@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>QQ第三方登录</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript">
+        $(function(){
+            $("#loginBtn").click(function(){
+                $.post("http://127.0.0.1:8080/api/auth/loginByQQ",function(result){
+                    alert(result)
+                    if(result){
+                        window.location.href="/zq/success.jsp";
+                    }else{
+                        alert("用户名或者密码错误!");
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+<form>
+    用户名:<input type="text" id="username" name="username"><br/>
+    密码:<input type="text" id="password" name="password"><br/>
+    <input type="button" value="登录" id="loginBtn">
+</form>
+</body>
+</html>

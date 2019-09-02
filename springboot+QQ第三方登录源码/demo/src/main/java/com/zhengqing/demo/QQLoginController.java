@@ -12,6 +12,7 @@ import com.qq.connect.oauth.Oauth;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,7 +51,13 @@ public class QQLoginController {
         log.info( "QQ三方登录回调接口：" + QQ_redirect_URI );
     }
 
-
+    /**
+     * @CrossOrigin： 配置该方法接受某一个域的请求 - 解决跨域问题
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+//    @CrossOrigin( value = "http://127.0.0.1:8080" )
     @RequestMapping("/loginByQQ")
     public void loginByQQ( HttpServletRequest request, HttpServletResponse response ) throws IOException {
         // 响应编码
