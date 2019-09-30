@@ -1,0 +1,5 @@
+#spring:
+#  security:
+#    user:
+#      name: admin  # \u7528\u6237\u540D
+#      password: 123456  # \u5BC6\u7801
