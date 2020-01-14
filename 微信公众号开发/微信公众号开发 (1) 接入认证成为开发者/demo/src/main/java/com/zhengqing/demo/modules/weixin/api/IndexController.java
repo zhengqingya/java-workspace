@@ -1,31 +1,8 @@
-package com.zhengqing.demo.modules.weixin.api;
-
-
-import com.zhengqing.demo.modules.common.api.BaseController;
-import com.zhengqing.demo.utils.SecurityUtil;
-import io.swagger.annotations.Api;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Arrays;
-
-/**
- * <p> 微信校验接口 </p>
- *
- * @author : zhengqing
- * @description :
- * @date : 2019/6/10 14:16
- */
 @Slf4j
 @RestController
-@RequestMapping("/api/weixin")
-@Api(tags = "微信校验接口")
-public class CheckSignatureController extends BaseController {
+@RequestMapping("/api/weixin/index")
+@Api(tags = "微信 - 接口")
+public class IndexController extends BaseController {
 
     // TODO 这里的token是微信公众平台上自己所配的！
     private static final String token = "zhengqing";
@@ -37,7 +14,7 @@ public class CheckSignatureController extends BaseController {
      * nonce: 随机数
      * echostr: 随机字符串
      */
-    @GetMapping("/checkSignature")
+    @GetMapping
     public void checkSignature(HttpServletRequest request, HttpServletResponse response) throws IOException {
         System.out.println("============= 处理微信认证 ===============");
         // 拿到微信的请求参数
