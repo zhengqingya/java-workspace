@@ -25,7 +25,7 @@ import java.util.Arrays;
 @RestController
 @RequestMapping("/api")
 @Api(tags = "微信校验接口")
-public class IndexController extends BaseController {
+public class CheckSignatureController extends BaseController {
 
     // TODO 这里的token是微信公众平台上自己所配的！
     private static final String token = "zhengqing";
@@ -37,8 +37,8 @@ public class IndexController extends BaseController {
      * nonce: 随机数
      * echostr: 随机字符串
      */
-    @GetMapping("/checkToken")
-    public void checkToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @GetMapping("/checkSignature")
+    public void checkSignature(HttpServletRequest request, HttpServletResponse response) throws IOException {
         System.out.println("============= 处理微信认证 ===============");
         // 拿到微信的请求参数
         String signature = request.getParameter("signature");
