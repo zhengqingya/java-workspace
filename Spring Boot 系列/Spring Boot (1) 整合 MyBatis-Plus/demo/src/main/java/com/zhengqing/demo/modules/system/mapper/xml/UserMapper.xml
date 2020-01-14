@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhengqing.demo.modules.system.mapper.UserMapper">
+
+	<!-- 通用查询映射结果 -->
+	<resultMap id="BaseResultMap" type="com.zhengqing.demo.modules.system.entity.User">
+		<id column="id" property="id" />
+		<result column="username" property="username" />
+		<result column="password" property="password" />
+	</resultMap>
+
+    <select id="selectUsers" resultMap="BaseResultMap">
+        SELECT
+             *
+        FROM t_sys_user
+        WHERE
+             1 = 1
+        <if test="filter.id!=null and filter.id!=''">
+            AND	id= #{filter.id}
+        </if>
+		<if test="filter.username!=null and filter.username!=''">
+			AND	username LIKE '%${filter.username}%'
+		</if>
+        ORDER BY id DESC
+    </select>
+
+</mapper>
