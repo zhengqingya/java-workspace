@@ -23,7 +23,7 @@ import java.util.Arrays;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/weixin")
 @Api(tags = "微信校验接口")
 public class CheckSignatureController extends BaseController {
 
