@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>微信公众号开发 (1) 微信接入认证成为开发者</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p>本系列教程将基于<code>springboot2.1.8.RELEASE</code>完成</p>
+<p>本文将实现</p>
+<ol>
+<li>注册账号</li>
+<li>接入微信</li>
+<li>认证成为开发者</li>
+</ol>
+<h3><a id="_10"></a>二、进入微信公众平台注册账号</h3>
+<blockquote>
+<p><a href="https://mp.weixin.qq.com/">https://mp.weixin.qq.com/</a></p>
+</blockquote>
+<p>个人用户建议注册订阅号<br>
+<img src="https://img-blog.csdnimg.cn/20190111182649715.png" alt="在这里插入图片描述"><br>
+最后注册成功如下：<br>
+<img src="https://img-blog.csdnimg.cn/20190215104313143.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_18"></a>三、接入认证成为开发者</h3>
+<blockquote>
+<p>可参考微信官方开发文档：<a href="https://mp.weixin.qq.com/wiki?t=resource/res_main&amp;id=mp1421135319">https://mp.weixin.qq.com/wiki?t=resource/res_main&amp;id=mp1421135319</a></p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/20200114092649695.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="1_24"></a>1、填写服务器配置</h4>
+<p>选择左下方的开发者工具，进入测试账号开发</p>
+<blockquote>
+<p>why？<br>
+测试账号的权限多点，如果已经认证了的账号可不需要利用测试账号开发</p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/20190610111857434.png" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20190610111938620.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+登录进去<br>
+<img src="https://img-blog.csdnimg.cn/20190610112012769.png" alt="在这里插入图片描述"></p>
+<p>填写服务器 <code>URL</code> 和自定义的校验<code>Token</code><br>
+<img src="https://img-blog.csdnimg.cn/20200114175123477.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<blockquote>
+<p>温馨小提示：</p>
+<ol>
+<li>微信公众号接口必须以http://或https://开头，分别支持80端口和443端口！</li>
+<li>这里的url可以选择自己买的服务器地址，记得必须开放80端口去使用！<br>
+或者使用内网映射外网工具生成一个域名地址供给你开发使用，此方法自行百度，如下就是其中一种使用~<br>
+<img src="https://img-blog.csdnimg.cn/20200114103222749.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
+</ol>
+</blockquote>
+<h4><a id="2URL_46"></a>2、提交验证URL有效性</h4>
+<p><img src="https://img-blog.csdnimg.cn/20200114095532598.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>配置好后，点击提交，微信服务器会发送一个<code>GET</code>请求到我们配置的地址上，在后台通过get请求的方式获取，请求的时候会传入几个参数<br>
+<img src="https://img-blog.csdnimg.cn/20200114100107135.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+回到项目中，处理微信认证，然后启动项目测试</p>
+<blockquote>
+<p>温馨小提示：这里小编将自己的内网映射到外网了，方便本地测试~</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api/weixin/index"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"微信 - 接口"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">IndexController</span> <span class="token keyword">extends</span> <span class="token class-name">BaseController</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">// TODO 这里的token是微信公众平台上自己所配的！</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String token <span class="token operator">=</span> <span class="token string">"zhengqing"</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 处理微信认证：验证服务器地址的有效性，get提交
+     * signature: 微信加密签名，signature结合了开发者填写的token参数和请求中的timestamp参数、nonce参数。
+     * timestamp 时间戳
+     * nonce: 随机数
+     * echostr: 随机字符串
+     */</span>
+    <span class="token annotation punctuation">@GetMapping</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">checkSignature</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> IOException <span class="token punctuation">{</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"============= 处理微信认证 ==============="</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 拿到微信的请求参数</span>
+        String signature <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">"signature"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String timestamp <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">"timestamp"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String nonce <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">"nonce"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String echostr <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">"echostr"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// ① 将token、timestamp、nonce三个参数进行字典序排序 b a d c h ==&gt;a b c d h</span>
+        String<span class="token punctuation">[</span><span class="token punctuation">]</span> strArr <span class="token operator">=</span> <span class="token punctuation">{</span>token<span class="token punctuation">,</span> timestamp<span class="token punctuation">,</span> nonce<span class="token punctuation">}</span><span class="token punctuation">;</span>
+        <span class="token comment">// 字典排序</span>
+        Arrays<span class="token punctuation">.</span><span class="token function">sort</span><span class="token punctuation">(</span>strArr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// ② 将三个参数字符串拼接成一个字符串进行sha1加密</span>
+        StringBuffer sb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringBuffer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 字符串拼接</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>String str <span class="token operator">:</span> strArr<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            sb<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>str<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 加密</span>
+        String sha1Str <span class="token operator">=</span> SecurityUtil<span class="token punctuation">.</span><span class="token function">sha1</span><span class="token punctuation">(</span>sb<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// ③ 开发者获得加密后的字符串可与signature对比，标识该请求来源于微信</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>sha1Str<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>signature<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment">// 如果相等，就是来自微信请求</span>
+            <span class="token comment">// 若确认此次GET请求来自微信服务器，原样返回echostr参数内容，则接入生效</span>
+            response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>echostr<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>其中sha1加密工具类</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SecurityUtil</span> <span class="token punctuation">{</span>
+	<span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">sha1</span><span class="token punctuation">(</span>String str<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+		<span class="token keyword">try</span> <span class="token punctuation">{</span>
+			StringBuilder sb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+			MessageDigest digest <span class="token operator">=</span> MessageDigest<span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token string">"sha1"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+			<span class="token comment">// 放入加密字符串</span>
+			digest<span class="token punctuation">.</span><span class="token function">update</span><span class="token punctuation">(</span>str<span class="token punctuation">.</span><span class="token function">getBytes</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+			<span class="token comment">// 进行加密</span>
+			<span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> digestMsg <span class="token operator">=</span> digest<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+			<span class="token comment">// byte转换16进制</span>
+			<span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">byte</span> b <span class="token operator">:</span> digestMsg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+				sb<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>String<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">"%02x"</span><span class="token punctuation">,</span> b<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+			<span class="token punctuation">}</span>
+			<span class="token keyword">return</span> sb<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">NoSuchAlgorithmException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+			e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token punctuation">}</span>
+		<span class="token keyword">return</span> str<span class="token punctuation">;</span>
+	<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>注意端口必须为80端口哦！！！<br>
+<img src="https://img-blog.csdnimg.cn/20200114105615336.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="3_133"></a>3、测试接入认证</h4>
+<p>启动项目后，回到微信公众平台，提交发送接入认证请求，如果配置正确，会提示配置成功，并保存配置信息</p>
+<p><img src="https://img-blog.csdnimg.cn/20200114175311370.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>就这样，我们简单的完成了微信认证成为开发者 ~</p>
+<h3><a id="demo_141"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
