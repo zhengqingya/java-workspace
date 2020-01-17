@@ -21,11 +21,13 @@
 </ol>
 <h6><a id="_10"></a>微信文档中提示的一些注意点：</h6>
 <ol>
-<li>自定义菜单最多<code>3个一级菜单</code>，每一级菜单最多<code>5个二级菜单</code>。</li>
+<li>access_token的<code>存储</code>至少要保留<code>512</code>个<code>字符</code>空间。</li>
+<li>access_token的<code>有效期</code>为<code>2小时</code>，需定时刷新，重复获取将导致上次获取的access_token失效</li>
+<li>自定义菜单最多<code>3个一级菜单</code>，每一级菜单最多<code>5个二级菜单</code></li>
 <li><code>一级菜单最多4个汉字</code>，<code>二级菜单最多7个汉字</code></li>
-<li><code>菜单刷新策略：</code>5分钟之后更新菜单。测试时可以尝试取消关注公众账号后再次关注，则可以看到创建后的效果。​</li>
+<li><code>菜单刷新策略：</code>5分钟之后更新菜单。测试时可以尝试取消关注公众账号后再次关注，则可以看到创建后的效果</li>
 </ol>
-<h3><a id="RestTemplate_http_16"></a>二、<code>RestTemplate</code>配置 (用于远程<code>调用</code>微信http<code>接口</code>方法)</h3>
+<h3><a id="RestTemplate_http_18"></a>二、<code>RestTemplate</code>配置 (用于远程<code>调用</code>微信http<code>接口</code>方法)</h3>
 <p>RestTemplate是Spring提供的用于访问Rest服务的客户端,RestTemplate提供了多种便捷访问远程Http服务的方法,能够大大提高客户端的编写效率。</p>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RestTemplateConfig</span> <span class="token punctuation">{</span>
@@ -40,14 +42,14 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h3><a id="_35"></a>三、微信接口调用说明</h3>
+<h3><a id="_37"></a>三、微信接口调用说明</h3>
 <ol>
 <li>获取access_token接口 ： <code>【GET请求】</code>  <code>https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&amp;appid=APPID&amp;secret=APPSECRET</code></li>
 <li>查询菜单接口 ： <code>【GET请求】</code> <code>https://api.weixin.qq.com/cgi-bin/menu/get?access_token=ACCESS_TOKEN</code></li>
 <li>删除菜单接口 : <code>【GET请求】</code> <code>https://api.weixin.qq.com/cgi-bin/menu/delete?access_token=ACCESS_TOKEN</code></li>
 <li>创建菜单接口 : <code>【POST请求】</code> <code>https://api.weixin.qq.com/cgi-bin/menu/create?access_token=ACCESS_TOKEN</code></li>
 </ol>
-<h6><a id="_42"></a>封装微信接口所需变量</h6>
+<h6><a id="_44"></a>封装微信接口所需变量</h6>
 <pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Constants</span> <span class="token punctuation">{</span>
     <span class="token comment">/**
      * TODO 填写自己的 `appID` 和 `appsecret`
@@ -79,12 +81,12 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h3><a id="AppIDAppSecretaccess_token_77"></a>四、根据<code>AppID</code>和<code>AppSecret</code>获取<code>access_token</code></h3>
+<h3><a id="AppIDAppSecretaccess_token_79"></a>四、根据<code>AppID</code>和<code>AppSecret</code>获取<code>access_token</code></h3>
 <p>access_token是公众号的全局唯一接口调用凭据，公众号调用各接口（下面的<code>创建菜单</code>、<code>查询菜单</code>、<code>删除菜单</code>等）时都需使用access_token！</p>
 <blockquote>
 <p><a href="https://developers.weixin.qq.com/doc/offiaccount/Basic_Information/Get_access_token.html">这里可查看微信文档获取access_token方式</a></p>
 </blockquote>
-<h6><a id="_AccessTokenVO_82"></a>① 封装响应结果<code>AccessTokenVO</code></h6>
+<h6><a id="_AccessTokenVO_84"></a>① 封装响应结果<code>AccessTokenVO</code></h6>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
 <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"access_token: 公众号的全局唯一接口调用凭据"</span><span class="token punctuation">)</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AccessTokenVO</span> <span class="token punctuation">{</span>
@@ -97,7 +99,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h6><a id="__98"></a>② 服务类</h6>
+<h6><a id="__100"></a>② 服务类</h6>
 <pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IWeixinService</span> <span class="token punctuation">{</span>
 
     <span class="token comment">/**
@@ -111,7 +113,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h6><a id="__115"></a>③ 服务实现类</h6>
+<h6><a id="__117"></a>③ 服务实现类</h6>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
 <span class="token annotation punctuation">@Service</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">WeixinServiceImpl</span> <span class="token keyword">implements</span> <span class="token class-name">IWeixinService</span> <span class="token punctuation">{</span>
@@ -127,8 +129,8 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h3><a id="_134"></a>五、自定义菜单处理</h3>
-<h4><a id="clickview_136"></a><code>click</code>和<code>view</code>请求示例</h4>
+<h3><a id="_136"></a>五、自定义菜单处理</h3>
+<h4><a id="clickview_138"></a><code>click</code>和<code>view</code>请求示例</h4>
 <pre><code>{
      "button":[
      {	
@@ -159,12 +161,12 @@
        }]
  }
 </code></pre>
-<h4><a id="1_170"></a>1、封装菜单数据</h4>
+<h4><a id="1_172"></a>1、封装菜单数据</h4>
 <blockquote>
 <p>温馨小提示：这里封装数据建议多看下微信文档中给出的数据，不然可能会对最后组装菜单树数据创建菜单的时候感到迷惑 ~</p>
 </blockquote>
 <p><img src="https://img-blog.csdnimg.cn/2020011717243590.png" alt="在这里插入图片描述"></p>
-<h6><a id="__176"></a>① 菜单类型枚举类</h6>
+<h6><a id="__178"></a>① 菜单类型枚举类</h6>
 <pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">enum</span> MenuType <span class="token punctuation">{</span>
     <span class="token comment">// 点击式菜单</span>
     <span class="token function">CLICK</span><span class="token punctuation">(</span><span class="token string">"click"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
@@ -172,7 +174,7 @@
     <span class="token function">VIEW</span><span class="token punctuation">(</span><span class="token string">"view"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h6><a id="____187"></a>② 菜单 - 基类</h6>
+<h6><a id="____189"></a>② 菜单 - 基类</h6>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
 <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"菜单 - 基类"</span><span class="token punctuation">)</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Button</span> <span class="token punctuation">{</span>
@@ -182,7 +184,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h6><a id="__200"></a>③ 点击式菜单</h6>
+<h6><a id="__202"></a>③ 点击式菜单</h6>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
 <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"用户点击菜单可接收消息推送"</span><span class="token punctuation">)</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ClickButton</span> <span class="token keyword">extends</span> <span class="token class-name">Button</span> <span class="token punctuation">{</span>
@@ -195,7 +197,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h6><a id="__216"></a>④ 链接式菜单</h6>
+<h6><a id="__218"></a>④ 链接式菜单</h6>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
 <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"用户点击菜单可打开链接"</span><span class="token punctuation">)</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ViewButton</span> <span class="token keyword">extends</span> <span class="token class-name">Button</span> <span class="token punctuation">{</span>
@@ -208,7 +210,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h6><a id="__232"></a>⑤ 含二级菜单的一级菜单</h6>
+<h6><a id="__234"></a>⑤ 含二级菜单的一级菜单</h6>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
 <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"含二级菜单的一级菜单"</span><span class="token punctuation">)</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ComplexButton</span> <span class="token keyword">extends</span> <span class="token class-name">Button</span> <span class="token punctuation">{</span>
@@ -218,7 +220,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h6><a id="__245"></a>⑥ 最外层的菜单树</h6>
+<h6><a id="__247"></a>⑥ 最外层的菜单树</h6>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
 <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"菜单树"</span><span class="token punctuation">)</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Menu</span> <span class="token punctuation">{</span>
@@ -228,7 +230,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><a id="2_258"></a>2、服务类</h4>
+<h4><a id="2_260"></a>2、服务类</h4>
 <pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IMenuService</span> <span class="token punctuation">{</span>
 
     <span class="token comment">/**
@@ -258,7 +260,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><a id="3_291"></a>3、服务实现类</h4>
+<h4><a id="3_293"></a>3、服务实现类</h4>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
 <span class="token annotation punctuation">@Service</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MenuServiceImpl</span> <span class="token keyword">implements</span> <span class="token class-name">IMenuService</span> <span class="token punctuation">{</span>
@@ -289,8 +291,8 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h3><a id="_325"></a>六、测试</h3>
-<h6><a id="1access_token_327"></a>1、获取<code>access_token</code></h6>
+<h3><a id="_327"></a>六、测试</h3>
+<h6><a id="1access_token_329"></a>1、获取<code>access_token</code></h6>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
 <span class="token annotation punctuation">@RunWith</span><span class="token punctuation">(</span>SpringRunner<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
 <span class="token annotation punctuation">@SpringBootTest</span><span class="token punctuation">(</span>classes <span class="token operator">=</span> DemoApplication<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
@@ -307,7 +309,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h6><a id="2_347"></a>2、<code>创建自定义菜单</code>、<code>查询菜单</code>、<code>删除菜单</code></h6>
+<h6><a id="2_349"></a>2、<code>创建自定义菜单</code>、<code>查询菜单</code>、<code>删除菜单</code></h6>
 <p>注：这里小编将获取到的<code>access_token</code> 写死到常量 <code>Constants.ACCESS_TOKEN</code> 中做测试，实际项目中可将<code>access_token</code>保存到缓存中，每隔快到2个小时的时候去重新获取一次刷新缓存数据 ~</p>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
 <span class="token annotation punctuation">@RunWith</span><span class="token punctuation">(</span>SpringRunner<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
@@ -380,7 +382,7 @@
 </code></pre>
 <p>最终自定义的菜单</p>
 <p><img src="https://img-blog.csdnimg.cn/20200117174307321.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h3><a id="demo_426"></a>本文案例demo源码</h3>
+<h3><a id="demo_428"></a>本文案例demo源码</h3>
 <p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
 </div>
 </body>
