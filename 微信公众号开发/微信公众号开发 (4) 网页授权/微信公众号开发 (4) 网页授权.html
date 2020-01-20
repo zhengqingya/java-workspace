@@ -1,0 +1,323 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>微信公众号开发 (4) 网页授权</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/86311495">微信公众号开发 (1) 微信接入认证成为开发者</a></li>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/103977209">微信公众号开发 (2) 消息处理</a></li>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/104005562">微信公众号开发 (3) 菜单处理</a></li>
+</ol>
+<h6><a id="_6"></a>本文将实现</h6>
+<ol>
+<li>网页授权</li>
+<li>获取用户基本信息</li>
+</ol>
+<h6><a id="_11"></a>网页授权流程</h6>
+<ol>
+<li><code>填写</code>网页授权<code>回调域名</code></li>
+<li>引导用户进入授权页面同意<code>授权</code>，<code>获取code</code></li>
+<li>通过<code>code</code> <code>换</code> 取网页授权<code>access_token</code> 和 <code>openid</code> （注：与基础支持中的access_token不同）</li>
+<li><code>刷新</code>网页授权<code>access_token</code>，避免过期（可选择性操作）</li>
+<li><code>通过</code>网页授权<code>access_token和openid获取用户基本信息</code>（支持UnionID机制）</li>
+</ol>
+<h3><a id="_19"></a>二、填写网页授权回调域名</h3>
+<p><code>测试号</code>在如下地址中，<code>体验接口权限表</code> -&gt; <code>网页帐号</code> -&gt; <code>修改</code><br>
+<a href="http://mp.weixin.qq.com/debug/cgi-bin/sandboxinfo?action=showinfo&amp;t=sandbox/index">http://mp.weixin.qq.com/debug/cgi-bin/sandboxinfo?action=showinfo&amp;t=sandbox/index</a></p>
+<p><img src="https://img-blog.csdnimg.cn/20200120153347327.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+注：勿加 <code>http://</code> 等协议头！<br>
+<img src="https://img-blog.csdnimg.cn/2020012015351120.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_28"></a>三、授权相关接口</h3>
+<blockquote>
+<p>温馨小提示：接口相关参数说明可直接查看微信官方文档 <a href="https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/Wechat_webpage_authorization.html">https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/Wechat_webpage_authorization.html</a></p>
+</blockquote>
+<h6><a id="1_32"></a>1、用户授权页面</h6>
+<pre><code>https://open.weixin.qq.com/connect/oauth2/authorize?appid=APPID&amp;redirect_uri=REDIRECT_URI&amp;response_type=code&amp;scope=SCOPE&amp;state=STATE#wechat_redirect
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>是否必须</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>appid</code></td>
+<td>是</td>
+<td>公众号的唯一标识</td>
+</tr>
+<tr>
+<td><code>redirect_uri</code></td>
+<td>是</td>
+<td>授权后重定向的回调链接地址， 请使用 urlEncode 对链接进行处理</td>
+</tr>
+<tr>
+<td>response_type</td>
+<td>是</td>
+<td>返回类型，请填写code</td>
+</tr>
+<tr>
+<td><code>scope</code></td>
+<td>是</td>
+<td>应用授权作用域，<code>snsapi_base</code> （不弹出授权页面，直接跳转，只能获取用户openid），<code>snsapi_userinfo</code> （弹出授权页面，可通过openid拿到昵称、性别、所在地。并且， 即使在未关注的情况下，只要用户授权，也能获取其信息 ）</td>
+</tr>
+<tr>
+<td>state</td>
+<td>否</td>
+<td>重定向后会带上state参数，开发者可以填写a-zA-Z0-9的参数值，最多128字节</td>
+</tr>
+<tr>
+<td>#wechat_redirect</td>
+<td>是</td>
+<td>无论直接打开还是做页面302重定向时候，必须带此参数</td>
+</tr>
+</tbody>
+</table><h6><a id="2codeaccess_tokenopenid_47"></a>2、通过<code>code</code>换取网页授权<code>access_token</code>和<code>openid</code></h6>
+<pre><code>【GET请求】https://api.weixin.qq.com/sns/oauth2/access_token?appid=APPID&amp;secret=SECRET&amp;code=CODE&amp;grant_type=authorization_code
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>是否必须</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>appid</code></td>
+<td>是</td>
+<td>公众号的唯一标识</td>
+</tr>
+<tr>
+<td><code>secret</code></td>
+<td>是</td>
+<td>公众号的appsecret</td>
+</tr>
+<tr>
+<td><code>code</code></td>
+<td>是</td>
+<td>填写第一步获取的code参数</td>
+</tr>
+<tr>
+<td>grant_type</td>
+<td>是</td>
+<td>填写为authorization_code</td>
+</tr>
+</tbody>
+</table><h6><a id="3access_token_60"></a>3、刷新access_token（如果需要）</h6>
+<pre><code>【GET请求】https://api.weixin.qq.com/sns/oauth2/refresh_token?appid=APPID&amp;grant_type=refresh_token&amp;refresh_token=REFRESH_TOKEN
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>是否必须</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>appid</code></td>
+<td>是</td>
+<td>公众号的唯一标识</td>
+</tr>
+<tr>
+<td>grant_type</td>
+<td>是</td>
+<td>填写为refresh_token</td>
+</tr>
+<tr>
+<td><code>refresh_token</code></td>
+<td>是</td>
+<td>填写通过access_token获取到的refresh_token参数</td>
+</tr>
+</tbody>
+</table><h6><a id="4scope_snsapi_userinfo_72"></a>4、获取用户信息(需scope为 <code>snsapi_userinfo</code>)</h6>
+<pre><code>【GET请求】https://api.weixin.qq.com/sns/userinfo?access_token=ACCESS_TOKEN&amp;openid=OPENID&amp;lang=zh_CN
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>access_token</code></td>
+<td>网页授权接口调用凭证,注意：此access_token与基础支持的access_token不同</td>
+</tr>
+<tr>
+<td><code>openid</code></td>
+<td>用户的唯一标识</td>
+</tr>
+<tr>
+<td>lang</td>
+<td>返回国家地区语言版本，zh_CN 简体，zh_TW 繁体，en 英语</td>
+</tr>
+</tbody>
+</table><h6><a id="5access_token_84"></a>5、检验授权凭证（access_token）是否有效</h6>
+<pre><code>【GET请求】https://api.weixin.qq.com/sns/auth?access_token=ACCESS_TOKEN&amp;openid=OPENID
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>access_token</code></td>
+<td>网页授权接口调用凭证,注意：此access_token与基础支持的access_token不同</td>
+</tr>
+<tr>
+<td><code>openid</code></td>
+<td>用户的唯一标识</td>
+</tr>
+</tbody>
+</table><hr>
+<h3><a id="_97"></a>注：下面部分只贴出了重要代码部分，完整案例可参考文末提供的源码</h3>
+<hr>
+<h3><a id="__code_101"></a>四、引导用户进入授权页面同意授权 -&gt; 获取code</h3>
+<h6><a id="view_103"></a>方式①：通过创建<code>链接式菜单(view)</code></h6>
+<p><img src="https://img-blog.csdnimg.cn/202001201626430.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200120162941774.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="url_108"></a>方式②：直接发送授权url消息，用户点击进入授权</h6>
+<pre><code>https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx62d91f5c16d6e8e0&amp;redirect_uri=http://m9adhq.natappfree.cc/api/weixin/basic/getOpenId&amp;response_type=code&amp;scope=snsapi_userinfo&amp;state=STATE#wechat_redirect
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/20200120163229322.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+授权相关的几个api接口如下：<br>
+<img src="https://img-blog.csdnimg.cn/20200120173024622.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="codeaccess_tokenopenidaccess_token_118"></a>五、通过<code>code</code>换取网页授权<code>access_token</code>和<code>openid</code>（与基础支持中的access_token不同）</h3>
+<p>用户同意授权后，页面将跳转至 <code>redirect_uri/?code=CODE&amp;state=STATE</code></p>
+<blockquote>
+<p>code说明 ： code作为换取access_token的票据，每次用户授权带上的code将不一样，code只能使用一次，5分钟未被使用自动过期。</p>
+</blockquote>
+<p>注：小编这里拿到<code>access_token</code>和<code>openid</code>之后将页面重定向到了获取用户信息的接口，然后返回json用户信息数据~</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">getOpenId</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    String code <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">"code"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    String state <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span><span class="token string">"state"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"======================================= \n code值："</span> <span class="token operator">+</span> code<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    String responseContent <span class="token operator">=</span> restTemplate<span class="token punctuation">.</span><span class="token function">getForObject</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>AUTH_GET_ACCESS_TOKEN_AND_OPENID
+            <span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"APPID"</span><span class="token punctuation">,</span> Constants<span class="token punctuation">.</span>APP_ID<span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"SECRET"</span><span class="token punctuation">,</span> Constants<span class="token punctuation">.</span>APP_SECRET<span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"CODE"</span><span class="token punctuation">,</span> code<span class="token punctuation">)</span><span class="token punctuation">,</span> String<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    JSONObject result <span class="token operator">=</span> JSON<span class="token punctuation">.</span><span class="token function">parseObject</span><span class="token punctuation">(</span>responseContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    String accessToken <span class="token operator">=</span> result<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token string">"access_token"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    String openid <span class="token operator">=</span> result<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token string">"openid"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    String refreshToken <span class="token operator">=</span> result<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token string">"refresh_token"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"======================================= \n access_token值："</span> <span class="token operator">+</span> accessToken <span class="token operator">+</span> <span class="token string">"\n  openid值："</span> <span class="token operator">+</span> openid<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    String redirectUrl <span class="token operator">=</span> <span class="token string">"http://m9adhq.natappfree.cc/api/weixin/basic/getUserInfo?openid="</span> <span class="token operator">+</span> openid <span class="token operator">+</span> <span class="token string">"&amp;access_token="</span> <span class="token operator">+</span> accessToken<span class="token punctuation">;</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 授权之后重定向到指定URL（这里是跳转到获取用户基本信息接口）</span>
+        response<span class="token punctuation">.</span><span class="token function">sendRedirect</span><span class="token punctuation">(</span>redirectUrl<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_154"></a>六、获取微信用户基本信息</h3>
+<pre><code class="prism language-java"><span class="token keyword">public</span> WeixinUserInfoVO <span class="token function">getUserInfo</span><span class="token punctuation">(</span>String openId<span class="token punctuation">,</span> String accessToken<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    WeixinUserInfoVO weixinUserInfoVO <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    String responseContent <span class="token operator">=</span> restTemplate<span class="token punctuation">.</span><span class="token function">getForObject</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>AUTH_GET_USER_INFO
+            <span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"ACCESS_TOKEN"</span><span class="token punctuation">,</span> accessToken<span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"OPENID"</span><span class="token punctuation">,</span> openId<span class="token punctuation">)</span><span class="token punctuation">,</span> String<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    weixinUserInfoVO <span class="token operator">=</span> JSON<span class="token punctuation">.</span><span class="token function">parseObject</span><span class="token punctuation">(</span>responseContent<span class="token punctuation">,</span> WeixinUserInfoVO<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> weixinUserInfoVO<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>其中<code>WeixinUserInfoVO</code>基本信息类</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"微信用户基本信息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">WeixinUserInfoVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"用户的唯一标识"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String openid<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"用户昵称"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String nickname<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"用户的性别，值为1时是男性，值为2时是女性，值为0时是未知"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> Integer sex<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"用户个人资料填写的省份"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String province<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"普通用户个人资料填写的城市"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String city<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"国家，如中国为CN"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String country<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"用户头像，最后一个数值代表正方形头像大小（有0、46、64、96、132数值可选，0代表640*640正方形头像），用户没有头像时该项为空。若用户更换头像，原有头像URL将失效。"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String headimgurl<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"用户特权信息，json 数组，如微信沃卡用户为（chinaunicom）"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String privilege<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"只有在用户将公众号绑定到微信开放平台帐号后，才会出现该字段。"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String unionid<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"返回国家地区语言版本，zh_CN 简体，zh_TW 繁体，en 英语"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String language<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>响应数据如下：<br>
+<img src="https://img-blog.csdnimg.cn/20200120165825479.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>这里获取到用户信息之后，也就可以写页面，然后进行自己的业务交互了… (<code>openid：微信用户的唯一标识</code>)</p>
+<h3><a id="access_token_212"></a>七、刷新access_token（如果需要）</h3>
+<p>由于access_token拥有较短的有效期，当access_token超时后，可以使用refresh_token进行刷新，refresh_token有效期为30天，当refresh_token失效之后，需要用户重新授权。</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> String <span class="token function">refreshAccessToken</span><span class="token punctuation">(</span>String appId<span class="token punctuation">,</span> String refreshToken<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    String responseResult <span class="token operator">=</span> restTemplate<span class="token punctuation">.</span><span class="token function">getForObject</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>AUTH_REFRESH_ACCESS_TOKEN
+            <span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"APPID"</span><span class="token punctuation">,</span> appId<span class="token punctuation">)</span>
+            <span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"REFRESH_TOKEN"</span><span class="token punctuation">,</span> refreshToken<span class="token punctuation">)</span><span class="token punctuation">,</span> String<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    JSONObject jsonObject <span class="token operator">=</span> JSON<span class="token punctuation">.</span><span class="token function">parseObject</span><span class="token punctuation">(</span>responseResult<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> jsonObject<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token string">"access_token"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="access_token_226"></a>八、检验授权凭证（access_token）是否有效</h3>
+<pre><code class="prism language-java"><span class="token keyword">public</span> WeixinResponseResult <span class="token function">checkAccessToken</span><span class="token punctuation">(</span>String openId<span class="token punctuation">,</span> String accessToken<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+     String responseResult <span class="token operator">=</span> restTemplate<span class="token punctuation">.</span><span class="token function">getForObject</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>AUTH_CHECK_ACCESS_TOKEN
+             <span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"ACCESS_TOKEN"</span><span class="token punctuation">,</span> accessToken<span class="token punctuation">)</span>
+             <span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"OPENID"</span><span class="token punctuation">,</span> openId<span class="token punctuation">)</span><span class="token punctuation">,</span> String<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     WeixinResponseResult weixinResponseResult <span class="token operator">=</span> JSON<span class="token punctuation">.</span><span class="token function">parseObject</span><span class="token punctuation">(</span>responseResult<span class="token punctuation">,</span> WeixinResponseResult<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token keyword">if</span> <span class="token punctuation">(</span>weixinResponseResult<span class="token punctuation">.</span><span class="token function">getErrcode</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+         log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"授权凭证无效："</span> <span class="token operator">+</span> responseResult<span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">MyException</span><span class="token punctuation">(</span>weixinResponseResult<span class="token punctuation">.</span><span class="token function">getErrcode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> weixinResponseResult<span class="token punctuation">.</span><span class="token function">getErrmsg</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token punctuation">}</span>
+     <span class="token keyword">return</span> weixinResponseResult<span class="token punctuation">;</span>
+ <span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_242"></a>九、总结</h3>
+<ol>
+<li>微信公众号开发网上有很多教程，但针对于每一个开发者的环境以及语言不同而有所差异，建议认真看微信提供的官方文档去学习，大致也就是<code>查看文档</code> <code>封装数据</code> <code>调微信api接口</code> <code>业务处理</code></li>
+<li>关于微信公众号开发小编也已经写了几篇了，大家在学习完微信官方提供的原始api之后，GitHub以及Gitee等上面有很多大神已经封装好了优秀的开源sdk，这时候我们有了一定的微信开发基础就可以去阅读参考学习</li>
+<li>小编建议大家在学习遇到问题，查看别人如何实现以及解决问题的时候，更多的是去学习思维方式处理逻辑，而不是拿到就跑，虽然写代码也不过就是复制黏贴运行完无bug就万事大吉，但我们也要 知其然知其所以然 ！</li>
+</ol>
+<h3><a id="demo_248"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
