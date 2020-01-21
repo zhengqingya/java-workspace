@@ -1,0 +1,808 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>微信公众号开发 (2) 消息处理</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p><a href="https://zhengqing.blog.csdn.net/article/details/86311495">微信公众号开发 (1) 微信接入认证成为开发者</a></p>
+<p>本文将实现</p>
+<ol>
+<li>接收消息</li>
+<li>回复消息</li>
+</ol>
+<h3><a id="_9"></a>二、消息接收</h3>
+<p>消息接收<code>POST</code>和微信认证<code>GET</code>是同一个接口（开发者填写的URL）<br>
+<img src="https://img-blog.csdnimg.cn/20200114181558746.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api/weixin/index"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"微信 - 接口"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">IndexController</span> <span class="token keyword">extends</span> <span class="token class-name">BaseController</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 解析请求消息，post请求
+     */</span>
+    <span class="token annotation punctuation">@PostMapping</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">msgProcess</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+        <span class="token comment">// 获取请求的字节流</span>
+        ServletInputStream inputStream <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 转换为字符流， 得到缓冲流</span>
+        InputStreamReader inputStreamReader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">InputStreamReader</span><span class="token punctuation">(</span>inputStream<span class="token punctuation">,</span> StandardCharsets<span class="token punctuation">.</span>UTF_8<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        BufferedReader reader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedReader</span><span class="token punctuation">(</span>inputStreamReader<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String content <span class="token operator">=</span> null<span class="token punctuation">;</span>
+        <span class="token comment">// 读取消息内容</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>content <span class="token operator">=</span> reader<span class="token punctuation">.</span><span class="token function">readLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>content<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>接收到的<code>文本消息</code>格式如下</p>
+<blockquote>
+<p>其它消息格式可查看微信开放文档：<a href="https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Receiving_standard_messages.html">https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Receiving_standard_messages.html</a></p>
+</blockquote>
+<pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>xml</span><span class="token punctuation">&gt;</span></span>
+	<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>ToUserName</span><span class="token punctuation">&gt;</span></span><span class="token cdata">&lt;![CDATA[gh_683c79d81f78]]&gt;</span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>ToUserName</span><span class="token punctuation">&gt;</span></span>
+	<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>FromUserName</span><span class="token punctuation">&gt;</span></span><span class="token cdata">&lt;![CDATA[Wy5wvH9zSaQZSZcV7wZE18D]]&gt;</span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>FromUserName</span><span class="token punctuation">&gt;</span></span>
+	<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>CreateTime</span><span class="token punctuation">&gt;</span></span>1578996487<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>CreateTime</span><span class="token punctuation">&gt;</span></span>
+	<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>MsgType</span><span class="token punctuation">&gt;</span></span><span class="token cdata">&lt;![CDATA[text]]&gt;</span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>MsgType</span><span class="token punctuation">&gt;</span></span>
+	<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>Content</span><span class="token punctuation">&gt;</span></span><span class="token cdata">&lt;![CDATA[测试]]&gt;</span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>Content</span><span class="token punctuation">&gt;</span></span>
+	<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>MsgId</span><span class="token punctuation">&gt;</span></span>22605792697428179<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>MsgId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>xml</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ToUserName</td>
+<td>开发者微信号</td>
+</tr>
+<tr>
+<td>FromUserName</td>
+<td>发送方帐号（一个OpenID）</td>
+</tr>
+<tr>
+<td>CreateTime</td>
+<td>消息创建时间 （整型）</td>
+</tr>
+<tr>
+<td>MsgType</td>
+<td>消息类型，文本为text</td>
+</tr>
+<tr>
+<td>Content</td>
+<td>文本消息内容</td>
+</tr>
+<tr>
+<td>MsgId</td>
+<td>消息id，64位整型</td>
+</tr>
+</tbody>
+</table><h3><a id="_65"></a>三、消息处理</h3>
+<p>当用户发送消息给公众号时（或某些特定的用户操作引发的事件推送时），会产生一个POST请求，开发者可以在响应包（Get）中返回特定XML结构，来对该消息进行响应（现支持回复<code>文本</code>、<code>图片</code>、<code>图文</code>、<code>语音</code>、<code>视频</code>、<code>音乐</code>）。</p>
+<blockquote>
+<p>温馨小提示：这里的消息封装可根据<a href="https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Receiving_standard_messages.html">微信开放文档</a>中给出的消息格式自行封装，完整代码可参考文末给出的源码哦~</p>
+</blockquote>
+<h4><a id="1_71"></a>1、封装消息类型枚举类</h4>
+<p><img src="https://img-blog.csdnimg.cn/20200116114915816.png" alt="在这里插入图片描述"></p>
+<h6><a id="__75"></a>① 请求消息类型</h6>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">enum</span> EnumRequestMessageType <span class="token punctuation">{</span>
+    <span class="token comment">// 请求消息类型</span>
+    <span class="token function">TEXT</span><span class="token punctuation">(</span><span class="token string">"text"</span><span class="token punctuation">,</span> <span class="token string">"文本"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">IMAGE</span><span class="token punctuation">(</span><span class="token string">"image"</span><span class="token punctuation">,</span> <span class="token string">"图片"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">VOICE</span><span class="token punctuation">(</span><span class="token string">"voice"</span><span class="token punctuation">,</span> <span class="token string">"语音"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">VIDEO</span><span class="token punctuation">(</span><span class="token string">"video"</span><span class="token punctuation">,</span> <span class="token string">"视频"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">SHORTVIDEO</span><span class="token punctuation">(</span><span class="token string">"shortvideo"</span><span class="token punctuation">,</span> <span class="token string">"小视频"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">LOCATION</span><span class="token punctuation">(</span><span class="token string">"location"</span><span class="token punctuation">,</span> <span class="token string">"地理位置"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">LINK</span><span class="token punctuation">(</span><span class="token string">"link"</span><span class="token punctuation">,</span> <span class="token string">"链接"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">// 事件推送</span>
+    <span class="token function">EVENT</span><span class="token punctuation">(</span><span class="token string">"event"</span><span class="token punctuation">,</span> <span class="token string">"推送"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__92"></a>② 事件推送类型</h6>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">enum</span> EnumEventMessageType <span class="token punctuation">{</span>
+    <span class="token function">SUBSCRIBE</span><span class="token punctuation">(</span><span class="token string">"subscribe"</span><span class="token punctuation">,</span> <span class="token string">"订阅"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">UNSUBSCRIBE</span><span class="token punctuation">(</span><span class="token string">"unsubscribe"</span><span class="token punctuation">,</span> <span class="token string">"取消订阅"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">CLICK</span><span class="token punctuation">(</span><span class="token string">"CLICK"</span><span class="token punctuation">,</span> <span class="token string">"自定义菜单点击事件"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">SCAN</span><span class="token punctuation">(</span><span class="token string">"SCAN"</span><span class="token punctuation">,</span> <span class="token string">"用户已关注时的事件推送"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__103"></a>③ 响应消息类型</h6>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">enum</span> EnumResponseMessageType <span class="token punctuation">{</span>
+    <span class="token function">TEXT</span><span class="token punctuation">(</span><span class="token string">"text"</span><span class="token punctuation">,</span> <span class="token string">"文本"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">IMAGE</span><span class="token punctuation">(</span><span class="token string">"image"</span><span class="token punctuation">,</span> <span class="token string">"图片"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">VOICE</span><span class="token punctuation">(</span><span class="token string">"voice"</span><span class="token punctuation">,</span> <span class="token string">"语音"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">VIDEO</span><span class="token punctuation">(</span><span class="token string">"video"</span><span class="token punctuation">,</span> <span class="token string">"视频"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">MUSIC</span><span class="token punctuation">(</span><span class="token string">"music"</span><span class="token punctuation">,</span> <span class="token string">"音乐"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token function">NEWS</span><span class="token punctuation">(</span><span class="token string">"news"</span><span class="token punctuation">,</span> <span class="token string">"图文"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="2_116"></a>2、封装请求消息</h4>
+<p><img src="https://img-blog.csdnimg.cn/20200116114946177.png" alt="在这里插入图片描述"></p>
+<h6><a id="__120"></a>① 请求消息基类</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"请求消息-基类"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BaseMessageDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"开发者微信号"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String ToUserName<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"发送方帐号（一个OpenID）"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String FromUserName<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息创建时间 （整型）"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">long</span> CreateTime<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息id，64位整型"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">long</span> MsgId<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__142"></a>② 事件推送</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"事件推送"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">EventMessageDTO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumRequestMessageType<span class="token punctuation">.</span>EVENT<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"文本消息内容"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String Event<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__158"></a>③ 图片消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"图片消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ImageMessageDTO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumRequestMessageType<span class="token punctuation">.</span>IMAGE<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"图片链接（由系统生成）"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String PicUrl<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"图片消息媒体id，可以调用获取临时素材接口拉取数据"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MediaId<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__177"></a>④ 链接消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"链接消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">LinkMessageDTO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageDTO</span> <span class="token punctuation">{</span>
+
+	<span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+	<span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumRequestMessageType<span class="token punctuation">.</span>LINK<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+	<span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息标题"</span><span class="token punctuation">)</span>
+	<span class="token keyword">private</span> String Title<span class="token punctuation">;</span>
+
+	<span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息描述"</span><span class="token punctuation">)</span>
+	<span class="token keyword">private</span> String Description<span class="token punctuation">;</span>
+
+	<span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息链接"</span><span class="token punctuation">)</span>
+	<span class="token keyword">private</span> String Url<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__199"></a>⑤ 地理位置消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"地理位置消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">LocationMessageDTO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumRequestMessageType<span class="token punctuation">.</span>LOCATION<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"地理位置维度"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String Location_X<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"地理位置经度"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String Location_Y<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"地图缩放大小"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String Scale<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"地理位置信息"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String Label<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__224"></a>⑥ 小视频消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"小视频消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ShortVideoMessageDTO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumRequestMessageType<span class="token punctuation">.</span>SHORTVIDEO<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"视频消息媒体id，可以调用获取临时素材接口拉取数据"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MediaId<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"视频消息缩略图的媒体id，可以调用获取临时素材接口拉取数据"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String ThumbMediaId<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__243"></a>⑦ 文本消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"文本消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TextMessageDTO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumRequestMessageType<span class="token punctuation">.</span>TEXT<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"文本消息内容"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String Content<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__259"></a>⑧ 视频消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"视频消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">VideoMessageDTO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumRequestMessageType<span class="token punctuation">.</span>VIDEO<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"视频消息媒体id，可以调用获取临时素材接口拉取数据"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MediaId<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"视频消息缩略图的媒体id，可以调用多媒体文件下载接口拉取数据"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String ThumbMediaId<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__278"></a>⑨ 语音消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"语音消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">VoiceMessageDTO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumRequestMessageType<span class="token punctuation">.</span>VOICE<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"语音消息媒体id，可以调用获取临时素材接口拉取数据"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MediaId<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"语音格式，如amr，speex等"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String Format<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 请注意，开通语音识别后，用户每次发送语音给公众号时，微信会在推送的语音消息XML数据包中，
+     * 增加一个Recognition字段（注：由于客户端缓存，开发者开启或者关闭语音识别功能，对新关注者立刻生效，对已关注用户需要24小时生效。开发者可以重新关注此帐号进行测试）
+     */</span>
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"语音识别结果，UTF8编码"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String Recognition<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_304"></a>3、封装响应消息</h4>
+<p><img src="https://img-blog.csdnimg.cn/20200116115632891.png" alt="在这里插入图片描述"></p>
+<h6><a id="__308"></a>① 响应消息基类</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"响应消息-基类"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BaseMessageVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"接收方帐号（收到的OpenID）"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String ToUserName<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"开发者微信号"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String FromUserName<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息创建时间 （整型）"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">long</span> CreateTime<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"位0x0001被标志时，星标刚收到的消息"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> FuncFlag <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__330"></a>② 图片消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"图片消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ImageMessageVO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumResponseMessageType<span class="token punctuation">.</span>IMAGE<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"图片"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> Image Image<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Data</span>
+    <span class="token annotation punctuation">@AllArgsConstructor</span>
+    <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"图片消息中Image类的定义"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Image</span> <span class="token punctuation">{</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"通过素材管理中的接口上传多媒体文件，得到的id"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String MediaId<span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__356"></a>③ 音乐消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"音乐消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MusicMessageVO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumResponseMessageType<span class="token punctuation">.</span>MUSIC<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"音乐"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> Music Music<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Data</span>
+    <span class="token annotation punctuation">@AllArgsConstructor</span>
+    <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"音乐消息中Music类的定义"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Music</span> <span class="token punctuation">{</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"音乐标题"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String Title<span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"音乐描述"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String Description<span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"音乐链接"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String MusicUrl<span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"高质量音乐链接，WIFI环境优先使用该链接播放音乐"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String HQMusicUrl<span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"缩略图的媒体id，通过素材管理中的接口上传多媒体文件，得到的id"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String ThumbMediaId<span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__394"></a>④ 图文消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"图文消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">NewsMessageVO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumResponseMessageType<span class="token punctuation">.</span>NEWS<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"图文消息个数；当用户发送文本、图片、视频、图文、地理位置这五种消息时，开发者只能回复1条图文消息；其余场景最多可回复8条图文消息"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> ArticleCount <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"图文消息信息，注意，如果图文数超过限制，则将只发限制内的条数"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> List<span class="token generics function"><span class="token punctuation">&lt;</span>Article<span class="token punctuation">&gt;</span></span> Articles<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Data</span>
+    <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"图文消息中Article类的定义"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Article</span> <span class="token punctuation">{</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"图文消息标题"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String Title<span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"图文消息描述"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String Description <span class="token operator">=</span> <span class="token string">""</span><span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"图片链接，支持JPG、PNG格式，较好的效果为大图360*200，小图200*200"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String PicUrl <span class="token operator">=</span> <span class="token string">""</span><span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"点击图文消息跳转链接"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String Url <span class="token operator">=</span> <span class="token string">""</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addArticle</span><span class="token punctuation">(</span>Article article<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>Articles <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            Articles <span class="token operator">=</span> Lists<span class="token punctuation">.</span><span class="token function">newLinkedList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        Articles<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>article<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        ArticleCount<span class="token operator">++</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__439"></a>⑤ 文本消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"文本消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TextMessageVO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumResponseMessageType<span class="token punctuation">.</span>TEXT<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"回复的消息内容（换行：在content中能够换行，微信客户端就支持换行显示）"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String Content<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__455"></a>⑥ 视频消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"视频消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">VideoMessageVO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumResponseMessageType<span class="token punctuation">.</span>VIDEO<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"视频"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> Video Video<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Data</span>
+    <span class="token annotation punctuation">@AllArgsConstructor</span>
+    <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"视频消息中Voice类的定义"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Video</span> <span class="token punctuation">{</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"通过素材管理中的接口上传多媒体文件，得到的id"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String MediaId<span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"视频消息的标题"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String Title<span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"视频消息的描述"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String Description<span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__487"></a>⑦ 语音消息</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"语音消息"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">VoiceMessageVO</span> <span class="token keyword">extends</span> <span class="token class-name">BaseMessageVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"消息类型"</span><span class="token punctuation">,</span> hidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String MsgType <span class="token operator">=</span> EnumResponseMessageType<span class="token punctuation">.</span>VOICE<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"语音"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> Voice Voice<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Data</span>
+    <span class="token annotation punctuation">@AllArgsConstructor</span>
+    <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"语音消息中Voice类的定义"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">Voice</span> <span class="token punctuation">{</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"通过素材管理中的接口上传多媒体文件，得到的id"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> String MediaId<span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4_513"></a>4、消息处理工具类</h4>
+<h6><a id="_pomxml_515"></a>① <code>pom.xml</code>中引入所需依赖</h6>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- dom4j： 解析微信发来的请求（XML） --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/org.dom4j/dom4j --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.dom4j<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>dom4j<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.1.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/jaxen/jaxen --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>jaxen<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>jaxen<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.1.6<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- xstream：将响应消息转换成xml返回 --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/com.thoughtworks.xstream/xstream --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.thoughtworks.xstream<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>xstream<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.4.11.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h6><a id="__541"></a>② 工具类</h6>
+<ol>
+<li>解析微信发来的请求（xml）</li>
+<li>将响应消息的Java对象转换成xml</li>
+</ol>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageUtil</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 解析微信发来的请求（XML）
+     *
+     * @param request
+     * @return
+     * @throws Exception
+     */</span>
+    <span class="token annotation punctuation">@SuppressWarnings</span><span class="token punctuation">(</span><span class="token string">"unchecked"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span> <span class="token function">parseXml</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+        <span class="token comment">// 将解析结果存储在HashMap中</span>
+        Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span> map <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 从request中取得输入流</span>
+        InputStream inputStream <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 读取输入流</span>
+        SAXReader reader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">SAXReader</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Document document <span class="token operator">=</span> reader<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span>inputStream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 得到xml根元素</span>
+        Element root <span class="token operator">=</span> document<span class="token punctuation">.</span><span class="token function">getRootElement</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 得到根元素的所有子节点</span>
+        List<span class="token generics function"><span class="token punctuation">&lt;</span>Element<span class="token punctuation">&gt;</span></span> elementList <span class="token operator">=</span> root<span class="token punctuation">.</span><span class="token function">elements</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 遍历所有子节点</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>Element e <span class="token operator">:</span> elementList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>e<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> e<span class="token punctuation">.</span><span class="token function">getText</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 释放资源</span>
+        inputStream<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        inputStream <span class="token operator">=</span> null<span class="token punctuation">;</span>
+        <span class="token keyword">return</span> map<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 文本消息对象转换成xml
+     *
+     * @param textMessageVO 文本消息对象   XStream是一个Java对象和XML相互转换的工具
+     * @return xml
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">textMessageToXml</span><span class="token punctuation">(</span>TextMessageVO textMessageVO<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        xstream<span class="token punctuation">.</span><span class="token function">alias</span><span class="token punctuation">(</span><span class="token string">"xml"</span><span class="token punctuation">,</span> textMessageVO<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> xstream<span class="token punctuation">.</span><span class="token function">toXML</span><span class="token punctuation">(</span>textMessageVO<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 图片消息对象转换成xml
+     *
+     * @param imageMessageVO 图片消息对象
+     * @return xml
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">imageMessageToXml</span><span class="token punctuation">(</span>ImageMessageVO imageMessageVO<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        xstream<span class="token punctuation">.</span><span class="token function">alias</span><span class="token punctuation">(</span><span class="token string">"xml"</span><span class="token punctuation">,</span> imageMessageVO<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> xstream<span class="token punctuation">.</span><span class="token function">toXML</span><span class="token punctuation">(</span>imageMessageVO<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 语音消息对象转换成xml
+     *
+     * @param voiceMessageVO 语音消息对象
+     * @return xml
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">voiceMessageToXml</span><span class="token punctuation">(</span>VoiceMessageVO voiceMessageVO<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        xstream<span class="token punctuation">.</span><span class="token function">alias</span><span class="token punctuation">(</span><span class="token string">"xml"</span><span class="token punctuation">,</span> voiceMessageVO<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> xstream<span class="token punctuation">.</span><span class="token function">toXML</span><span class="token punctuation">(</span>voiceMessageVO<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 视频消息对象转换成xml
+     *
+     * @param videoMessageVO 视频消息对象
+     * @return xml
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">videoMessageToXml</span><span class="token punctuation">(</span>VideoMessageVO videoMessageVO<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        xstream<span class="token punctuation">.</span><span class="token function">alias</span><span class="token punctuation">(</span><span class="token string">"xml"</span><span class="token punctuation">,</span> videoMessageVO<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> xstream<span class="token punctuation">.</span><span class="token function">toXML</span><span class="token punctuation">(</span>videoMessageVO<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 音乐消息对象转换成xml
+     *
+     * @param musicMessage 音乐消息对象
+     * @return xml
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">musicMessageToXml</span><span class="token punctuation">(</span>MusicMessageVO musicMessage<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        xstream<span class="token punctuation">.</span><span class="token function">alias</span><span class="token punctuation">(</span><span class="token string">"xml"</span><span class="token punctuation">,</span> musicMessage<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> xstream<span class="token punctuation">.</span><span class="token function">toXML</span><span class="token punctuation">(</span>musicMessage<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 图文消息对象转换成xml
+     *
+     * @param newsMessage 图文消息对象
+     * @return xml
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">newsMessageToXml</span><span class="token punctuation">(</span>NewsMessageVO newsMessage<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        xstream<span class="token punctuation">.</span><span class="token function">alias</span><span class="token punctuation">(</span><span class="token string">"xml"</span><span class="token punctuation">,</span> newsMessage<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        xstream<span class="token punctuation">.</span><span class="token function">alias</span><span class="token punctuation">(</span><span class="token string">"item"</span><span class="token punctuation">,</span> NewsMessageVO<span class="token punctuation">.</span>Article<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> xstream<span class="token punctuation">.</span><span class="token function">toXML</span><span class="token punctuation">(</span>newsMessage<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 扩展xstream，使其支持CDATA块
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> XStream xstream <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">XStream</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">XppDriver</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> HierarchicalStreamWriter <span class="token function">createWriter</span><span class="token punctuation">(</span>Writer out<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">PrettyPrintWriter</span><span class="token punctuation">(</span>out<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token comment">// 对所有xml节点的转换都增加CDATA标记</span>
+                <span class="token keyword">boolean</span> cdata <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+
+                <span class="token annotation punctuation">@Override</span>
+                <span class="token annotation punctuation">@SuppressWarnings</span><span class="token punctuation">(</span><span class="token string">"unchecked"</span><span class="token punctuation">)</span>
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">startNode</span><span class="token punctuation">(</span>String name<span class="token punctuation">,</span> Class <span class="token class-name">clazz</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">startNode</span><span class="token punctuation">(</span>name<span class="token punctuation">,</span> clazz<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+
+                <span class="token annotation punctuation">@Override</span>
+                <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">writeText</span><span class="token punctuation">(</span>QuickWriter writer<span class="token punctuation">,</span> String text<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>cdata<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span><span class="token string">"&lt;![CDATA["</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>text<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span><span class="token string">"]]&gt;"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                        writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>text<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_682"></a>四、回复消息</h3>
+<h4><a id="1_684"></a>1、回复文本消息</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@PostMapping</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">msgProcess</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+     <span class="token comment">// 将请求、响应的编码均设置为UTF-8（防止中文乱码）</span>
+     request<span class="token punctuation">.</span><span class="token function">setCharacterEncoding</span><span class="token punctuation">(</span><span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     response<span class="token punctuation">.</span><span class="token function">setCharacterEncoding</span><span class="token punctuation">(</span><span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token comment">// 调用核心业务类接收消息、处理消息</span>
+     String respMessage <span class="token operator">=</span> msgService<span class="token punctuation">.</span><span class="token function">processRequest</span><span class="token punctuation">(</span>request<span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token comment">// 响应消息</span>
+     PrintWriter out <span class="token operator">=</span> response<span class="token punctuation">.</span><span class="token function">getWriter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     out<span class="token punctuation">.</span><span class="token function">print</span><span class="token punctuation">(</span>respMessage<span class="token punctuation">)</span><span class="token punctuation">;</span>
+     out<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token punctuation">}</span>
+</code></pre>
+<p>其中的<code>processRequest</code>消息处理方法逻辑如下</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Service</span>
+<span class="token annotation punctuation">@Transactional</span><span class="token punctuation">(</span>rollbackFor <span class="token operator">=</span> Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MsgServiceImpl</span> <span class="token keyword">implements</span> <span class="token class-name">IMsgService</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> String <span class="token function">processRequest</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        String respMessage <span class="token operator">=</span> null<span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            <span class="token comment">// xml请求解析</span>
+            Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span> requestMap <span class="token operator">=</span> MessageUtil<span class="token punctuation">.</span><span class="token function">parseXml</span><span class="token punctuation">(</span>request<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 发送方帐号（open_id）</span>
+            String fromUserName <span class="token operator">=</span> requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"FromUserName"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 公众帐号</span>
+            String toUserName <span class="token operator">=</span> requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"ToUserName"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 消息类型</span>
+            String msgType <span class="token operator">=</span> requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"MsgType"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 回复文本消息</span>
+            TextMessageVO textMessage <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">TextMessageVO</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            textMessage<span class="token punctuation">.</span><span class="token function">setToUserName</span><span class="token punctuation">(</span>fromUserName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            textMessage<span class="token punctuation">.</span><span class="token function">setFromUserName</span><span class="token punctuation">(</span>toUserName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            textMessage<span class="token punctuation">.</span><span class="token function">setCreateTime</span><span class="token punctuation">(</span>System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            textMessage<span class="token punctuation">.</span><span class="token function">setMsgType</span><span class="token punctuation">(</span>EnumResponseMessageType<span class="token punctuation">.</span>TEXT<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 默认返回的文本消息内容</span>
+            String respContent <span class="token operator">=</span> <span class="token string">"请求处理异常，请稍候重试！"</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 事件推送</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>EnumRequestMessageType<span class="token punctuation">.</span><span class="token function">getEnum</span><span class="token punctuation">(</span>msgType<span class="token punctuation">)</span> <span class="token operator">==</span> EnumRequestMessageType<span class="token punctuation">.</span>EVENT<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token comment">// 事件类型</span>
+                String eventType <span class="token operator">=</span> requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"Event"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">switch</span> <span class="token punctuation">(</span>EnumEventMessageType<span class="token punctuation">.</span><span class="token function">getEnum</span><span class="token punctuation">(</span>eventType<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token comment">// 订阅</span>
+                    <span class="token keyword">case</span> SUBSCRIBE<span class="token operator">:</span>
+                        respContent <span class="token operator">=</span> <span class="token string">"亲，感谢您的关注！"</span><span class="token punctuation">;</span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span>
+                    <span class="token comment">// 取消订阅</span>
+                    <span class="token keyword">case</span> UNSUBSCRIBE<span class="token operator">:</span>
+                        <span class="token comment">// TODO 取消订阅后用户再收不到公众号发送的消息，因此不需要回复消息</span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span>
+                    <span class="token comment">// 自定义菜单点击事件</span>
+                    <span class="token keyword">case</span> CLICK<span class="token operator">:</span>
+                        <span class="token comment">// TODO 自定义菜单权没有开放，暂不处理该类消息</span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span>
+                    <span class="token keyword">default</span><span class="token operator">:</span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                respContent <span class="token operator">=</span> EnumRequestMessageType<span class="token punctuation">.</span><span class="token function">getEnum</span><span class="token punctuation">(</span>msgType<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getTypeValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            textMessage<span class="token punctuation">.</span><span class="token function">setContent</span><span class="token punctuation">(</span>respContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            respMessage <span class="token operator">=</span> MessageUtil<span class="token punctuation">.</span><span class="token function">textMessageToXml</span><span class="token punctuation">(</span>textMessage<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> respMessage<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    
+<span class="token punctuation">}</span>
+</code></pre>
+<p>测试</p>
+<p><img src="https://img-blog.csdnimg.cn/20200116133953962.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="2__771"></a>2、 原样返回消息内容</h4>
+<p>原样返回消息内容，可调用<code>IMsgService</code>中的<code>processRequestReturnSameMsg</code>方法</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> String <span class="token function">processRequestReturnSameMsg</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    String respMessage <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        <span class="token comment">// xml请求解析</span>
+        Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span> requestMap <span class="token operator">=</span> MessageUtil<span class="token punctuation">.</span><span class="token function">parseXml</span><span class="token punctuation">(</span>request<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 发送方帐号（open_id）</span>
+        String fromUserName <span class="token operator">=</span> requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"FromUserName"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 公众帐号</span>
+        String toUserName <span class="token operator">=</span> requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"ToUserName"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 消息类型</span>
+        String msgType <span class="token operator">=</span> requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"MsgType"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 回复消息</span>
+        BaseMessageVO baseMessageVO <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BaseMessageVO</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        baseMessageVO<span class="token punctuation">.</span><span class="token function">setToUserName</span><span class="token punctuation">(</span>fromUserName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        baseMessageVO<span class="token punctuation">.</span><span class="token function">setFromUserName</span><span class="token punctuation">(</span>toUserName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        baseMessageVO<span class="token punctuation">.</span><span class="token function">setCreateTime</span><span class="token punctuation">(</span>System<span class="token punctuation">.</span><span class="token function">currentTimeMillis</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">switch</span> <span class="token punctuation">(</span>EnumRequestMessageType<span class="token punctuation">.</span><span class="token function">getEnum</span><span class="token punctuation">(</span>msgType<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment">// 文本消息</span>
+            <span class="token keyword">case</span> TEXT<span class="token operator">:</span>
+                TextMessageVO textMessageVO <span class="token operator">=</span> BeanUtil<span class="token punctuation">.</span><span class="token function">copyProperties</span><span class="token punctuation">(</span>baseMessageVO<span class="token punctuation">,</span> TextMessageVO<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                textMessageVO<span class="token punctuation">.</span><span class="token function">setContent</span><span class="token punctuation">(</span>requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"Content"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                respMessage <span class="token operator">=</span> MessageUtil<span class="token punctuation">.</span><span class="token function">textMessageToXml</span><span class="token punctuation">(</span>textMessageVO<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token comment">// 图片消息</span>
+            <span class="token keyword">case</span> IMAGE<span class="token operator">:</span>
+                ImageMessageVO imageMessageVO <span class="token operator">=</span> BeanUtil<span class="token punctuation">.</span><span class="token function">copyProperties</span><span class="token punctuation">(</span>baseMessageVO<span class="token punctuation">,</span> ImageMessageVO<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                ImageMessageVO<span class="token punctuation">.</span>Image image <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ImageMessageVO<span class="token punctuation">.</span>Image</span><span class="token punctuation">(</span>requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"MediaId"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                imageMessageVO<span class="token punctuation">.</span><span class="token function">setImage</span><span class="token punctuation">(</span>image<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                respMessage <span class="token operator">=</span> MessageUtil<span class="token punctuation">.</span><span class="token function">imageMessageToXml</span><span class="token punctuation">(</span>imageMessageVO<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token comment">// 语音消息</span>
+            <span class="token keyword">case</span> VOICE<span class="token operator">:</span>
+                VoiceMessageVO voiceMessageVO <span class="token operator">=</span> BeanUtil<span class="token punctuation">.</span><span class="token function">copyProperties</span><span class="token punctuation">(</span>baseMessageVO<span class="token punctuation">,</span> VoiceMessageVO<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                VoiceMessageVO<span class="token punctuation">.</span>Voice voice <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">VoiceMessageVO<span class="token punctuation">.</span>Voice</span><span class="token punctuation">(</span>requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"MediaId"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                voiceMessageVO<span class="token punctuation">.</span><span class="token function">setVoice</span><span class="token punctuation">(</span>voice<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                respMessage <span class="token operator">=</span> MessageUtil<span class="token punctuation">.</span><span class="token function">voiceMessageToXml</span><span class="token punctuation">(</span>voiceMessageVO<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token comment">// 事件推送</span>
+            <span class="token keyword">case</span> EVENT<span class="token operator">:</span>
+                <span class="token comment">// 事件类型</span>
+                String eventType <span class="token operator">=</span> requestMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"Event"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">switch</span> <span class="token punctuation">(</span>EnumEventMessageType<span class="token punctuation">.</span><span class="token function">getEnum</span><span class="token punctuation">(</span>eventType<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token comment">// 订阅</span>
+                    <span class="token keyword">case</span> SUBSCRIBE<span class="token operator">:</span>
+                        NewsMessageVO newsMessage <span class="token operator">=</span> BeanUtil<span class="token punctuation">.</span><span class="token function">copyProperties</span><span class="token punctuation">(</span>baseMessageVO<span class="token punctuation">,</span> NewsMessageVO<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        NewsMessageVO<span class="token punctuation">.</span>Article article <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">NewsMessageVO<span class="token punctuation">.</span>Article</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        article<span class="token punctuation">.</span><span class="token function">setTitle</span><span class="token punctuation">(</span><span class="token string">"感谢您的关注，这是一条图文消息！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        article<span class="token punctuation">.</span><span class="token function">setDescription</span><span class="token punctuation">(</span><span class="token string">"mysql转oracle笔记"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        article<span class="token punctuation">.</span><span class="token function">setPicUrl</span><span class="token punctuation">(</span><span class="token string">"https://mmbiz.qpic.cn/mmbiz_png/iaUVVC0premhqE0TrtLzM6ABMIKKjnu81hraZvXia52byYMqADCyqXKwbs2wJ6jiadWc7MypLKL4EC5mUzXZKH2Rg/640?wx_fmt=png&amp;tp=webp&amp;wxfrom=5&amp;wx_lazy=1&amp;wx_co=1"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        article<span class="token punctuation">.</span><span class="token function">setUrl</span><span class="token punctuation">(</span><span class="token string">"https://mp.weixin.qq.com/s?__biz=Mzg2NzEwMjc3Ng==&amp;mid=2247483813&amp;idx=1&amp;sn=7a18081426d014ddccd203d33011f526&amp;chksm=ce41f8f2f93671e4fc5d93292360fd24da4cf1434415befc37f25be2d40780b4a485653861d8&amp;mpshare=1&amp;scene=1&amp;srcid=&amp;sharer_sharetime=1579140222251&amp;sharer_shareid=936076bf8d5bee83e89fd7e769b5c6db&amp;key=c62bc26d01d4cb91d588b8abdeaca0fbba6d713fbc52e3b4c4a9f0377e231e0fe6b4ce07f287f509e37cefa17a0346475f12d85e21bcdbb8e953d0685018a874fbd80005417e94836ad9b0ff7559b334&amp;ascene=1&amp;uin=MTg4MzA0MzMxNA%3D%3D&amp;devicetype=Windows+7&amp;version=62070158&amp;lang=zh_CN&amp;exportkey=AYq%2FJJZv5hRr7YLluyVInZk%3D&amp;pass_ticket=vCPgwidZSOs1xBfcd5SrzkCdVlApSWF7Xc%2BOzjYf8GlJ9%2BLQco9XYzTHe9yWHqc1"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        newsMessage<span class="token punctuation">.</span><span class="token function">addArticle</span><span class="token punctuation">(</span>article<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        respMessage <span class="token operator">=</span> MessageUtil<span class="token punctuation">.</span><span class="token function">newsMessageToXml</span><span class="token punctuation">(</span>newsMessage<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span>
+                    <span class="token comment">// 取消订阅</span>
+                    <span class="token keyword">case</span> UNSUBSCRIBE<span class="token operator">:</span>
+                        <span class="token comment">// TODO 取消订阅后用户再收不到公众号发送的消息，因此不需要回复消息</span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span>
+                    <span class="token comment">// 自定义菜单点击事件</span>
+                    <span class="token keyword">case</span> CLICK<span class="token operator">:</span>
+                        <span class="token comment">// TODO 自定义菜单权没有开放，暂不处理该类消息</span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span>
+                    <span class="token keyword">default</span><span class="token operator">:</span>
+                        <span class="token keyword">break</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token keyword">default</span><span class="token operator">:</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> respMessage<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>测试<br>
+<img src="https://img-blog.csdnimg.cn/20200116134249789.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>就这样一个简单的<code>接受消息</code>与<code>回复消息</code>就完成了，关于消息处理我们可以根据微信提供的官方文档去学习即可~</p>
+<h3><a id="demo_859"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>

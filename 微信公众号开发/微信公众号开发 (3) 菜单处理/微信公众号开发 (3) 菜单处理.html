@@ -1,0 +1,390 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>微信公众号开发 (3) 菜单处理</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/86311495">微信公众号开发 (1) 微信接入认证成为开发者</a></li>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/103977209">微信公众号开发 (2) 消息处理</a></li>
+</ol>
+<h6><a id="_5"></a>本文将实现</h6>
+<ol>
+<li>根据<code>AppID</code>和<code>AppSecret</code>获取<code>access_token</code></li>
+<li>自定义菜单（<code>创建菜单</code>、<code>查询菜单</code>、<code>删除菜单</code>）</li>
+</ol>
+<h6><a id="_10"></a>微信文档中提示的一些注意点：</h6>
+<ol>
+<li>access_token的<code>存储</code>至少要保留<code>512</code>个<code>字符</code>空间。</li>
+<li>access_token的<code>有效期</code>为<code>2小时</code>，需定时刷新，重复获取将导致上次获取的access_token失效</li>
+<li>自定义菜单最多<code>3个一级菜单</code>，每一级菜单最多<code>5个二级菜单</code></li>
+<li><code>一级菜单最多4个汉字</code>，<code>二级菜单最多7个汉字</code></li>
+<li><code>菜单刷新策略：</code>5分钟之后更新菜单。测试时可以尝试取消关注公众账号后再次关注，则可以看到创建后的效果</li>
+</ol>
+<h3><a id="RestTemplate_http_18"></a>二、<code>RestTemplate</code>配置 (用于远程<code>调用</code>微信http<code>接口</code>方法)</h3>
+<p>RestTemplate是Spring提供的用于访问Rest服务的客户端,RestTemplate提供了多种便捷访问远程Http服务的方法,能够大大提高客户端的编写效率。</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RestTemplateConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> RestTemplate <span class="token function">restTemplate</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        RestTemplate restTemplate <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">RestTemplate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 解决post请求中文乱码问题</span>
+        restTemplate<span class="token punctuation">.</span><span class="token function">getMessageConverters</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">StringHttpMessageConverter</span><span class="token punctuation">(</span>StandardCharsets<span class="token punctuation">.</span>UTF_8<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> restTemplate<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_37"></a>三、微信接口调用说明</h3>
+<ol>
+<li>获取access_token接口 ： <code>【GET请求】</code>  <code>https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&amp;appid=APPID&amp;secret=APPSECRET</code></li>
+<li>查询菜单接口 ： <code>【GET请求】</code> <code>https://api.weixin.qq.com/cgi-bin/menu/get?access_token=ACCESS_TOKEN</code></li>
+<li>删除菜单接口 : <code>【GET请求】</code> <code>https://api.weixin.qq.com/cgi-bin/menu/delete?access_token=ACCESS_TOKEN</code></li>
+<li>创建菜单接口 : <code>【POST请求】</code> <code>https://api.weixin.qq.com/cgi-bin/menu/create?access_token=ACCESS_TOKEN</code></li>
+</ol>
+<h6><a id="_44"></a>封装微信接口所需变量</h6>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Constants</span> <span class="token punctuation">{</span>
+    <span class="token comment">/**
+     * TODO 填写自己的 `appID` 和 `appsecret`
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String APP_ID <span class="token operator">=</span> <span class="token string">"xxx"</span><span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String APP_SECRET <span class="token operator">=</span> <span class="token string">"xxx"</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 通过 `GET请求方式` 获取 `access_token`
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String GET_ACCESS_TOKEN_URL <span class="token operator">=</span> <span class="token string">"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&amp;appid=APPID&amp;secret=APPSECRET"</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * TODO 只做临时方便测试使用
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String ACCESS_TOKEN <span class="token operator">=</span> <span class="token string">"xxx"</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 查询菜单接口 - GET请求
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String GET_MENU_URL <span class="token operator">=</span> <span class="token string">"https://api.weixin.qq.com/cgi-bin/menu/get?access_token=ACCESS_TOKEN"</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 删除菜单接口 - GET请求 （注意，在个性化菜单时，调用此接口会删除默认菜单及全部个性化菜单）
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String DELETE_MENU_URL <span class="token operator">=</span> <span class="token string">"https://api.weixin.qq.com/cgi-bin/menu/delete?access_token=ACCESS_TOKEN"</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 创建菜单接口 - POST请求
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String CREATE_MENU_URL <span class="token operator">=</span> <span class="token string">"https://api.weixin.qq.com/cgi-bin/menu/create?access_token=ACCESS_TOKEN"</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="AppIDAppSecretaccess_token_79"></a>四、根据<code>AppID</code>和<code>AppSecret</code>获取<code>access_token</code></h3>
+<p>access_token是公众号的全局唯一接口调用凭据，公众号调用各接口（下面的<code>创建菜单</code>、<code>查询菜单</code>、<code>删除菜单</code>等）时都需使用access_token！</p>
+<blockquote>
+<p><a href="https://developers.weixin.qq.com/doc/offiaccount/Basic_Information/Get_access_token.html">这里可查看微信文档获取access_token方式</a></p>
+</blockquote>
+<h6><a id="_AccessTokenVO_84"></a>① 封装响应结果<code>AccessTokenVO</code></h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"access_token: 公众号的全局唯一接口调用凭据"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AccessTokenVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"获取到的凭证"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String access_token<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"凭证有效时间，单位：秒(微信目前暂7200秒，即2小时，过期后需再次获取)"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> expires_in<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__100"></a>② 服务类</h6>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IWeixinService</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 根据AppID和AppSecret获取access_token
+     *
+     * @param appId:
+     * @param appSecret:
+     * @return: com.zhengqing.demo.modules.weixin.model.AccessTokenVO
+     */</span>
+    AccessTokenVO <span class="token function">getAccessToken</span><span class="token punctuation">(</span>String appId<span class="token punctuation">,</span> String appSecret<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__117"></a>③ 服务实现类</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Service</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">WeixinServiceImpl</span> <span class="token keyword">implements</span> <span class="token class-name">IWeixinService</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> RestTemplate restTemplate<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> AccessTokenVO <span class="token function">getAccessToken</span><span class="token punctuation">(</span>String appId<span class="token punctuation">,</span> String appSecret<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        AccessTokenVO accessTokenVO <span class="token operator">=</span> restTemplate<span class="token punctuation">.</span><span class="token function">getForObject</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>GET_ACCESS_TOKEN_URL<span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"APPID"</span><span class="token punctuation">,</span> appId<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"APPSECRET"</span><span class="token punctuation">,</span> appSecret<span class="token punctuation">)</span><span class="token punctuation">,</span> AccessTokenVO<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> accessTokenVO<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_136"></a>五、自定义菜单处理</h3>
+<h4><a id="clickview_138"></a><code>click</code>和<code>view</code>请求示例</h4>
+<pre><code>{
+     "button":[
+     {	
+          "type":"click",
+          "name":"今日歌曲",
+          "key":"V1001_TODAY_MUSIC"
+      },
+      {
+           "name":"菜单",
+           "sub_button":[
+           {	
+               "type":"view",
+               "name":"搜索",
+               "url":"http://www.soso.com/"
+            },
+            {
+                 "type":"miniprogram",
+                 "name":"wxa",
+                 "url":"http://mp.weixin.qq.com",
+                 "appid":"wx286b93c14bbf93aa",
+                 "pagepath":"pages/lunar/index"
+             },
+            {
+               "type":"click",
+               "name":"赞一下我们",
+               "key":"V1001_GOOD"
+            }]
+       }]
+ }
+</code></pre>
+<h4><a id="1_172"></a>1、封装菜单数据</h4>
+<blockquote>
+<p>温馨小提示：这里封装数据建议多看下微信文档中给出的数据，不然可能会对最后组装菜单树数据创建菜单的时候感到迷惑 ~</p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/2020011717243590.png" alt="在这里插入图片描述"></p>
+<h6><a id="__178"></a>① 菜单类型枚举类</h6>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">enum</span> MenuType <span class="token punctuation">{</span>
+    <span class="token comment">// 点击式菜单</span>
+    <span class="token function">CLICK</span><span class="token punctuation">(</span><span class="token string">"click"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">// 链接式菜单</span>
+    <span class="token function">VIEW</span><span class="token punctuation">(</span><span class="token string">"view"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="____189"></a>② 菜单 - 基类</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"菜单 - 基类"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Button</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"菜单标题，不超过16个字节，子菜单不超过60个字节"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String name<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__202"></a>③ 点击式菜单</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"用户点击菜单可接收消息推送"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ClickButton</span> <span class="token keyword">extends</span> <span class="token class-name">Button</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"菜单的响应动作类型，view表示网页类型，click表示点击类型，miniprogram表示小程序类型"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String type <span class="token operator">=</span> MenuType<span class="token punctuation">.</span>CLICK<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"菜单KEY值，用于消息接口推送，不超过128字节"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String key<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__218"></a>④ 链接式菜单</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"用户点击菜单可打开链接"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ViewButton</span> <span class="token keyword">extends</span> <span class="token class-name">Button</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"菜单的响应动作类型，view表示网页类型，click表示点击类型，miniprogram表示小程序类型"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String type <span class="token operator">=</span> MenuType<span class="token punctuation">.</span>VIEW<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"(view、miniprogram类型必须) 网页 链接，用户点击菜单可打开链接，不超过1024字节。 type为miniprogram时，不支持小程序的老版本客户端将打开本url"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String url<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__234"></a>⑤ 含二级菜单的一级菜单</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"含二级菜单的一级菜单"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ComplexButton</span> <span class="token keyword">extends</span> <span class="token class-name">Button</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"二级菜单数组，个数应为1~5个"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> Button<span class="token punctuation">[</span><span class="token punctuation">]</span> sub_button<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="__247"></a>⑥ 最外层的菜单树</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span>description <span class="token operator">=</span> <span class="token string">"菜单树"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Menu</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"一级菜单数组，个数应为1~3个"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> Button<span class="token punctuation">[</span><span class="token punctuation">]</span> button<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="2_260"></a>2、服务类</h4>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IMenuService</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 查询菜单
+     *
+     * @param accessToken:访问凭据
+     * @return: java.lang.Object
+     */</span>
+    Object <span class="token function">getMenu</span><span class="token punctuation">(</span>String accessToken<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 删除菜单
+     *
+     * @param accessToken:访问凭据
+     * @return: com.zhengqing.demo.modules.weixin.model.WeixinResponseResult
+     */</span>
+    WeixinResponseResult <span class="token function">deleteMenu</span><span class="token punctuation">(</span>String accessToken<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 创建菜单
+     *
+     * @param menu        : 创建的菜单数据
+     * @param accessToken : 访问凭据
+     * @return: com.zhengqing.demo.modules.weixin.model.WeixinResponseResult
+     */</span>
+    WeixinResponseResult <span class="token function">createMenu</span><span class="token punctuation">(</span>Menu menu<span class="token punctuation">,</span> String accessToken<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_293"></a>3、服务实现类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Service</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MenuServiceImpl</span> <span class="token keyword">implements</span> <span class="token class-name">IMenuService</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> RestTemplate restTemplate<span class="token punctuation">;</span>
+
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> Object <span class="token function">getMenu</span><span class="token punctuation">(</span>String accessToken<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Object menu <span class="token operator">=</span> restTemplate<span class="token punctuation">.</span><span class="token function">getForObject</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>GET_MENU_URL<span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"ACCESS_TOKEN"</span><span class="token punctuation">,</span> accessToken<span class="token punctuation">)</span><span class="token punctuation">,</span> Object<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> menu<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> WeixinResponseResult <span class="token function">deleteMenu</span><span class="token punctuation">(</span>String accessToken<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        WeixinResponseResult result <span class="token operator">=</span> restTemplate<span class="token punctuation">.</span><span class="token function">getForObject</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>DELETE_MENU_URL<span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"ACCESS_TOKEN"</span><span class="token punctuation">,</span> accessToken<span class="token punctuation">)</span><span class="token punctuation">,</span> WeixinResponseResult<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> WeixinResponseResult <span class="token function">createMenu</span><span class="token punctuation">(</span>Menu menu<span class="token punctuation">,</span> String accessToken<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 将菜单对象转换成json字符串</span>
+        String jsonMenu <span class="token operator">=</span> JSON<span class="token punctuation">.</span><span class="token function">toJSONString</span><span class="token punctuation">(</span>menu<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        WeixinResponseResult result <span class="token operator">=</span> restTemplate<span class="token punctuation">.</span><span class="token function">postForObject</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>CREATE_MENU_URL<span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"ACCESS_TOKEN"</span><span class="token punctuation">,</span> accessToken<span class="token punctuation">)</span><span class="token punctuation">,</span> jsonMenu<span class="token punctuation">,</span> WeixinResponseResult<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_327"></a>六、测试</h3>
+<h6><a id="1access_token_329"></a>1、获取<code>access_token</code></h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RunWith</span><span class="token punctuation">(</span>SpringRunner<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@SpringBootTest</span><span class="token punctuation">(</span>classes <span class="token operator">=</span> DemoApplication<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">WeixinTest</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> IWeixinService weixinService<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Test</span> <span class="token comment">// 获取 `access_token`</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">getAccessToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+        AccessTokenVO accessTokenVO <span class="token operator">=</span> weixinService<span class="token punctuation">.</span><span class="token function">getAccessToken</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>APP_ID<span class="token punctuation">,</span> Constants<span class="token punctuation">.</span>APP_SECRET<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"======================================== \n"</span> <span class="token operator">+</span> accessTokenVO<span class="token punctuation">.</span><span class="token function">getAccess_token</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="2_349"></a>2、<code>创建自定义菜单</code>、<code>查询菜单</code>、<code>删除菜单</code></h6>
+<p>注：这里小编将获取到的<code>access_token</code> 写死到常量 <code>Constants.ACCESS_TOKEN</code> 中做测试，实际项目中可将<code>access_token</code>保存到缓存中，每隔快到2个小时的时候去重新获取一次刷新缓存数据 ~</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RunWith</span><span class="token punctuation">(</span>SpringRunner<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@SpringBootTest</span><span class="token punctuation">(</span>classes <span class="token operator">=</span> DemoApplication<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MenuTest</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> IMenuService menuService<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Test</span> <span class="token comment">// 查询菜单</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">getMenu</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Object menu <span class="token operator">=</span> menuService<span class="token punctuation">.</span><span class="token function">getMenu</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>ACCESS_TOKEN<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"======================================== \n"</span> <span class="token operator">+</span> JSON<span class="token punctuation">.</span><span class="token function">toJSONString</span><span class="token punctuation">(</span>menu<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Test</span> <span class="token comment">// 删除菜单</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">deleteMenu</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        WeixinResponseResult result <span class="token operator">=</span> menuService<span class="token punctuation">.</span><span class="token function">deleteMenu</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>ACCESS_TOKEN<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"======================================== \n"</span> <span class="token operator">+</span> result<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Test</span> <span class="token comment">// 创建菜单</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">createMenu</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        WeixinResponseResult result <span class="token operator">=</span> menuService<span class="token punctuation">.</span><span class="token function">createMenu</span><span class="token punctuation">(</span><span class="token function">createMenuTree</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> Constants<span class="token punctuation">.</span>ACCESS_TOKEN<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"======================================== \n"</span> <span class="token operator">+</span> result<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 菜单数据
+     */</span>
+     <span class="token keyword">private</span> Menu <span class="token function">createMenuTree</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 链接式菜单</span>
+        ViewButton btn11 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ViewButton</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        btn11<span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span><span class="token string">"CSDN"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        btn11<span class="token punctuation">.</span><span class="token function">setUrl</span><span class="token punctuation">(</span><span class="token string">"https://zhengqing.blog.csdn.net/"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        ViewButton btn12 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ViewButton</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        btn12<span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span><span class="token string">"个人博客"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        btn12<span class="token punctuation">.</span><span class="token function">setUrl</span><span class="token punctuation">(</span><span class="token string">"http://zhengqingya.gitee.io/blog/"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 点击式菜单</span>
+        ClickButton mainBtn2 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ClickButton</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mainBtn2<span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span><span class="token string">"点我吖"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mainBtn2<span class="token punctuation">.</span><span class="token function">setKey</span><span class="token punctuation">(</span><span class="token string">"hello"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        ViewButton btn31 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ViewButton</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        btn31<span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span><span class="token string">"码云"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        btn31<span class="token punctuation">.</span><span class="token function">setUrl</span><span class="token punctuation">(</span><span class="token string">"https://gitee.com/zhengqingya/projects"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        ViewButton btn32 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ViewButton</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        btn32<span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span><span class="token string">"GitHub"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        btn32<span class="token punctuation">.</span><span class="token function">setUrl</span><span class="token punctuation">(</span><span class="token string">"https://github.com/zhengqingya?tab=repositories"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 含二级菜单的一级菜单</span>
+        ComplexButton mainBtn1 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ComplexButton</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mainBtn1<span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span><span class="token string">"博客"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mainBtn1<span class="token punctuation">.</span><span class="token function">setSub_button</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ViewButton</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{</span>btn11<span class="token punctuation">,</span> btn12<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        ComplexButton mainBtn3 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ComplexButton</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mainBtn3<span class="token punctuation">.</span><span class="token function">setName</span><span class="token punctuation">(</span><span class="token string">"仓库"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mainBtn3<span class="token punctuation">.</span><span class="token function">setSub_button</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ViewButton</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{</span>btn31<span class="token punctuation">,</span> btn32<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        Menu menu <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Menu</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        menu<span class="token punctuation">.</span><span class="token function">setButton</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Button</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{</span>mainBtn1<span class="token punctuation">,</span> mainBtn2<span class="token punctuation">,</span> mainBtn3<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">return</span> menu<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>最终自定义的菜单</p>
+<p><img src="https://img-blog.csdnimg.cn/20200117174307321.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="demo_428"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
