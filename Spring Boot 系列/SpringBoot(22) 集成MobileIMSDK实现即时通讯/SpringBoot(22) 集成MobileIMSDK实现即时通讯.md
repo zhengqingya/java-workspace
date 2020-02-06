@@ -23,8 +23,8 @@
 
 由于这里是maven项目，其中一部分jar包可通过maven仓库直接引入，而其余的则通过外部jar包引入方式使用即可~
 
-如下4个需作为外部jar包在pom.xml中引入
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206150239918.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+如下5个需作为外部jar包在pom.xml中引入
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206183009910.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
 
 ```xml
 <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
@@ -58,6 +58,12 @@
     <artifactId>MobileIMSDKServerX_netty</artifactId>
     <scope>system</scope>
     <systemPath>${project.basedir}/src/main/resources/lib/MobileIMSDKServerX_netty.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>com.zhengqing</groupId>
+    <artifactId>netty-all-4.1.17.Final</artifactId>
+    <scope>system</scope>
+    <systemPath>${project.basedir}/src/main/resources/lib/netty-all-4.1.17.Final.jar</systemPath>
 </dependency>
 ```
 

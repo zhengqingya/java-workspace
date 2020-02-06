@@ -166,6 +166,12 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/src/main/resources/lib/MobileIMSDKServerX_netty.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>netty-all-4.1.17.Final</artifactId>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/resources/lib/netty-all-4.1.17.Final.jar</systemPath>
+        </dependency>
 
 
     </dependencies>

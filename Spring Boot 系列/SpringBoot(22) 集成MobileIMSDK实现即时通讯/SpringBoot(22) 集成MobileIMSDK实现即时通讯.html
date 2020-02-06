@@ -28,8 +28,8 @@
 </ol>
 <h4><a id="2pomxml_21"></a>2、<code>pom.xml</code>中引入相关依赖</h4>
 <p>由于这里是maven项目，其中一部分jar包可通过maven仓库直接引入，而其余的则通过外部jar包引入方式使用即可~</p>
-<p>如下4个需作为外部jar包在pom.xml中引入<br>
-<img src="https://img-blog.csdnimg.cn/20200206150239918.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>如下5个需作为外部jar包在pom.xml中引入<br>
+<img src="https://img-blog.csdnimg.cn/20200206183009910.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 <pre><code class="prism language-xml"><span class="token comment">&lt;!-- https://mvnrepository.com/artifact/com.google.code.gson/gson --&gt;</span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.google.code.gson<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
@@ -62,6 +62,12 @@
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>system<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>systemPath</span><span class="token punctuation">&gt;</span></span>${project.basedir}/src/main/resources/lib/MobileIMSDKServerX_netty.jar<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>systemPath</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.zhengqing<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>netty-all-4.1.17.Final<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>system<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>systemPath</span><span class="token punctuation">&gt;</span></span>${project.basedir}/src/main/resources/lib/netty-all-4.1.17.Final.jar<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>systemPath</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
 <pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>plugins</span><span class="token punctuation">&gt;</span></span>
     <span class="token comment">&lt;!-- maven打包插件 -&gt; 将整个工程打成一个 fatjar --&gt;</span>
@@ -75,9 +81,9 @@
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>plugin</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>plugins</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<h3><a id="_78"></a>三、开发服务端</h3>
+<h3><a id="_84"></a>三、开发服务端</h3>
 <p><img src="https://img-blog.csdnimg.cn/20200206151657988.png" alt="在这里插入图片描述"></p>
-<h4><a id="1ServerEventListener_82"></a>1、与客服端的所有数据交互事件（实现<code>ServerEventListener</code>类）</h4>
+<h4><a id="1ServerEventListener_88"></a>1、与客服端的所有数据交互事件（实现<code>ServerEventListener</code>类）</h4>
 <pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ServerEventListenerImpl</span> <span class="token keyword">implements</span> <span class="token class-name">ServerEventListener</span> <span class="token punctuation">{</span>
     <span class="token keyword">private</span> <span class="token keyword">static</span> Logger logger <span class="token operator">=</span> LoggerFactory<span class="token punctuation">.</span><span class="token function">getLogger</span><span class="token punctuation">(</span>ServerEventListenerImpl<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
@@ -253,7 +259,7 @@
     <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><a id="2QoSMessageQoSEventListenerS2C_261"></a>2、服务端主动发起消息的QoS回调通知（实现<code>MessageQoSEventListenerS2C</code>类）</h4>
+<h4><a id="2QoSMessageQoSEventListenerS2C_267"></a>2、服务端主动发起消息的QoS回调通知（实现<code>MessageQoSEventListenerS2C</code>类）</h4>
 <pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageQoSEventS2CListnerImpl</span> <span class="token keyword">implements</span> <span class="token class-name">MessageQoSEventListenerS2C</span> <span class="token punctuation">{</span>
     <span class="token keyword">private</span> <span class="token keyword">static</span> Logger logger <span class="token operator">=</span> LoggerFactory<span class="token punctuation">.</span><span class="token function">getLogger</span><span class="token punctuation">(</span>MessageQoSEventS2CListnerImpl<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
@@ -271,7 +277,7 @@
     <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><a id="3_282"></a>3、服务端配置</h4>
+<h4><a id="3_288"></a>3、服务端配置</h4>
 <pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ServerLauncherImpl</span> <span class="token keyword">extends</span> <span class="token class-name">ServerLauncher</span> <span class="token punctuation">{</span>
     <span class="token comment">// 静态类方法：进行一些全局配置设置</span>
     <span class="token keyword">static</span> <span class="token punctuation">{</span>
@@ -312,7 +318,7 @@
     
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><a id="4_326"></a>4、服务端启动类</h4>
+<h4><a id="4_332"></a>4、服务端启动类</h4>
 <blockquote>
 <p>温馨小提示：这里由于小编将服务端和客户端集成在同一个项目中，因此如下配置</p>
 </blockquote>
@@ -341,9 +347,9 @@
 </code></pre>
 <p>如果服务端与客户端不在同一个项目 ，服务端可直接通过如下方式启动即可~<br>
 <img src="https://img-blog.csdnimg.cn/20200206153338589.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h3><a id="_357"></a>四、开发客户端</h3>
+<h3><a id="_363"></a>四、开发客户端</h3>
 <p><img src="https://img-blog.csdnimg.cn/20200206153524946.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h4><a id="1IM_361"></a>1、客户端与IM服务端连接事件</h4>
+<h4><a id="1IM_367"></a>1、客户端与IM服务端连接事件</h4>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChatBaseEventImpl</span> <span class="token keyword">implements</span> <span class="token class-name">ChatBaseEvent</span> <span class="token punctuation">{</span>
 
@@ -363,7 +369,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><a id="2_384"></a>2、接收消息事件</h4>
+<h4><a id="2_390"></a>2、接收消息事件</h4>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChatTransDataEventImpl</span> <span class="token keyword">implements</span> <span class="token class-name">ChatTransDataEvent</span> <span class="token punctuation">{</span>
 
@@ -379,7 +385,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><a id="3_403"></a>3、消息是否送达事件</h4>
+<h4><a id="3_409"></a>3、消息是否送达事件</h4>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageQoSEventImpl</span> <span class="token keyword">implements</span> <span class="token class-name">MessageQoSEvent</span> <span class="token punctuation">{</span>
 
@@ -397,7 +403,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><a id="4MobileIMSDK_424"></a>4、MobileIMSDK初始化配置</h4>
+<h4><a id="4MobileIMSDK_430"></a>4、MobileIMSDK初始化配置</h4>
 <pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">IMClientManager</span> <span class="token punctuation">{</span>
     <span class="token keyword">private</span> <span class="token keyword">static</span> IMClientManager instance <span class="token operator">=</span> null<span class="token punctuation">;</span>
 
@@ -443,7 +449,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h4><a id="6IM_473"></a>6、连接IM服务端，发送消息</h4>
+<h4><a id="6IM_479"></a>6、连接IM服务端，发送消息</h4>
 <p>服务类</p>
 <pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IChatService</span> <span class="token punctuation">{</span>
 
@@ -512,7 +518,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h3><a id="Controller_549"></a>五、编写Controller进行测试</h3>
+<h3><a id="Controller_555"></a>五、编写Controller进行测试</h3>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@RestController</span>
 <span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api"</span><span class="token punctuation">)</span>
 <span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"聊天测试-接口"</span><span class="token punctuation">)</span>
@@ -539,15 +545,15 @@
 </code></pre>
 <p>启动项目，访问：<a href="http://127.0.0.1:8080/swagger-ui.html">http://127.0.0.1:8080/swagger-ui.html</a><br>
 <img src="https://img-blog.csdnimg.cn/20200206154603131.png" alt="在这里插入图片描述"></p>
-<h6><a id="1_loginConnectIM_580"></a>1、 <code>loginConnect</code>接口：任意输入一个账号密码登录连接IM服务端</h6>
+<h6><a id="1_loginConnectIM_586"></a>1、 <code>loginConnect</code>接口：任意输入一个账号密码登录连接IM服务端</h6>
 <p><img src="https://img-blog.csdnimg.cn/20200206155043155.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
 控制台日志如下：<br>
 <img src="https://img-blog.csdnimg.cn/20200206155331349.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h6><a id="2_sendMsgadminadmin__586"></a>2、 <code>sendMsg</code>接口：给指定用户发送消息，这里由于只有一个客户端，上一步登录了一个<code>admin</code>账号，因此小编给<code>admin</code>账号(也就是自己) 发送消息</h6>
+<h6><a id="2_sendMsgadminadmin__592"></a>2、 <code>sendMsg</code>接口：给指定用户发送消息，这里由于只有一个客户端，上一步登录了一个<code>admin</code>账号，因此小编给<code>admin</code>账号(也就是自己) 发送消息</h6>
 <p><img src="https://img-blog.csdnimg.cn/20200206155506118.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
 控制台日志如下：<br>
 <img src="https://img-blog.csdnimg.cn/2020020615583363.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h3><a id="_592"></a>六、总结</h3>
+<h3><a id="_598"></a>六、总结</h3>
 <p>关于集成可参考MobileIMSDK给出的文档一步一步实现，其中给出了通过Java GUI编程实现的一个小demo，我们可以先将其运行起来，先体验一下功能，代码量也不是太多，我们可以通过debug方式查看执行流程，清楚执行流程之后我们就可以将demo中的代码移植到我们自己的项目中加以修改运用于自己的业务中，切勿拿起就跑，否则一旦运气不好，将浪费更多的时间去集成，这样很不好！<br>
 <img src="https://img-blog.csdnimg.cn/20200206160813755.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
 <img src="https://img-blog.csdnimg.cn/20200206160846850.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
@@ -558,7 +564,7 @@
 <li>客户端通过 <code>ChatServiceImpl</code>中<code>sendMsg</code>方法发送一条消息，如果对方在线能接收消息则走服务端<code>ServerEventListenerImpl</code>中<code>onTransBuffer_C2C_CallBack</code>方法，否则走<code>onTransBuffer_C2C_RealTimeSendFaild_CallBack</code>方法；如果对方成功接收到消息，客户端将走<code>MessageQoSEventImpl</code>中<code>messagesBeReceived</code>事件，否则走<code>messagesLost</code>事件</li>
 <li>客户端通过<code>ChatTransDataEventImpl</code>中<code>onTransBuffer</code>回调事件接收消息</li>
 </ol>
-<h3><a id="demo_605"></a>本文案例demo源码</h3>
+<h3><a id="demo_611"></a>本文案例demo源码</h3>
 <p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
 </div>
 </body>
