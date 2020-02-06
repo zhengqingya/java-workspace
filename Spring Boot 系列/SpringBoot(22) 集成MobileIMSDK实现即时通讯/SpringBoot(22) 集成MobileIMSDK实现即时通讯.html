@@ -1,0 +1,566 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(22) 集成MobileIMSDK实现即时通讯</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<h6><a id="MobileIMSDK_2"></a>MobileIMSDK是什么？</h6>
+<p>一个专为移动端开发的开源原创<code>即时通讯框架</code>，超轻量级、高度提炼，完全基于<code>UDP协议</code>，支持<code>iOS</code>、<code>Android</code>、标准<code>Java</code>平台，服务端基于<code>Mina</code>和<code>Netty</code>编写。MobileIMSDK还可与姊妹工程 <code>MobileIMSDK-Web</code>无缝互通，从而实现<code>Web网页端聊天</code>或<code>推送</code>等。</p>
+<h6><a id="_6"></a>本文将实现</h6>
+<ol>
+<li>基于<code>springboot2.1.8.RELEASE</code> 集成 <code>MobileIMSDK</code></li>
+<li>开发IM<code>服务端</code></li>
+<li>开发<code>客户端</code></li>
+<li>实现Java<code>客户端与客户端</code>之间的<code>通信</code></li>
+</ol>
+<h3><a id="SpringBoot__MobileIMSDK__13"></a>二、<code>SpringBoot</code> 集成 <code>MobileIMSDK</code> 准备</h3>
+<h4><a id="1MobileIMSDKhttpsgiteecomjackjiangMobileIMSDKhttpsgiteecomjackjiangMobileIMSDK_15"></a>1、MobileIMSDK下载：<a href="https://gitee.com/jackjiang/MobileIMSDK">https://gitee.com/jackjiang/MobileIMSDK</a></h4>
+<ol>
+<li>服务端所需jar包： <code>dist/server-xxx</code></li>
+<li>客服端所需jar包： <code>dist/client/java</code><br>
+<img src="https://img-blog.csdnimg.cn/20200206145211644.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
+</ol>
+<h4><a id="2pomxml_21"></a>2、<code>pom.xml</code>中引入相关依赖</h4>
+<p>由于这里是maven项目，其中一部分jar包可通过maven仓库直接引入，而其余的则通过外部jar包引入方式使用即可~</p>
+<p>如下4个需作为外部jar包在pom.xml中引入<br>
+<img src="https://img-blog.csdnimg.cn/20200206150239918.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- https://mvnrepository.com/artifact/com.google.code.gson/gson --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.google.code.gson<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>gson<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.8.5<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- MobileIMSDK所需jar包依赖[注：这里是在本地lib中引入，maven中央仓库中暂无此jar包]，要与&lt;includeSystemScope&gt;true&lt;/includeSystemScope&gt;配合使用--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.zhengqing<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>MobileIMSDK4j<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>system<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>systemPath</span><span class="token punctuation">&gt;</span></span>${project.basedir}/src/main/resources/lib/MobileIMSDK4j.jar<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>systemPath</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.zhengqing<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>MobileIMSDKServerX_meta<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>system<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>systemPath</span><span class="token punctuation">&gt;</span></span>${project.basedir}/src/main/resources/lib/MobileIMSDKServerX_meta.jar<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>systemPath</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.zhengqing<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>swing-worker-1.2(1.6-)<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>system<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>systemPath</span><span class="token punctuation">&gt;</span></span>${project.basedir}/src/main/resources/lib/swing-worker-1.2(1.6-).jar<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>systemPath</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.zhengqing<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>MobileIMSDKServerX_netty<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>system<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>systemPath</span><span class="token punctuation">&gt;</span></span>${project.basedir}/src/main/resources/lib/MobileIMSDKServerX_netty.jar<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>systemPath</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>plugins</span><span class="token punctuation">&gt;</span></span>
+    <span class="token comment">&lt;!-- maven打包插件 -&gt; 将整个工程打成一个 fatjar --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>plugin</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-maven-plugin<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!-- 作用:项目打成jar，同时把本地jar包也引入进去 --&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>configuration</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>includeSystemScope</span><span class="token punctuation">&gt;</span></span>true<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>includeSystemScope</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>configuration</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>plugin</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>plugins</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3><a id="_78"></a>三、开发服务端</h3>
+<p><img src="https://img-blog.csdnimg.cn/20200206151657988.png" alt="在这里插入图片描述"></p>
+<h4><a id="1ServerEventListener_82"></a>1、与客服端的所有数据交互事件（实现<code>ServerEventListener</code>类）</h4>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ServerEventListenerImpl</span> <span class="token keyword">implements</span> <span class="token class-name">ServerEventListener</span> <span class="token punctuation">{</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> Logger logger <span class="token operator">=</span> LoggerFactory<span class="token punctuation">.</span><span class="token function">getLogger</span><span class="token punctuation">(</span>ServerEventListenerImpl<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 用户身份验证回调方法定义.
+     * &lt;p&gt;
+     * 服务端的应用层可在本方法中实现用户登陆验证。
+     * &lt;br&gt;
+     * 注意：本回调在一种特殊情况下——即用户实际未退出登陆但再次发起来登陆包时，本回调是不会被调用的！
+     * &lt;p&gt;
+     * 根据MobileIMSDK的算法实现，本方法中用户验证通过（即方法返回值=0时）后
+     * ，将立即调用回调方法 {@link #onUserLoginAction_CallBack(int, String, IoSession)}。
+     * 否则会将验证结果（本方法返回值错误码通过客户端的 ChatBaseEvent.onLoginMessage(int dwUserId, int dwErrorCode)
+     * 方法进行回调）通知客户端）。
+     *
+     * @param userId  传递过来的准一id，保证唯一就可以通信，可能是登陆用户名、也可能是任意不重复的id等，具体意义由业务层决定
+     * @param token   用于身份鉴别和合法性检查的token，它可能是登陆密码，也可能是通过前置单点登陆接口拿到的token等，具体意义由业务层决定
+     * @param extra   额外信息字符串。本字段目前为保留字段，供上层应用自行放置需要的内容
+     * @param session 此客户端连接对应的 netty “会话”
+     * @return 0 表示登陆验证通过，否则可以返回用户自已定义的错误码，错误码值应为：&gt;=1025的整数
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">onVerifyUserCallBack</span><span class="token punctuation">(</span>String userId<span class="token punctuation">,</span> String token<span class="token punctuation">,</span> String extra<span class="token punctuation">,</span> Channel session<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        logger<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"【DEBUG_回调通知】正在调用回调方法：OnVerifyUserCallBack...(extra="</span> <span class="token operator">+</span> extra <span class="token operator">+</span> <span class="token string">")"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 用户登录验证成功后的回调方法定义（可理解为上线通知回调）.
+     * &lt;p&gt;
+     * 服务端的应用层通常可在本方法中实现用户上线通知等。
+     * &lt;br&gt;
+     * 注意：本回调在一种特殊情况下——即用户实际未退出登陆但再次发起来登陆包时，回调也是一定会被调用。
+     *
+     * @param userId  传递过来的准一id，保证唯一就可以通信，可能是登陆用户名、也可能是任意不重复的id等，具体意义由业务层决定
+     * @param extra   额外信息字符串。本字段目前为保留字段，供上层应用自行放置需要的内容。为了丰富应用层处理的手段，在本回调中也把此字段传进来了
+     * @param session 此客户端连接对应的 netty “会话”
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onUserLoginAction_CallBack</span><span class="token punctuation">(</span>String userId<span class="token punctuation">,</span> String extra<span class="token punctuation">,</span> Channel session<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        logger<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"【IM_回调通知OnUserLoginAction_CallBack】用户："</span> <span class="token operator">+</span> userId <span class="token operator">+</span> <span class="token string">" 上线了！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 用户退出登录回调方法定义（可理解为下线通知回调）。
+     * &lt;p&gt;
+     * 服务端的应用层通常可在本方法中实现用户下线通知等。
+     *
+     * @param userId  下线的用户user_id
+     * @param obj
+     * @param session 此客户端连接对应的 netty “会话”
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onUserLogoutAction_CallBack</span><span class="token punctuation">(</span>String userId<span class="token punctuation">,</span> Object obj<span class="token punctuation">,</span> Channel session<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        logger<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"【DEBUG_回调通知OnUserLogoutAction_CallBack】用户："</span> <span class="token operator">+</span> userId <span class="token operator">+</span> <span class="token string">" 离线了！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 通用数据回调方法定义（客户端发给服务端的（即接收user_id="0"））.
+     * &lt;p&gt;
+     * MobileIMSDK在收到客户端向user_id=0(即接收目标是服务器)的情况下通过
+     * 本方法的回调通知上层。上层通常可在本方法中实现如：添加好友请求等业务实现。
+     *
+     * &lt;p style="background:#fbf5ee;border-radius:4px;"&gt;
+     * &lt;b&gt;&lt;font color="#ff0000"&gt;【版本兼容性说明】&lt;/font&gt;&lt;/b&gt;本方法用于替代v3.x中的以下方法：&lt;br&gt;
+     * &lt;code&gt;public boolean onTransBuffer_CallBack(String userId, String from_user_id
+     * , String dataContent, String fingerPrint, int typeu, Channel session);
+     * &lt;/code&gt;
+     *
+     * @param userId       接收方的user_id（本方法接收的是发给服务端的消息，所以此参数的值肯定==0）
+     * @param from_user_id 发送方的user_id
+     * @param dataContent  数据内容（文本形式）
+     * @param session      此客户端连接对应的 netty “会话”
+     * @return true表示本方法已成功处理完成，否则表示未处理成功。此返回值目前框架中并没有特殊意义，仅作保留吧
+     * @since 4.0
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">onTransBuffer_C2S_CallBack</span><span class="token punctuation">(</span>Protocal p<span class="token punctuation">,</span> Channel session<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 接收者uid</span>
+        String userId <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getTo</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 发送者uid</span>
+        String from_user_id <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getFrom</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 消息或指令内容</span>
+        String dataContent <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getDataContent</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 消息或指令指纹码（即唯一ID）</span>
+        String fingerPrint <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getFp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 【重要】用户定义的消息或指令协议类型（开发者可据此类型来区分具体的消息或指令）</span>
+        <span class="token keyword">int</span> typeu <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getTypeu</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        logger<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"【DEBUG_回调通知】[typeu="</span> <span class="token operator">+</span> typeu <span class="token operator">+</span> <span class="token string">"]收到了客户端"</span> <span class="token operator">+</span> from_user_id <span class="token operator">+</span> <span class="token string">"发给服务端的消息：str="</span> <span class="token operator">+</span> dataContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 通道数据回调函数定义（客户端发给客户端的（即接收方user_id不为“0”的情况））.
+     * &lt;p&gt;
+     * &lt;b&gt;注意：&lt;/b&gt;本方法当且仅当在数据被服务端成功在线发送出去后被回调调用.
+     * &lt;p&gt;
+     * 上层通常可在本方法中实现用户聊天信息的收集，以便后期监控分析用户的行为等^_^。
+     * &lt;p&gt;
+     * 提示：如果开启消息QoS保证，因重传机制，本回调中的消息理论上有重复的可能，请以参数 #fingerPrint
+     * 作为消息的唯一标识ID进行去重处理。
+     *
+     * &lt;p style="background:#fbf5ee;border-radius:4px;"&gt;
+     * &lt;b&gt;&lt;font color="#ff0000"&gt;【版本兼容性说明】&lt;/font&gt;&lt;/b&gt;本方法用于替代v3.x中的以下方法：&lt;br&gt;
+     * &lt;code&gt;public void onTransBuffer_C2C_CallBack(String userId, String from_user_id
+     * , String dataContent, String fingerPrint, int typeu);
+     *
+     * @param userId       接收方的user_id（本方法接收的是客户端发给客户端的，所以此参数的值肯定&gt;0）
+     * @param from_user_id 发送方的user_id
+     * @param dataContent
+     * @since 4.0
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onTransBuffer_C2C_CallBack</span><span class="token punctuation">(</span>Protocal p<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 接收者uid</span>
+        String userId <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getTo</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 发送者uid</span>
+        String from_user_id <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getFrom</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 消息或指令内容</span>
+        String dataContent <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getDataContent</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 消息或指令指纹码（即唯一ID）</span>
+        String fingerPrint <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getFp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 【重要】用户定义的消息或指令协议类型（开发者可据此类型来区分具体的消息或指令）</span>
+        <span class="token keyword">int</span> typeu <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getTypeu</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        logger<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"【DEBUG_回调通知】[typeu="</span> <span class="token operator">+</span> typeu <span class="token operator">+</span> <span class="token string">"]收到了客户端"</span> <span class="token operator">+</span> from_user_id <span class="token operator">+</span> <span class="token string">"发给客户端"</span> <span class="token operator">+</span> userId <span class="token operator">+</span> <span class="token string">"的消息：str="</span> <span class="token operator">+</span> dataContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 通用数据实时发送失败后的回调函数定义（客户端发给客户端的（即接收方user_id不为“0”的情况））.
+     * &lt;p&gt;
+     * 注意：本方法当且仅当在数据被服务端&lt;u&gt;在线发送&lt;/u&gt;失败后被回调调用.
+     * &lt;p&gt;
+     * &lt;b&gt;此方法存的意义何在？&lt;/b&gt;&lt;br&gt;
+     * 发生此种情况的场景可能是：对方确实不在线（那么此方法里就可以作为离线消息处理了）、
+     * 或者在发送时判断对方是在线的但服务端在发送时却没有成功（这种情况就可能是通信错误
+     * 或对方非正常通出但尚未到达会话超时时限）。&lt;br&gt;&lt;u&gt;应用层在此方法里实现离线消息的处理即可！&lt;/u&gt;
+     *
+     * &lt;p style="background:#fbf5ee;border-radius:4px;"&gt;
+     * &lt;b&gt;&lt;font color="#ff0000"&gt;【版本兼容性说明】&lt;/font&gt;&lt;/b&gt;本方法用于替代v3.x中的以下方法：&lt;br&gt;
+     * &lt;code&gt;public boolean onTransBuffer_C2C_RealTimeSendFaild_CallBack(String userId
+     * , String from_user_id, String dataContent, String fingerPrint, int typeu);
+     * &lt;/code&gt;
+     *
+     * @param userId       接收方的user_id（本方法接收的是客户端发给客户端的，所以此参数的值肯定&gt;0），此id在本方法中不一定保证有意义
+     * @param from_user_id 发送方的user_id
+     * @param dataContent  消息内容
+     * @param fingerPrint  该消息对应的指纹（如果该消息有QoS保证机制的话），用于在QoS重要机制下服务端离线存储时防止重复存储哦
+     * @return true表示应用层已经处理了离线消息（如果该消息有QoS机制，则服务端将代为发送一条伪应答包
+     * （伪应答仅意味着不是接收方的实时应答，而只是存储到离线DB中，但在发送方看来也算是被对方收到，只是延
+     * 迟收到而已（离线消息嘛））），否则表示应用层没有处理（如果此消息有QoS机制，则发送方在QoS重传机制超时
+     * 后报出消息发送失败的提示）
+     * @see #onTransBuffer_C2C_CallBack(Protocal)
+     * @since 4.0
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">onTransBuffer_C2C_RealTimeSendFaild_CallBack</span><span class="token punctuation">(</span>Protocal p<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 接收者uid</span>
+        String userId <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getTo</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 发送者uid</span>
+        String from_user_id <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getFrom</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 消息或指令内容</span>
+        String dataContent <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getDataContent</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 消息或指令指纹码（即唯一ID）</span>
+        String fingerPrint <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getFp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 【重要】用户定义的消息或指令协议类型（开发者可据此类型来区分具体的消息或指令）</span>
+        <span class="token keyword">int</span> typeu <span class="token operator">=</span> p<span class="token punctuation">.</span><span class="token function">getTypeu</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        logger<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"【DEBUG_回调通知】[typeu="</span> <span class="token operator">+</span> typeu <span class="token operator">+</span> <span class="token string">"]客户端"</span> <span class="token operator">+</span> from_user_id <span class="token operator">+</span> <span class="token string">"发给客户端"</span> <span class="token operator">+</span> userId <span class="token operator">+</span> <span class="token string">"的消息：str="</span> <span class="token operator">+</span> dataContent
+                <span class="token operator">+</span> <span class="token string">"，因实时发送没有成功，需要上层应用作离线处理哦，否则此消息将被丢弃."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="2QoSMessageQoSEventListenerS2C_261"></a>2、服务端主动发起消息的QoS回调通知（实现<code>MessageQoSEventListenerS2C</code>类）</h4>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageQoSEventS2CListnerImpl</span> <span class="token keyword">implements</span> <span class="token class-name">MessageQoSEventListenerS2C</span> <span class="token punctuation">{</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> Logger logger <span class="token operator">=</span> LoggerFactory<span class="token punctuation">.</span><span class="token function">getLogger</span><span class="token punctuation">(</span>MessageQoSEventS2CListnerImpl<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">messagesLost</span><span class="token punctuation">(</span>ArrayList<span class="token generics function"><span class="token punctuation">&lt;</span>Protocal<span class="token punctuation">&gt;</span></span> lostMessages<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        logger<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"【DEBUG_QoS_S2C事件】收到系统的未实时送达事件通知，当前共有"</span>
+                <span class="token operator">+</span> lostMessages<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">"个包QoS保证机制结束，判定为【无法实时送达】！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">messagesBeReceived</span><span class="token punctuation">(</span>String theFingerPrint<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>theFingerPrint <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            logger<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"【DEBUG_QoS_S2C事件】收到对方已收到消息事件的通知，fp="</span> <span class="token operator">+</span> theFingerPrint<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_282"></a>3、服务端配置</h4>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ServerLauncherImpl</span> <span class="token keyword">extends</span> <span class="token class-name">ServerLauncher</span> <span class="token punctuation">{</span>
+    <span class="token comment">// 静态类方法：进行一些全局配置设置</span>
+    <span class="token keyword">static</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 设置AppKey（此key目前为保留字段，请忽略之）</span>
+        ServerLauncher<span class="token punctuation">.</span>appKey <span class="token operator">=</span> <span class="token string">"5418023dfd98c579b6001741"</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 设置MobileIMSDK服务端的网络监听端口</span>
+        ServerLauncherImpl<span class="token punctuation">.</span>PORT <span class="token operator">=</span> <span class="token number">7901</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 开/关Demog日志的输出</span>
+        QoS4SendDaemonS2C<span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setDebugable</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        QoS4ReciveDaemonC2S<span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setDebugable</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        ServerLauncher<span class="token punctuation">.</span>debug <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// TODO 与客户端协商一致的心跳敏感模式设置</span>
+<span class="token comment">//		ServerToolKits.setSenseMode(SenseMode.MODE_10S);</span>
+
+        <span class="token comment">// 关闭与Web端的消息互通桥接器（其实SDK中默认就是false）</span>
+        ServerLauncher<span class="token punctuation">.</span>bridgeEnabled <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token comment">// TODO 跨服桥接器MQ的URI（本参数只在ServerLauncher.bridgeEnabled为true时有意义）</span>
+<span class="token comment">//		BridgeProcessor.IMMQ_URI = "amqp://js:19844713@192.168.31.190";</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 实例构造方法</span>
+    <span class="token keyword">public</span> <span class="token function">ServerLauncherImpl</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> IOException <span class="token punctuation">{</span>
+        <span class="token keyword">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 初始化消息处理事件监听者.
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">initListeners</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// ** 设置各种回调事件处理实现类</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">setServerEventListener</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ServerEventListenerImpl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">setServerMessageQoSEventListener</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">MessageQoSEventS2CListnerImpl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4_326"></a>4、服务端启动类</h4>
+<blockquote>
+<p>温馨小提示：这里由于小编将服务端和客户端集成在同一个项目中，因此如下配置</p>
+</blockquote>
+<ol>
+<li>SpringBoot的<code>CommandLineRunner</code>接口主要用于实现在服务初始化后，去执行一段代码块逻辑（<code>run方法</code>），这段初始化代码在整个应用生命周期内只会执行一次！</li>
+<li><code>@Order(value = 1)</code> ：按照一定的顺序去执行，value值越小越先执行</li>
+</ol>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token annotation punctuation">@Order</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChatServerRunner</span> <span class="token keyword">implements</span> <span class="token class-name">CommandLineRunner</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">run</span><span class="token punctuation">(</span>String<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> strings<span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"================= ↓↓↓↓↓↓ 启动MobileIMSDK服务端 ↓↓↓↓↓↓ ================="</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 实例化后记得startup哦，单独startup()的目的是让调用者可以延迟决定何时真正启动IM服务</span>
+        <span class="token keyword">final</span> ServerLauncherImpl sli <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ServerLauncherImpl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 启动MobileIMSDK服务端的Demo</span>
+        sli<span class="token punctuation">.</span><span class="token function">startup</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 加一个钩子，确保在JVM退出时释放netty的资源</span>
+        Runtime<span class="token punctuation">.</span><span class="token function">getRuntime</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">addShutdownHook</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span>sli<span class="token operator">:</span><span class="token operator">:</span>shutdown<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>如果服务端与客户端不在同一个项目 ，服务端可直接通过如下方式启动即可~<br>
+<img src="https://img-blog.csdnimg.cn/20200206153338589.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_357"></a>四、开发客户端</h3>
+<p><img src="https://img-blog.csdnimg.cn/20200206153524946.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="1IM_361"></a>1、客户端与IM服务端连接事件</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChatBaseEventImpl</span> <span class="token keyword">implements</span> <span class="token class-name">ChatBaseEvent</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onLoginMessage</span><span class="token punctuation">(</span><span class="token keyword">int</span> dwErrorCode<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>dwErrorCode <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"IM服务器登录/连接成功！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"IM服务器登录/连接失败，错误代码："</span> <span class="token operator">+</span> dwErrorCode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onLinkCloseMessage</span><span class="token punctuation">(</span><span class="token keyword">int</span> dwErrorCode<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"与IM服务器的网络连接出错关闭了，error："</span> <span class="token operator">+</span> dwErrorCode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="2_384"></a>2、接收消息事件</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChatTransDataEventImpl</span> <span class="token keyword">implements</span> <span class="token class-name">ChatTransDataEvent</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onTransBuffer</span><span class="token punctuation">(</span>String fingerPrintOfProtocal<span class="token punctuation">,</span> String userid<span class="token punctuation">,</span> String dataContent<span class="token punctuation">,</span> <span class="token keyword">int</span> typeu<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"[typeu="</span> <span class="token operator">+</span> typeu <span class="token operator">+</span> <span class="token string">"]收到来自用户"</span> <span class="token operator">+</span> userid <span class="token operator">+</span> <span class="token string">"的消息:"</span> <span class="token operator">+</span> dataContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onErrorResponse</span><span class="token punctuation">(</span><span class="token keyword">int</span> errorCode<span class="token punctuation">,</span> String errorMsg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"收到服务端错误消息，errorCode="</span> <span class="token operator">+</span> errorCode <span class="token operator">+</span> <span class="token string">", errorMsg="</span> <span class="token operator">+</span> errorMsg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_403"></a>3、消息是否送达事件</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MessageQoSEventImpl</span> <span class="token keyword">implements</span> <span class="token class-name">MessageQoSEvent</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span> <span class="token comment">// 对方未成功接收消息的回调事件 lostMessages：存放消息内容</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">messagesLost</span><span class="token punctuation">(</span>ArrayList<span class="token generics function"><span class="token punctuation">&lt;</span>Protocal<span class="token punctuation">&gt;</span></span> lostMessages<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"收到系统的未实时送达事件通知，当前共有"</span> <span class="token operator">+</span> lostMessages<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">"个包QoS保证机制结束，判定为【无法实时送达】！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span> <span class="token comment">// 对方成功接收到消息的回调事件</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">messagesBeReceived</span><span class="token punctuation">(</span>String theFingerPrint<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>theFingerPrint <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"收到对方已收到消息事件的通知，fp="</span> <span class="token operator">+</span> theFingerPrint<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4MobileIMSDK_424"></a>4、MobileIMSDK初始化配置</h4>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">IMClientManager</span> <span class="token punctuation">{</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> IMClientManager instance <span class="token operator">=</span> null<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * MobileIMSDK是否已被初始化. true表示已初化完成，否则未初始化.
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> init <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> IMClientManager <span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>instance <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            instance <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">IMClientManager</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> instance<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token function">IMClientManager</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">initMobileIMSDK</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">initMobileIMSDK</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>init<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment">// 设置AppKey</span>
+            ConfigEntity<span class="token punctuation">.</span>appKey <span class="token operator">=</span> <span class="token string">"5418023dfd98c579b6001741"</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 设置服务器ip和服务器端口</span>
+            ConfigEntity<span class="token punctuation">.</span>serverIP <span class="token operator">=</span> <span class="token string">"127.0.0.1"</span><span class="token punctuation">;</span>
+            ConfigEntity<span class="token punctuation">.</span>serverUDPPort <span class="token operator">=</span> <span class="token number">7901</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// MobileIMSDK核心IM框架的敏感度模式设置</span>
+<span class="token comment">//			ConfigEntity.setSenseMode(SenseMode.MODE_10S);</span>
+
+            <span class="token comment">// 开启/关闭DEBUG信息输出</span>
+            ClientCoreSDK<span class="token punctuation">.</span>DEBUG <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 设置事件回调</span>
+            ClientCoreSDK<span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setChatBaseEvent</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ChatBaseEventImpl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            ClientCoreSDK<span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setChatTransDataEvent</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ChatTransDataEventImpl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            ClientCoreSDK<span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setMessageQoSEvent</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">MessageQoSEventImpl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            init <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="6IM_473"></a>6、连接IM服务端，发送消息</h4>
+<p>服务类</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IChatService</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 登录连接IM服务器请求
+     *
+     * @param username: 用户名
+     * @param password: 密码
+     * @return: void
+     */</span>
+    <span class="token keyword">void</span> <span class="token function">loginConnect</span><span class="token punctuation">(</span>String username<span class="token punctuation">,</span> String password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 发送消息
+     *
+     * @param friendId: 接收消息者id
+     * @param msg:      消息内容
+     * @return: void
+     */</span>
+    <span class="token keyword">void</span> <span class="token function">sendMsg</span><span class="token punctuation">(</span>String friendId<span class="token punctuation">,</span> String msg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>服务实现类</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Service</span>
+<span class="token annotation punctuation">@Transactional</span><span class="token punctuation">(</span>rollbackFor <span class="token operator">=</span> Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChatServiceImpl</span> <span class="token keyword">implements</span> <span class="token class-name">IChatService</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">loginConnect</span><span class="token punctuation">(</span>String username<span class="token punctuation">,</span> String password<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 确保MobileIMSDK被初始化哦（整个APP生生命周期中只需调用一次哦）</span>
+        <span class="token comment">// 提示：在不退出APP的情况下退出登陆后再重新登陆时，请确保调用本方法一次，不然会报code=203错误哦！</span>
+        IMClientManager<span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">initMobileIMSDK</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// * 异步提交登陆名和密码</span>
+        <span class="token keyword">new</span> <span class="token class-name">LocalUDPDataSender<span class="token punctuation">.</span>SendLoginDataAsync</span><span class="token punctuation">(</span>username<span class="token punctuation">,</span> password<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment">/**
+             * 登陆信息发送完成后将调用本方法（注意：此处仅是登陆信息发送完成，真正的登陆结果要在异步回调中处理哦）。
+             * @param code 数据发送返回码，0 表示数据成功发出，否则是错误码
+             */</span>
+            <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">fireAfterSendLogin</span><span class="token punctuation">(</span><span class="token keyword">int</span> code<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>code <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"数据发送成功！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                    log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"数据发送失败。错误码是："</span> <span class="token operator">+</span> code<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">sendMsg</span><span class="token punctuation">(</span>String friendId<span class="token punctuation">,</span> String msg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 发送消息（异步提升体验，你也可直接调用LocalUDPDataSender.send(..)方法发送）</span>
+        <span class="token keyword">new</span> <span class="token class-name">LocalUDPDataSender<span class="token punctuation">.</span>SendCommonDataAsync</span><span class="token punctuation">(</span>msg<span class="token punctuation">,</span> friendId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token annotation punctuation">@Override</span>
+            <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">onPostExecute</span><span class="token punctuation">(</span>Integer code<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>code <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"数据已成功发出！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                    log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"数据发送失败。错误码是："</span> <span class="token operator">+</span> code <span class="token operator">+</span> <span class="token string">"！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="Controller_549"></a>五、编写Controller进行测试</h3>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"聊天测试-接口"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ChatController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> IChatService chatService<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@PostMapping</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"/loginConnect"</span><span class="token punctuation">,</span> produces <span class="token operator">=</span> Constants<span class="token punctuation">.</span>CONTENT_TYPE<span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"登陆请求"</span><span class="token punctuation">,</span> httpMethod <span class="token operator">=</span> <span class="token string">"POST"</span><span class="token punctuation">,</span> response <span class="token operator">=</span> ApiResult<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> ApiResult <span class="token function">loginConnect</span><span class="token punctuation">(</span><span class="token annotation punctuation">@RequestParam</span> String username<span class="token punctuation">,</span> <span class="token annotation punctuation">@RequestParam</span> String password<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        chatService<span class="token punctuation">.</span><span class="token function">loginConnect</span><span class="token punctuation">(</span>username<span class="token punctuation">,</span> password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> ApiResult<span class="token punctuation">.</span><span class="token function">ok</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@PostMapping</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"/sendMsg"</span><span class="token punctuation">,</span> produces <span class="token operator">=</span> Constants<span class="token punctuation">.</span>CONTENT_TYPE<span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"发送消息"</span><span class="token punctuation">,</span> httpMethod <span class="token operator">=</span> <span class="token string">"POST"</span><span class="token punctuation">,</span> response <span class="token operator">=</span> ApiResult<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> ApiResult <span class="token function">sendMsg</span><span class="token punctuation">(</span><span class="token annotation punctuation">@RequestParam</span> String friendId<span class="token punctuation">,</span> <span class="token annotation punctuation">@RequestParam</span> String msg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        chatService<span class="token punctuation">.</span><span class="token function">sendMsg</span><span class="token punctuation">(</span>friendId<span class="token punctuation">,</span> msg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> ApiResult<span class="token punctuation">.</span><span class="token function">ok</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>启动项目，访问：<a href="http://127.0.0.1:8080/swagger-ui.html">http://127.0.0.1:8080/swagger-ui.html</a><br>
+<img src="https://img-blog.csdnimg.cn/20200206154603131.png" alt="在这里插入图片描述"></p>
+<h6><a id="1_loginConnectIM_580"></a>1、 <code>loginConnect</code>接口：任意输入一个账号密码登录连接IM服务端</h6>
+<p><img src="https://img-blog.csdnimg.cn/20200206155043155.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+控制台日志如下：<br>
+<img src="https://img-blog.csdnimg.cn/20200206155331349.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="2_sendMsgadminadmin__586"></a>2、 <code>sendMsg</code>接口：给指定用户发送消息，这里由于只有一个客户端，上一步登录了一个<code>admin</code>账号，因此小编给<code>admin</code>账号(也就是自己) 发送消息</h6>
+<p><img src="https://img-blog.csdnimg.cn/20200206155506118.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+控制台日志如下：<br>
+<img src="https://img-blog.csdnimg.cn/2020020615583363.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_592"></a>六、总结</h3>
+<p>关于集成可参考MobileIMSDK给出的文档一步一步实现，其中给出了通过Java GUI编程实现的一个小demo，我们可以先将其运行起来，先体验一下功能，代码量也不是太多，我们可以通过debug方式查看执行流程，清楚执行流程之后我们就可以将demo中的代码移植到我们自己的项目中加以修改运用于自己的业务中，切勿拿起就跑，否则一旦运气不好，将浪费更多的时间去集成，这样很不好！<br>
+<img src="https://img-blog.csdnimg.cn/20200206160813755.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200206160846850.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>案例demo中相关代码注释都有，这里就简单说下整个流程吧：</p>
+<ol>
+<li>首先启动IM服务端</li>
+<li>用户在客户端登录一个用户与服务端建立连接保持通信（ 客户端<code>ChatServiceImpl</code>中<code>loginConnect</code>方法为登录连接服务端事件；服务端<code>ServerEventListenerImpl</code>中<code>onUserLoginAction_CallBack</code>方法为服务端接收的上线通知事件）</li>
+<li>客户端通过 <code>ChatServiceImpl</code>中<code>sendMsg</code>方法发送一条消息，如果对方在线能接收消息则走服务端<code>ServerEventListenerImpl</code>中<code>onTransBuffer_C2C_CallBack</code>方法，否则走<code>onTransBuffer_C2C_RealTimeSendFaild_CallBack</code>方法；如果对方成功接收到消息，客户端将走<code>MessageQoSEventImpl</code>中<code>messagesBeReceived</code>事件，否则走<code>messagesLost</code>事件</li>
+<li>客户端通过<code>ChatTransDataEventImpl</code>中<code>onTransBuffer</code>回调事件接收消息</li>
+</ol>
+<h3><a id="demo_605"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
