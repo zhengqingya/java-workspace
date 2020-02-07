@@ -1,0 +1,367 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(23) 集成socket.io服务端和客户端</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<h5><a id="websocketsocketio_2"></a><code>websocket</code>和<code>socket.io</code>区别？</h5>
+<h6><a id="websocket_4"></a>websocket</h6>
+<ol>
+<li>一种让客户端和服务器之间能进行双向实时通信的技术</li>
+<li>使用时，虽然主流浏览器都已经支持，但仍然可能有不兼容的情况</li>
+<li>适合用于client和基于node搭建的服务端使用</li>
+</ol>
+<h6><a id="socketio_10"></a>socket.io</h6>
+<ol>
+<li>将WebSocket、AJAX和其它的通信方式全部封装成了统一的通信接口</li>
+<li>使用时，不用担心兼容问题，底层会自动选用最佳的通信方式</li>
+<li>适合进行服务端和客户端双向数据通信</li>
+</ol>
+<p>w3cschool上对socket.io的描述如下：<br>
+<img src="https://img-blog.csdnimg.cn/20200207230000333.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h5><a id="_19"></a>本文将实现</h5>
+<ol>
+<li>基于<code>springboot2.1.8.RELEASE</code>集成<code>netty-socketio</code> ： 仿<code>node.js</code>实现的<code>socket.io服务端</code></li>
+<li>集成<code>socket.io-client</code>： <code>socket.io客户端</code></li>
+<li>实现<code>服务端</code>与<code>客户端</code>之间的<code>通信</code></li>
+</ol>
+<h3><a id="Javasocketio_26"></a>二、<code>Java</code>集成<code>socket.io</code>服务端</h3>
+<h4><a id="1pomxml_28"></a>1、<code>pom.xml</code>中引入所需依赖</h4>
+<blockquote>
+<p>温馨小提示：这里为了方便将后面需要的客户端<code>socket.io-client</code>依赖一起直接引入了哦~</p>
+</blockquote>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- netty-socketio： 仿`node.js`实现的socket.io服务端 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.corundumstudio.socketio<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>netty-socketio<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.7.7<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- socket.io客户端 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>io.socket<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>socket.io-client<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.0.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationymlsocketio_47"></a>2、<code>application.yml</code>中配置<code>socket.io</code>服务端</h4>
+<pre><code class="prism language-yml"><span class="token comment"># netty-socketio 配置</span>
+<span class="token key atrule">socketio</span><span class="token punctuation">:</span>
+  <span class="token key atrule">host</span><span class="token punctuation">:</span> 127.0.0.1
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">8888</span>
+  <span class="token comment"># 设置最大每帧处理数据的长度，防止他人利用大数据来攻击服务器</span>
+  <span class="token key atrule">maxFramePayloadLength</span><span class="token punctuation">:</span> <span class="token number">1048576</span>
+  <span class="token comment"># 设置http交互最大内容长度</span>
+  <span class="token key atrule">maxHttpContentLength</span><span class="token punctuation">:</span> <span class="token number">1048576</span>
+  <span class="token comment"># socket连接数大小（如只监听一个端口boss线程组为1即可）</span>
+  <span class="token key atrule">bossCount</span><span class="token punctuation">:</span> <span class="token number">1</span>
+  <span class="token key atrule">workCount</span><span class="token punctuation">:</span> <span class="token number">100</span>
+  <span class="token key atrule">allowCustomRequests</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token comment"># 协议升级超时时间（毫秒），默认10秒。HTTP握手升级为ws协议超时时间</span>
+  <span class="token key atrule">upgradeTimeout</span><span class="token punctuation">:</span> <span class="token number">1000000</span>
+  <span class="token comment"># Ping消息超时时间（毫秒），默认60秒，这个时间间隔内没有接收到心跳消息就会发送超时事件</span>
+  <span class="token key atrule">pingTimeout</span><span class="token punctuation">:</span> <span class="token number">6000000</span>
+  <span class="token comment"># Ping消息间隔（毫秒），默认25秒。客户端向服务器发送一条心跳消息间隔</span>
+  <span class="token key atrule">pingInterval</span><span class="token punctuation">:</span> <span class="token number">25000</span>
+</code></pre>
+<h4><a id="3socketio_70"></a>3、<code>socket.io服务端</code>配置类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SocketIOConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${socketio.host}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String host<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${socketio.port}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> Integer port<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${socketio.bossCount}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> bossCount<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${socketio.workCount}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> workCount<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${socketio.allowCustomRequests}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">boolean</span> allowCustomRequests<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${socketio.upgradeTimeout}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> upgradeTimeout<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${socketio.pingTimeout}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> pingTimeout<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${socketio.pingInterval}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> pingInterval<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> SocketIOServer <span class="token function">socketIOServer</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        SocketConfig socketConfig <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">SocketConfig</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        socketConfig<span class="token punctuation">.</span><span class="token function">setTcpNoDelay</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        socketConfig<span class="token punctuation">.</span><span class="token function">setSoLinger</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        com<span class="token punctuation">.</span>corundumstudio<span class="token punctuation">.</span>socketio<span class="token punctuation">.</span>Configuration config <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">com<span class="token punctuation">.</span>corundumstudio<span class="token punctuation">.</span>socketio<span class="token punctuation">.</span>Configuration</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        config<span class="token punctuation">.</span><span class="token function">setSocketConfig</span><span class="token punctuation">(</span>socketConfig<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        config<span class="token punctuation">.</span><span class="token function">setHostname</span><span class="token punctuation">(</span>host<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        config<span class="token punctuation">.</span><span class="token function">setPort</span><span class="token punctuation">(</span>port<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        config<span class="token punctuation">.</span><span class="token function">setBossThreads</span><span class="token punctuation">(</span>bossCount<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        config<span class="token punctuation">.</span><span class="token function">setWorkerThreads</span><span class="token punctuation">(</span>workCount<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        config<span class="token punctuation">.</span><span class="token function">setAllowCustomRequests</span><span class="token punctuation">(</span>allowCustomRequests<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        config<span class="token punctuation">.</span><span class="token function">setUpgradeTimeout</span><span class="token punctuation">(</span>upgradeTimeout<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        config<span class="token punctuation">.</span><span class="token function">setPingTimeout</span><span class="token punctuation">(</span>pingTimeout<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        config<span class="token punctuation">.</span><span class="token function">setPingInterval</span><span class="token punctuation">(</span>pingInterval<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">SocketIOServer</span><span class="token punctuation">(</span>config<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4socketio_121"></a>4、<code>socket.io服务端</code>服务层</h4>
+<p>服务类</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">ISocketIOService</span> <span class="token punctuation">{</span>
+    <span class="token comment">/**
+     * 启动服务
+     */</span>
+    <span class="token keyword">void</span> <span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 停止服务
+     */</span>
+    <span class="token keyword">void</span> <span class="token function">stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 推送信息给指定客户端
+     *
+     * @param userId:     客户端唯一标识
+     * @param msgContent: 消息内容
+     */</span>
+    <span class="token keyword">void</span> <span class="token function">pushMessageToUser</span><span class="token punctuation">(</span>String userId<span class="token punctuation">,</span> String msgContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>服务实现类：</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Service</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"socketIOService"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SocketIOServiceImpl</span> <span class="token keyword">implements</span> <span class="token class-name">ISocketIOService</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 存放已连接的客户端
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> SocketIOClient<span class="token punctuation">&gt;</span></span> clientMap <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ConcurrentHashMap</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 自定义事件`push_data_event`,用于服务端与客户端通信
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String PUSH_DATA_EVENT <span class="token operator">=</span> <span class="token string">"push_data_event"</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> SocketIOServer socketIOServer<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * Spring IoC容器创建之后，在加载SocketIOServiceImpl Bean之后启动
+     */</span>
+    <span class="token annotation punctuation">@PostConstruct</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">autoStartup</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * Spring IoC容器在销毁SocketIOServiceImpl Bean之前关闭,避免重启项目服务端口占用问题
+     */</span>
+    <span class="token annotation punctuation">@PreDestroy</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">autoStop</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 监听客户端连接</span>
+        socketIOServer<span class="token punctuation">.</span><span class="token function">addConnectListener</span><span class="token punctuation">(</span>client <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"************ 客户端： "</span> <span class="token operator">+</span> <span class="token function">getIpByClient</span><span class="token punctuation">(</span>client<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">" 已连接 ************"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 自定义事件`connected` -&gt; 与客户端通信  （也可以使用内置事件，如：Socket.EVENT_CONNECT）</span>
+            client<span class="token punctuation">.</span><span class="token function">sendEvent</span><span class="token punctuation">(</span><span class="token string">"connected"</span><span class="token punctuation">,</span> <span class="token string">"你成功连接上了哦..."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            String userId <span class="token operator">=</span> <span class="token function">getParamsByClient</span><span class="token punctuation">(</span>client<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>userId <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                clientMap<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>userId<span class="token punctuation">,</span> client<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 监听客户端断开连接</span>
+        socketIOServer<span class="token punctuation">.</span><span class="token function">addDisconnectListener</span><span class="token punctuation">(</span>client <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+            String clientIp <span class="token operator">=</span> <span class="token function">getIpByClient</span><span class="token punctuation">(</span>client<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span>clientIp <span class="token operator">+</span> <span class="token string">" *********************** "</span> <span class="token operator">+</span> <span class="token string">"客户端已断开连接"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            String userId <span class="token operator">=</span> <span class="token function">getParamsByClient</span><span class="token punctuation">(</span>client<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>userId <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                clientMap<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>userId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                client<span class="token punctuation">.</span><span class="token function">disconnect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 自定义事件`client_info_event` -&gt; 监听客户端消息</span>
+        socketIOServer<span class="token punctuation">.</span><span class="token function">addEventListener</span><span class="token punctuation">(</span>PUSH_DATA_EVENT<span class="token punctuation">,</span> String<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>client<span class="token punctuation">,</span> data<span class="token punctuation">,</span> ackSender<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+            <span class="token comment">// 客户端推送`client_info_event`事件时，onData接受数据，这里是string类型的json数据，还可以为Byte[],object其他类型</span>
+            String clientIp <span class="token operator">=</span> <span class="token function">getIpByClient</span><span class="token punctuation">(</span>client<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span>clientIp <span class="token operator">+</span> <span class="token string">" ************ 客户端："</span> <span class="token operator">+</span> data<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 启动服务</span>
+        socketIOServer<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// broadcast: 默认是向所有的socket连接进行广播，但是不包括发送者自身，如果自己也打算接收消息的话，需要给自己单独发送。</span>
+        <span class="token keyword">new</span> <span class="token class-name">Thread</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+            <span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+            <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">try</span> <span class="token punctuation">{</span>
+                    <span class="token comment">// 每3秒发送一次广播消息</span>
+                    Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">3000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    socketIOServer<span class="token punctuation">.</span><span class="token function">getBroadcastOperations</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">sendEvent</span><span class="token punctuation">(</span><span class="token string">"myBroadcast"</span><span class="token punctuation">,</span> <span class="token string">"广播消息 "</span> <span class="token operator">+</span> DateUtil<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>socketIOServer <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            socketIOServer<span class="token punctuation">.</span><span class="token function">stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            socketIOServer <span class="token operator">=</span> null<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">pushMessageToUser</span><span class="token punctuation">(</span>String userId<span class="token punctuation">,</span> String msgContent<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        SocketIOClient client <span class="token operator">=</span> clientMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>userId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>client <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            client<span class="token punctuation">.</span><span class="token function">sendEvent</span><span class="token punctuation">(</span>PUSH_DATA_EVENT<span class="token punctuation">,</span> msgContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 获取客户端url中的userId参数（这里根据个人需求和客户端对应修改即可）
+     *
+     * @param client: 客户端
+     * @return: java.lang.String
+     */</span>
+    <span class="token keyword">private</span> String <span class="token function">getParamsByClient</span><span class="token punctuation">(</span>SocketIOClient client<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 获取客户端url参数（这里的userId是唯一标识）</span>
+        Map<span class="token operator">&lt;</span>String<span class="token punctuation">,</span> List<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span><span class="token operator">&gt;</span> params <span class="token operator">=</span> client<span class="token punctuation">.</span><span class="token function">getHandshakeData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getUrlParams</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        List<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> userIdList <span class="token operator">=</span> params<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"userId"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>CollectionUtils<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span>userIdList<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> userIdList<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> null<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 获取连接的客户端ip地址
+     *
+     * @param client: 客户端
+     * @return: java.lang.String
+     */</span>
+    <span class="token keyword">private</span> String <span class="token function">getIpByClient</span><span class="token punctuation">(</span>SocketIOClient client<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        String sa <span class="token operator">=</span> client<span class="token punctuation">.</span><span class="token function">getRemoteAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String clientIp <span class="token operator">=</span> sa<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> sa<span class="token punctuation">.</span><span class="token function">indexOf</span><span class="token punctuation">(</span><span class="token string">":"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> clientIp<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="Javasocketio_279"></a>三、<code>Java</code>开发<code>socket.io</code>客户端</h3>
+<ol>
+<li><code>socket.emit</code>：发送数据到服务端事件</li>
+<li><code>socket.on</code>： 监听服务端事件</li>
+</ol>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SocketIOClientLaunch</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 服务端socket.io连接通信地址</span>
+        String url <span class="token operator">=</span> <span class="token string">"http://127.0.0.1:8888"</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            IO<span class="token punctuation">.</span>Options options <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">IO<span class="token punctuation">.</span>Options</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            options<span class="token punctuation">.</span>transports <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">String</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{</span><span class="token string">"websocket"</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
+            options<span class="token punctuation">.</span>reconnectionAttempts <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">;</span>
+            <span class="token comment">// 失败重连的时间间隔</span>
+            options<span class="token punctuation">.</span>reconnectionDelay <span class="token operator">=</span> <span class="token number">1000</span><span class="token punctuation">;</span>
+            <span class="token comment">// 连接超时时间(ms)</span>
+            options<span class="token punctuation">.</span>timeout <span class="token operator">=</span> <span class="token number">500</span><span class="token punctuation">;</span>
+            <span class="token comment">// userId: 唯一标识 传给服务端存储</span>
+            <span class="token keyword">final</span> Socket socket <span class="token operator">=</span> IO<span class="token punctuation">.</span><span class="token function">socket</span><span class="token punctuation">(</span>url <span class="token operator">+</span> <span class="token string">"?userId=1"</span><span class="token punctuation">,</span> options<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            socket<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span>Socket<span class="token punctuation">.</span>EVENT_CONNECT<span class="token punctuation">,</span> args1 <span class="token operator">-</span><span class="token operator">&gt;</span> socket<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token string">"hello..."</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 自定义事件`connected` -&gt; 接收服务端成功连接消息</span>
+            socket<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span><span class="token string">"connected"</span><span class="token punctuation">,</span> objects <span class="token operator">-</span><span class="token operator">&gt;</span> log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"服务端:"</span> <span class="token operator">+</span> objects<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 自定义事件`push_data_event` -&gt; 接收服务端消息</span>
+            socket<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span><span class="token string">"push_data_event"</span><span class="token punctuation">,</span> objects <span class="token operator">-</span><span class="token operator">&gt;</span> log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"服务端:"</span> <span class="token operator">+</span> objects<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 自定义事件`myBroadcast` -&gt; 接收服务端广播消息</span>
+            socket<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span><span class="token string">"myBroadcast"</span><span class="token punctuation">,</span> objects <span class="token operator">-</span><span class="token operator">&gt;</span> log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"服务端："</span> <span class="token operator">+</span> objects<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            socket<span class="token punctuation">.</span><span class="token function">connect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">3000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// 自定义事件`push_data_event` -&gt; 向服务端发送消息</span>
+                socket<span class="token punctuation">.</span><span class="token function">emit</span><span class="token punctuation">(</span><span class="token string">"push_data_event"</span><span class="token punctuation">,</span> <span class="token string">"发送数据 "</span> <span class="token operator">+</span> DateUtil<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_329"></a>四、运行测试</h3>
+<p>当客户端上线后，会通过自定义事件<code>push_data_event</code>每隔3秒向服务端发送消息，日志如下<br>
+<img src="https://img-blog.csdnimg.cn/2020020723242873.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>而服务端中跑了一个广播消息(自定义事件<code>myBroadcast</code>) 每隔3秒也会返回给客户端</p>
+<blockquote>
+<p><code>广播事件</code>:  向所有的socket连接进行广播发送消息数据</p>
+</blockquote>
+<pre><code class="prism language-java">socketIOServer<span class="token punctuation">.</span><span class="token function">getBroadcastOperations</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">sendEvent</span><span class="token punctuation">(</span><span class="token string">"myBroadcast"</span><span class="token punctuation">,</span> <span class="token string">"广播消息 "</span> <span class="token operator">+</span> DateUtil<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>日志如下：<br>
+<img src="https://img-blog.csdnimg.cn/2020020723293335.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>编写服务端主动发送消息给客户端接口</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api/socket.io"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"SocketIO测试-接口"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SocketIOController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> ISocketIOService socketIOService<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@PostMapping</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"/pushMessageToUser"</span><span class="token punctuation">,</span> produces <span class="token operator">=</span> Constants<span class="token punctuation">.</span>CONTENT_TYPE<span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"推送信息给指定客户端"</span><span class="token punctuation">,</span> httpMethod <span class="token operator">=</span> <span class="token string">"POST"</span><span class="token punctuation">,</span> response <span class="token operator">=</span> ApiResult<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> ApiResult <span class="token function">pushMessageToUser</span><span class="token punctuation">(</span><span class="token annotation punctuation">@RequestParam</span> String userId<span class="token punctuation">,</span> <span class="token annotation punctuation">@RequestParam</span> String msgContent<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        socketIOService<span class="token punctuation">.</span><span class="token function">pushMessageToUser</span><span class="token punctuation">(</span>userId<span class="token punctuation">,</span> msgContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> ApiResult<span class="token punctuation">.</span><span class="token function">ok</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>调用接口测试发送helloworld…<br>
+<img src="https://img-blog.csdnimg.cn/20200207233147559.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_369"></a>五、总结</h3>
+<h6><a id="socketio_371"></a>socket.io通信，服务端：</h6>
+<p>1.<code>socketIOServer.addConnectListener</code>：监听客户端连接<br>
+2. <code>socketIOServer.addDisconnectListener</code>：监听客户端断开连接<br>
+3. <code>socketIOServer.addEventListener</code>：监听客户端传输的消息<br>
+4. <code>client.sendEvent("自定义事件名称", "消息内容")</code>：服务端向指定的clien客户端发送消息<br>
+5. <code>socketIOServer.getBroadcastOperations().sendEvent("自定义事件名称", "消息内容")</code>：服务端发送广播消息给所有客户端</p>
+<h6><a id="socketio_380"></a>socket.io通信，客户端：</h6>
+<ol>
+<li><code>IO.socket(url)</code>：与指定的socket.io服务端建立连接</li>
+<li><code>socket.emit</code>：发送数据到服务端事件</li>
+<li><code>socket.on</code>： 监听服务端事件</li>
+</ol>
+<h3><a id="demo_386"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
