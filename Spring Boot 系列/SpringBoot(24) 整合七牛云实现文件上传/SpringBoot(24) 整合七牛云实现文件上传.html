@@ -1,0 +1,255 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(24) 整合七牛云实现文件上传</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p>本文将基于<code>springboot2.1.8.RELEASE</code>整合<code>七牛云</code>实现<code>文件上传</code></p>
+<blockquote>
+<p>本文参考 <a href="https://www.keppel.fun/articles/2019/02/27/1551262881214.html">https://www.keppel.fun/articles/2019/02/27/1551262881214.html</a></p>
+</blockquote>
+<h3><a id="AccessKeySecretKey_6"></a>二、准备(<code>AccessKey</code>、<code>SecretKey</code>、<code>对象储存空间名称</code>、<code>存储区域</code>、<code>访问域名</code>)</h3>
+<h4><a id="1httpsportalqiniucomAccessKeySecretKey_8"></a>1、先到<a href="https://portal.qiniu.com">七牛云官网</a>获取<code>AccessKey/SecretKey</code></h4>
+<blockquote>
+<p>温馨小提示：没有账号的可以先注册一个使用~</p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/20200304152337354.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="2_14"></a>2、在对象储存中创建一个空间，然后拿到<code>存储空间名称</code>、<code>存储区域</code>、<code>访问域名</code></h4>
+<blockquote>
+<p>温馨小提示：这里只是为了体验七牛云的文件上传功能，在访问控制处可暂时选择公开，后面是可以修改权限的，不用担心~</p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/20200304152731242.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+新建成功之后，七牛云给了一个测试域名可供使用一个月<br>
+<img src="https://img-blog.csdnimg.cn/20200304153329386.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="SpringBoot_22"></a>三、SpringBoot集成七牛云</h3>
+<h4><a id="1pomxml_24"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- https://mvnrepository.com/artifact/com.qiniu/qiniu-java-sdk --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.qiniu<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>qiniu-java-sdk<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>7.2.28<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/com.google.code.gson/gson --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.google.code.gson<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>gson<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.8.5<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_41"></a>2、<code>application.yml</code>中配置七牛云</h4>
+<pre><code class="prism language-yml"><span class="token comment"># ========================== ↓↓↓↓↓↓ 七牛云配置 ↓↓↓↓↓↓ ==========================</span>
+<span class="token key atrule">qiniu</span><span class="token punctuation">:</span>
+  <span class="token key atrule">accessKey</span><span class="token punctuation">:</span> xxx
+  <span class="token key atrule">secretKey</span><span class="token punctuation">:</span> xxx
+  <span class="token comment"># 对象储存</span>
+  <span class="token key atrule">bucket</span><span class="token punctuation">:</span> zhengqingya <span class="token comment"># 空间名称</span>
+  <span class="token key atrule">zone</span><span class="token punctuation">:</span> huadong <span class="token comment"># 存储区域</span>
+  <span class="token key atrule">domain</span><span class="token punctuation">:</span> q6nf5vyrf.bkt.clouddn.com <span class="token comment"># 访问域名</span>
+</code></pre>
+<h4><a id="3_54"></a>3、七牛云配置类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">QiniuConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${qiniu.accessKey}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String accessKey<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${qiniu.secretKey}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String secretKey<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${qiniu.zone}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String zone<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 配置空间的存储区域
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> com<span class="token punctuation">.</span>qiniu<span class="token punctuation">.</span>storage<span class="token punctuation">.</span>Configuration <span class="token function">qiNiuConfig</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">switch</span> <span class="token punctuation">(</span>zone<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">case</span> <span class="token string">"huadong"</span><span class="token operator">:</span>
+                <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">com<span class="token punctuation">.</span>qiniu<span class="token punctuation">.</span>storage<span class="token punctuation">.</span>Configuration</span><span class="token punctuation">(</span>Zone<span class="token punctuation">.</span><span class="token function">huadong</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">case</span> <span class="token string">"huabei"</span><span class="token operator">:</span>
+                <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">com<span class="token punctuation">.</span>qiniu<span class="token punctuation">.</span>storage<span class="token punctuation">.</span>Configuration</span><span class="token punctuation">(</span>Zone<span class="token punctuation">.</span><span class="token function">huabei</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">case</span> <span class="token string">"huanan"</span><span class="token operator">:</span>
+                <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">com<span class="token punctuation">.</span>qiniu<span class="token punctuation">.</span>storage<span class="token punctuation">.</span>Configuration</span><span class="token punctuation">(</span>Zone<span class="token punctuation">.</span><span class="token function">huanan</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">case</span> <span class="token string">"beimei"</span><span class="token operator">:</span>
+                <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">com<span class="token punctuation">.</span>qiniu<span class="token punctuation">.</span>storage<span class="token punctuation">.</span>Configuration</span><span class="token punctuation">(</span>Zone<span class="token punctuation">.</span><span class="token function">beimei</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">default</span><span class="token operator">:</span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">MyException</span><span class="token punctuation">(</span><span class="token string">"存储区域配置错误"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 构建一个七牛上传工具实例
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> UploadManager <span class="token function">uploadManager</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">UploadManager</span><span class="token punctuation">(</span><span class="token function">qiNiuConfig</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 认证信息实例
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> Auth <span class="token function">auth</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> Auth<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span>accessKey<span class="token punctuation">,</span> secretKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 构建七牛空间管理实例
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> BucketManager <span class="token function">bucketManager</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">BucketManager</span><span class="token punctuation">(</span><span class="token function">auth</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">qiNiuConfig</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> Gson <span class="token function">gson</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Gson</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4_120"></a>4、编写文件上传与删除方法</h4>
+<p>服务类：</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IQiniuService</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 以文件的形式上传
+     *
+     * @param file
+     * @param fileName:
+     * @return: java.lang.String
+     */</span>
+    String <span class="token function">uploadFile</span><span class="token punctuation">(</span>File file<span class="token punctuation">,</span> String fileName<span class="token punctuation">)</span> <span class="token keyword">throws</span> QiniuException<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 以流的形式上传
+     *
+     * @param inputStream
+     * @param fileName:
+     * @return: java.lang.String
+     */</span>
+    String <span class="token function">uploadFile</span><span class="token punctuation">(</span>InputStream inputStream<span class="token punctuation">,</span> String fileName<span class="token punctuation">)</span> <span class="token keyword">throws</span> QiniuException<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 删除文件
+     *
+     * @param key:
+     * @return: java.lang.String
+     */</span>
+    String <span class="token function">delete</span><span class="token punctuation">(</span>String key<span class="token punctuation">)</span> <span class="token keyword">throws</span> QiniuException<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>服务实现类：</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Service</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">QiniuServiceImpl</span> <span class="token keyword">implements</span> <span class="token class-name">IQiniuService</span><span class="token punctuation">,</span> InitializingBean <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> UploadManager uploadManager<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> BucketManager bucketManager<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> Auth auth<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${qiniu.bucket}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String bucket<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${qiniu.domain}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String domain<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 定义七牛云上传的相关策略
+     */</span>
+    <span class="token keyword">private</span> StringMap putPolicy<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> String <span class="token function">uploadFile</span><span class="token punctuation">(</span>File file<span class="token punctuation">,</span> String fileName<span class="token punctuation">)</span> <span class="token keyword">throws</span> QiniuException <span class="token punctuation">{</span>
+        Response response <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span>uploadManager<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>file<span class="token punctuation">,</span> fileName<span class="token punctuation">,</span> <span class="token function">getUploadToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> retry <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>response<span class="token punctuation">.</span><span class="token function">needRetry</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> retry <span class="token operator">&lt;</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            response <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span>uploadManager<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>file<span class="token punctuation">,</span> fileName<span class="token punctuation">,</span> <span class="token function">getUploadToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            retry<span class="token operator">++</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>response<span class="token punctuation">.</span>statusCode <span class="token operator">==</span> <span class="token number">200</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token string">"http://"</span> <span class="token operator">+</span> domain <span class="token operator">+</span> <span class="token string">"/"</span> <span class="token operator">+</span> fileName<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token string">"上传失败!"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> String <span class="token function">uploadFile</span><span class="token punctuation">(</span>InputStream inputStream<span class="token punctuation">,</span> String fileName<span class="token punctuation">)</span> <span class="token keyword">throws</span> QiniuException <span class="token punctuation">{</span>
+        Response response <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span>uploadManager<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>inputStream<span class="token punctuation">,</span> fileName<span class="token punctuation">,</span> <span class="token function">getUploadToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> null<span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> retry <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>response<span class="token punctuation">.</span><span class="token function">needRetry</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> retry <span class="token operator">&lt;</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            response <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span>uploadManager<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>inputStream<span class="token punctuation">,</span> fileName<span class="token punctuation">,</span> <span class="token function">getUploadToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> null<span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            retry<span class="token operator">++</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>response<span class="token punctuation">.</span>statusCode <span class="token operator">==</span> <span class="token number">200</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token string">"http://"</span> <span class="token operator">+</span> domain <span class="token operator">+</span> <span class="token string">"/"</span> <span class="token operator">+</span> fileName<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token string">"上传失败!"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> String <span class="token function">delete</span><span class="token punctuation">(</span>String key<span class="token punctuation">)</span> <span class="token keyword">throws</span> QiniuException <span class="token punctuation">{</span>
+        Response response <span class="token operator">=</span> bucketManager<span class="token punctuation">.</span><span class="token function">delete</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>bucket<span class="token punctuation">,</span> key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> retry <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span>response<span class="token punctuation">.</span><span class="token function">needRetry</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> retry<span class="token operator">++</span> <span class="token operator">&lt;</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            response <span class="token operator">=</span> bucketManager<span class="token punctuation">.</span><span class="token function">delete</span><span class="token punctuation">(</span>bucket<span class="token punctuation">,</span> key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> response<span class="token punctuation">.</span>statusCode <span class="token operator">==</span> <span class="token number">200</span> <span class="token operator">?</span> <span class="token string">"删除成功!"</span> <span class="token operator">:</span> <span class="token string">"删除失败!"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">afterPropertiesSet</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>putPolicy <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        putPolicy<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"returnBody"</span><span class="token punctuation">,</span> <span class="token string">"{\"key\":\"$(key)\",\"hash\":\"$(etag)\",\"bucket\":\"$(bucket)\",\"width\":$(imageInfo.width), \"height\":${imageInfo.height}}"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 获取上传凭证
+     */</span>
+    <span class="token keyword">private</span> String <span class="token function">getUploadToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span>auth<span class="token punctuation">.</span><span class="token function">uploadToken</span><span class="token punctuation">(</span>bucket<span class="token punctuation">,</span> null<span class="token punctuation">,</span> <span class="token number">3600</span><span class="token punctuation">,</span> putPolicy<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_237"></a>四、测试文件上传与删除</h3>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@RunWith</span><span class="token punctuation">(</span>SpringRunner<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@SpringBootTest</span><span class="token punctuation">(</span>classes <span class="token operator">=</span> DemoApplication<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">QiniuTest</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> IQiniuService qiniuService<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Test</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testUpload</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> QiniuException <span class="token punctuation">{</span>
+        String result <span class="token operator">=</span> qiniuService<span class="token punctuation">.</span><span class="token function">uploadFile</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span><span class="token string">"D:\\IT_zhengqing\\image\\helloworld.jpg"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"helloworld"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"访问地址： "</span> <span class="token operator">+</span> result<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Test</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testDelete</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> QiniuException <span class="token punctuation">{</span>
+        String result <span class="token operator">=</span> qiniuService<span class="token punctuation">.</span><span class="token function">delete</span><span class="token punctuation">(</span><span class="token string">"helloworld"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>result<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="demo_262"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
