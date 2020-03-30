@@ -1,0 +1,154 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(25) 整合Nacos实现配置管理、服务注册与发现</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p>本文将基于<code>springboot2.1.8.RELEASE</code>整合<code>Nacos</code>实现<code>配置管理(动态加载配置)</code>、<code>服务注册与发现</code></p>
+<blockquote>
+<p>Nacos文档: <a href="https://nacos.io/zh-cn/docs/what-is-nacos.html">https://nacos.io/zh-cn/docs/what-is-nacos.html</a></p>
+</blockquote>
+<h3><a id="DockerNacos_6"></a>二、<code>Docker</code>安装<code>Nacos</code></h3>
+<pre><code class="prism language-shell"><span class="token comment"># 单机模式运行【-e MODE=standalone】</span>
+docker run --name nacos_server -d -p 8848:8848 --restart<span class="token operator">=</span>always -e MODE<span class="token operator">=</span>standalone -v <span class="token variable">$PWD</span>/logs:/home/nacos/logs nacos/nacos-server:latest
+</code></pre>
+<p>通过 <code>IP:8848/nacos</code> 访问，默认登录账号密码：<code>nacos/nacos</code></p>
+<p>ex: <a href="http://www.zhengqingya.com:8848/nacos">www.zhengqingya.com:8848/nacos</a></p>
+<h3><a id="SpringBootNacos_18"></a>三、<code>SpringBoot</code>整合<code>Nacos</code></h3>
+<h4><a id="1pomxmlnacos_20"></a>1、<code>pom.xml</code>中<code>引入nacos</code>相关<code>依赖</code></h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- nacos 配置管理 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.alibaba.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>nacos-config-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>0.2.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- nacos 服务发现 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.alibaba.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>nacos-discovery-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>0.2.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!--nacos配置--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.alibaba.nacos<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>nacos-client<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.1.4<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationymlnacos_43"></a>2、<code>application.yml</code>中配置<code>nacos</code></h4>
+<pre><code class="prism language-yml"><span class="token key atrule">server</span><span class="token punctuation">:</span>
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">8080</span>
+
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">application</span><span class="token punctuation">:</span>
+    <span class="token key atrule">name</span><span class="token punctuation">:</span> nacos<span class="token punctuation">-</span>demo <span class="token comment"># nacos服务名</span>
+
+<span class="token comment"># ======================== ↓↓↓↓↓↓ nacos相关配置 ↓↓↓↓↓↓ ===============================</span>
+<span class="token key atrule">nacos</span><span class="token punctuation">:</span>
+  <span class="token comment"># 配置管理</span>
+  <span class="token key atrule">config</span><span class="token punctuation">:</span>
+    <span class="token key atrule">server-addr</span><span class="token punctuation">:</span> www.zhengqingya.com<span class="token punctuation">:</span><span class="token number">8848 </span><span class="token comment"># TODO 这里换成自己的ip加端口</span>
+  <span class="token comment"># 服务注册与发现</span>
+  <span class="token key atrule">discovery</span><span class="token punctuation">:</span>
+    <span class="token key atrule">server-addr</span><span class="token punctuation">:</span> $<span class="token punctuation">{</span>nacos.config.server<span class="token punctuation">-</span>addr<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_63"></a>3、配置管理</h4>
+<h6><a id="NacosPropertySource_65"></a>①启动类上添加<code>@NacosPropertySource</code></h6>
+<pre><code class="prism language-java"><span class="token comment">// 使用 @NacosPropertySource 加载 `dataId` 为 `application.yml` 的配置源，并开启自动更新</span>
+<span class="token annotation punctuation">@NacosPropertySource</span><span class="token punctuation">(</span>dataId <span class="token operator">=</span> <span class="token string">"application.yml"</span><span class="token punctuation">,</span> autoRefreshed <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@SpringBootApplication</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DemoApplication</span> <span class="token punctuation">{</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        SpringApplication<span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span>DemoApplication<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="Controller_78"></a>②新增动态加载配置测试Controller</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@NacosValue</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"${helloworld:HelloWorld}"</span><span class="token punctuation">,</span> autoRefreshed <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String hello<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/hello"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> String <span class="token function">hello</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> hello<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="nacos_95"></a>③nacos服务端新增配置</h6>
+<p><img src="https://img-blog.csdnimg.cn/20200330213802649.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200330214021535.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="__100"></a>④ 启动项目，修改配置，刷新页面</h6>
+<p>启动项目访问<a href="http://127.0.0.1:8080/hello">http://127.0.0.1:8080/hello</a>，修改nacos服务端配置参数，然后刷新页面，测试是否动态加载配置~<br>
+<img src="https://img-blog.csdnimg.cn/20200330214256512.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="4_104"></a>4、服务注册</h4>
+<h6><a id="Nacos_Api__106"></a>①Nacos Api 直接注册服务方式</h6>
+<pre><code class="prism language-shell"><span class="token function">curl</span> -X PUT <span class="token string">'http://www.zhengqingya.com:8848/nacos/v1/ns/instance?serviceName=example&amp;ip=127.0.0.1&amp;port=8080'</span>`
+</code></pre>
+<h6><a id="Java_112"></a>②Java</h6>
+<p>通过<code>@PostConstruct</code>来实现注册服务</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RegisterNacos</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@NacosInjected</span>
+    <span class="token keyword">private</span> NamingService namingService<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${server.port}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> serverPort<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${spring.application.name}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String applicationName<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 注册服务
+     *
+     * @throws NacosException
+     */</span>
+    <span class="token annotation punctuation">@PostConstruct</span> <span class="token comment">// 修饰的方法会在服务器加载Servlet的时候运行，并且只会被服务器执行一次！！！</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">registerInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> NacosException <span class="token punctuation">{</span>
+        namingService<span class="token punctuation">.</span><span class="token function">registerInstance</span><span class="token punctuation">(</span>applicationName<span class="token punctuation">,</span> <span class="token string">"127.0.0.1"</span><span class="token punctuation">,</span> serverPort<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h6><a id="_142"></a>③查看服务</h6>
+<p><img src="https://img-blog.csdnimg.cn/20200330215513579.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="5_145"></a>5、服务发现</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"discovery"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DiscoveryController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@NacosInjected</span>
+    <span class="token keyword">private</span> NamingService namingService<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 获取实例
+     *
+     * @param serviceName: 服务名
+     * @return
+     * @throws NacosException
+     */</span>
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/getInstance"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> List<span class="token generics function"><span class="token punctuation">&lt;</span>Instance<span class="token punctuation">&gt;</span></span> <span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token annotation punctuation">@RequestParam</span> String serviceName<span class="token punctuation">)</span> <span class="token keyword">throws</span> NacosException <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> namingService<span class="token punctuation">.</span><span class="token function">getAllInstances</span><span class="token punctuation">(</span>serviceName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>访问<a href="http://127.0.0.1:8080/discovery/getInstance?serviceName=nacos-demo">http://127.0.0.1:8080/discovery/getInstance?serviceName=nacos-demo</a></p>
+<p><img src="https://img-blog.csdnimg.cn/20200330215921262.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<hr>
+<h3><a id="demo_178"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
