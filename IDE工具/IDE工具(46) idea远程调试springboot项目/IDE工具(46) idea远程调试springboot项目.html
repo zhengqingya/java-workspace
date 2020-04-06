@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDE工具(46) idea远程调试springboot项目</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<h6><a id="_2"></a>基本环境</h6>
+<ol>
+<li>IntelliJ IDEA 2019.3</li>
+<li>SpringBoot项目</li>
+<li>Docker部署运行项目</li>
+</ol>
+<h3><a id="dockerspringboot_8"></a>二、docker部署运行springboot项目</h3>
+<p>注：<code>address</code> 是开启的远程端口，本地会通过监听这个端口来实现远程调试！！！</p>
+<pre><code class="prism language-shell">docker run -d -p 8080:8080 -p 5005:5005 --name app \
+-v /IT_zhengqing/code_test/app.jar:/tmp/app.jar \
+java:latest \
+java -agentlib:jdwp<span class="token operator">=</span>transport<span class="token operator">=</span>dt_socket,server<span class="token operator">=</span>y,suspend<span class="token operator">=</span>n,address<span class="token operator">=</span>5005 -jar /tmp/app.jar
+</code></pre>
+<h3><a id="idea_19"></a>三、通过idea在本地进行远程调试</h3>
+<h6><a id="_Remote_21"></a>① 选择<code>Remote</code></h6>
+<p><img src="https://img-blog.csdnimg.cn/20200406155350535.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="_HostPort_25"></a>② 填写项目所运行的远程主机<code>Host</code>和端口<code>Port</code>，其它参数默认即可~</h6>
+<p>注：这里端口是远程项目运行时所配置的address中的端口哦！！！</p>
+<p><img src="https://img-blog.csdnimg.cn/20200406155552761.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="__31"></a>③ 启动本地调试</h6>
+<p><img src="https://img-blog.csdnimg.cn/20200406155846278.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="_debug_35"></a>④ 本地debug测试</h6>
+<p>在本地打个断点，然后访问远程api接口 ex: <a href="http://zhengqingya.com:8080/hello">zhengqingya.com:8080/hello</a> ，可以看到本地idea中打的断点生效 ~</p>
+<p><img src="https://img-blog.csdnimg.cn/20200406160234980.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<hr>
+<h3><a id="demo_45"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
