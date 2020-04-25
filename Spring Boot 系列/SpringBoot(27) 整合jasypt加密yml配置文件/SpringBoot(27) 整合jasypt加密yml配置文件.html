@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(27) 整合jasypt加密yml配置文件</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<h4><a id="1_2"></a>1、问题</h4>
+<p>通常项目配置文件中的账号信息如下，都是直接暴露出来的，如果源码不小心泄露将会引起一系列安全问题…<br>
+<img src="https://img-blog.csdnimg.cn/20200425153614404.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="2_7"></a>2、解决</h4>
+<ol>
+<li>通过<code>配置中心</code>动态加载配置文件</li>
+<li>通过<code>jasypt</code>加密组件进行<code>加密</code>/<code>解密</code></li>
+</ol>
+<h3><a id="springbootjasypt_yml_12"></a>二、<code>springboot</code>整合<code>jasypt</code> <code>加密</code>yml<code>配置文件</code></h3>
+<h4><a id="1pomxml_14"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- jasypt加密组件: https://mvnrepository.com/artifact/com.github.ulisesbocchio/jasypt-spring-boot-starter --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.github.ulisesbocchio<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>jasypt-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.1.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_25"></a>2、<code>application.yml</code>中配置加密密钥</h4>
+<pre><code class="prism language-yml"><span class="token comment"># 配置加密密钥</span>
+<span class="token key atrule">jasypt</span><span class="token punctuation">:</span>
+  <span class="token key atrule">encryptor</span><span class="token punctuation">:</span>
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> zhengqing <span class="token comment"># TODO 这里密钥修改为自己的！！！</span>
+</code></pre>
+<h4><a id="3jasypt_34"></a>3、jasypt加密/解密测试类</h4>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">JasyptTest</span> <span class="token punctuation">{</span>
+    <span class="token annotation punctuation">@Test</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 对应配置文件中配置的加密密钥</span>
+        System<span class="token punctuation">.</span><span class="token function">setProperty</span><span class="token punctuation">(</span><span class="token string">"jasypt.encryptor.password"</span><span class="token punctuation">,</span> <span class="token string">"zhengqing"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        StringEncryptor stringEncryptor <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">DefaultLazyEncryptor</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">StandardEnvironment</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"加密： "</span> <span class="token operator">+</span> stringEncryptor<span class="token punctuation">.</span><span class="token function">encrypt</span><span class="token punctuation">(</span><span class="token string">"root"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"解密： "</span> <span class="token operator">+</span> stringEncryptor<span class="token punctuation">.</span><span class="token function">decrypt</span><span class="token punctuation">(</span><span class="token string">"N/+f2B9SznK4MUDSp24Upw=="</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/20200425154716944.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="4yml_51"></a>4、修改yml配置文件账号信息为加密方式</h4>
+<p>ex:  <code>root</code> -&gt; <code>ENC(N/+f2B9SznK4MUDSp24Upw==)</code></p>
+<pre><code class="prism language-yml"><span class="token key atrule">server</span><span class="token punctuation">:</span>
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">80</span>
+
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">application</span><span class="token punctuation">:</span>
+    <span class="token key atrule">name</span><span class="token punctuation">:</span> demo
+
+  <span class="token comment"># =========================== ↓↓↓↓↓↓ 配置数据源 ↓↓↓↓↓↓ ===========================</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3306/demo<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode</span>=true<span class="token important">&amp;characterEncoding</span>=UTF8<span class="token important">&amp;zeroDateTimeBehavior</span>=convertToNull<span class="token important">&amp;useSSL</span>=false <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+    <span class="token key atrule">name</span><span class="token punctuation">:</span> demo
+    <span class="token key atrule">username</span><span class="token punctuation">:</span> ENC(N/+f2B9SznK4MUDSp24Upw==)
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> ENC(N/+f2B9SznK4MUDSp24Upw==)
+    <span class="token key atrule">platform</span><span class="token punctuation">:</span> mysql
+    <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+
+<span class="token comment"># 配置加密密钥</span>
+<span class="token key atrule">jasypt</span><span class="token punctuation">:</span>
+  <span class="token key atrule">encryptor</span><span class="token punctuation">:</span>
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> zhengqing <span class="token comment"># TODO 这里密钥修改为自己的！！！</span>
+</code></pre>
+<h3><a id="_78"></a>三、进阶</h3>
+<h4><a id="1_80"></a>1、自定义加密标识</h4>
+<p>jasypt默认使用<code>ENC()</code>来标识加密，加载配置的时候检测到<code>ENC()</code>即会自动解密</p>
+<p>下面我们来尝试自定义一个加密标识，<code>JASYPT_ZQ()</code></p>
+<p><code>application.yml</code>中新增如下配置：</p>
+<pre><code class="prism language-yml"><span class="token key atrule">jasypt</span><span class="token punctuation">:</span>
+  <span class="token key atrule">encryptor</span><span class="token punctuation">:</span>
+    <span class="token key atrule">property</span><span class="token punctuation">:</span>
+      <span class="token key atrule">prefix</span><span class="token punctuation">:</span> JASYPT_ZQ(   <span class="token comment"># TODO 加密前缀</span>
+      <span class="token key atrule">suffix</span><span class="token punctuation">:</span> )            <span class="token comment"># TODO 加密后缀</span>
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> zhengqing    <span class="token comment"># TODO 加密密钥</span>
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/20200425160246810.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="2_99"></a>2、将<code>加密密钥</code>作为<code>启动运行参数</code></h4>
+<p>以上我们的密钥也是保存在配置文件中的，一旦密钥泄露，信息被解密，安全隐患依然存在！<br>
+因此我们可以通过将密钥设置为程序启动时的参数来避免！！！<br>
+<img src="https://img-blog.csdnimg.cn/20200425162345414.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<pre><code class="prism language-java">java <span class="token operator">-</span>Djasypt<span class="token punctuation">.</span>encryptor<span class="token punctuation">.</span>password<span class="token operator">=</span>zhengqing <span class="token operator">-</span>jar app<span class="token punctuation">.</span>jar
+</code></pre>
+<p>idea中如下配置运行：<br>
+<img src="https://img-blog.csdnimg.cn/2020042516180075.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="3_114"></a>3、自定义加密规则…</h4>
+<p>网上很多资源，可自行了解</p>
+<p>参考： <a href="https://mp.weixin.qq.com/s?__biz=MzU4ODI1MjA3NQ==&amp;mid=2247485657&amp;idx=1&amp;sn=90c133b9a72a24ee4fd1c26daada4526&amp;chksm=fddede1dcaa9570b21743ba8bb6e7664b6e7cbe19e22428e3b0c39d510f4d39e8c6e97979452&amp;mpshare=1&amp;scene=1&amp;srcid=&amp;sharer_sharetime=1587779354864&amp;sharer_shareid=936076bf8d5bee83e89fd7e769b5c6db&amp;key=f507b9b0259644edd1f930974d4889b0f82cb18afcc994eba182eaaaa6f508cf83e90a83181f96c8f3d48c33bbc9a1c4c4ff1595199e910bab8600804a8ed5b46565f278480da81da8f454cfc2d61879&amp;ascene=1&amp;uin=MTg4MzA0MzMxNA==&amp;devicetype=Windows%2010%20x64&amp;version=62090070&amp;lang=zh_CN&amp;exportkey=AR8HvbeJI12kmZ%2buYybssq8=&amp;pass_ticket=pn0NjMXu38wvdRXcouFgoGaFNJda4reHhGX6y6WRvmkqxyGFVPO7G59P1tsfao3r">数据库密码配置项都不加密？心也太大了！</a></p>
+<hr>
+<h3><a id="demo_125"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
