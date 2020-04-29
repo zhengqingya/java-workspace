@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace:命名空间(配置bean的全路径Mapper)  注意:一个项目中命名空间必须唯一 -->
+<mapper namespace="com.zhengqing.mybatis.mapper.UserMapper"> <!--全限定mapper名-->
+
+  <!-- 写sql:注意sql语句要和Dao层接口方法对应！ -->
+
+  <!-- User findOne(Long id);   select * from user where id =3
+    select:标签名字:
+    id:这个语句的唯一标识;必须和接口的方法名字一样;
+    resultType:返回值类型:如果接口的方法有返回值,就需要这个属性:应该一致
+    #{id}:参数的接收
+
+    如何调用sql？？？  :  全限定名（namespace+id）  -》 exf： com.zhengqing.mybatis.mapper.UserMapper.findOne
+  -->
+  <select id="findOne" resultType="com.zhengqing.mybatis.entity.User">
+        select * from t_user where id =#{id}
+    </select>
+
+</mapper>

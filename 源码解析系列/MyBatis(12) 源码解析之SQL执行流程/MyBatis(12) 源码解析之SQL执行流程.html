@@ -1,0 +1,119 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyBatis(12) 源码解析之SQL执行流程</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<h4><a id="_2"></a>资料</h4>
+<ol>
+<li>mybatis文档：<a href="https://mybatis.org/mybatis-3/index.html">https://mybatis.org/mybatis-3/index.html</a></li>
+<li>mybatis源码：<a href="https://github.com/mybatis/mybatis-3">https://github.com/mybatis/mybatis-3</a></li>
+</ol>
+<h3><a id="mybatis_7"></a>二、mybatis是什么？</h3>
+<ol>
+<li>一款优秀的<code>持久层框架</code>，支持<code>自定义SQL</code>、<code>存储过程</code>以及<code>高级映射</code>。</li>
+<li><code>免除</code>了传统的<code>JDBC代码</code>以及<code>设置参数</code>和<code>获取结果集</code>的工作。</li>
+<li>可以通过<code>XML</code>/<code>注解</code>方式来<code>配置和映射</code> <code>原始类型</code>、<code>接口</code>和<code>Java POJO</code>为数据库中的记录。</li>
+</ol>
+<p>mybatis和hibernate都属于<code>ORM</code>框架</p>
+<h6><a id="ORM_15"></a>ORM是什么？</h6>
+<p>ORM<code>对象关系映射</code>: <code>用于实现面向对象编程语言里不同类型系统数据之间的转换</code>，解决数据库与程序间的异构性</p>
+<p>ex: <code>username</code>字段在数据库中为<code>VARCHAR</code>类型，而在Java对象中为<code>String</code>类型<br>
+<img src="https://img-blog.csdnimg.cn/2020042921411580.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_21"></a>三、入门环境准备</h3>
+<p>这里可直接参考mybatis文档：<a href="https://mybatis.org/mybatis-3/getting-started.html">https://mybatis.org/mybatis-3/getting-started.html</a></p>
+<p>小编这里使用的是mybatis源码环境，即 将源码clone下来根据文档入门实现了一个简单的sql查询</p>
+<blockquote>
+<p>详细代码可自行参考： <a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/2020042918340219.png" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200429162148199.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200429162634688.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<hr>
+<p>下面将通过debug一步一步探索源码，主要将围绕如图3大模块来debug</p>
+<p><img src="https://img-blog.csdnimg.cn/20200429220854645.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="mybatis_42"></a>四、mybatis获取数据源</h3>
+<p><img src="https://img-blog.csdnimg.cn/20200429164356700.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200429170249269.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+这里的root即拿到的配置文件中的内容，然后一个一个去解析加载数据<br>
+<img src="https://img-blog.csdnimg.cn/20200429170427331.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<code>propertiesElement(root.evalNode("properties"))</code>：加载<code>jdbc.properties</code>配置文件中数据<br>
+<img src="https://img-blog.csdnimg.cn/20200429172227562.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+执行完，到<code>environmentsElement(root.evalNode("environments"))</code>方法处，即已经拿到我们配置文件的数据源信息<br>
+<img src="https://img-blog.csdnimg.cn/20200429173047931.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+然后进入<code>dataSourceElement(child.evalNode("dataSource"))</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429175321579.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+再进入<code>resolveClass</code>，发现通过<code>pooled</code>这个key可以拿到<code>org.apache.ibatis.datasource.pooled.PooledDataSourceFactory</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429175637650.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+回来我们可以发现获取到的这个<code>pooled</code>值value，也就是<code>org.apache.ibatis.datasource.pooled.PooledDataSourceFactory</code>Class类再newInstance拿到<code>DataSourceFactory</code>这么一个实例</p>
+<pre><code class="prism language-java">DataSourceFactory factory <span class="token operator">=</span> <span class="token punctuation">(</span>DataSourceFactory<span class="token punctuation">)</span> <span class="token function">resolveClass</span><span class="token punctuation">(</span>type<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getDeclaredConstructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">newInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>最终返回，即发现已经拿到了我们的<code>dataSource</code>数据库源，然后通过Builder设计模式赋值给<code>Environment</code>，存放到<code>org.apache.ibatis.session.Configuration#environment</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429180604933.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="mybatissql_65"></a>五、mybatis获取sql执行语句</h3>
+<p>首先要明白我们的sql语句是写在mapper.xml中，然后是在<code>mybatis-config.xml</code>中解析，因此debug 查看<code>org.apache.ibatis.builder.xml.XMLConfigBuilder#parseConfiguration</code> 方法中的 <code>mapperElement(root.evalNode("mappers"))</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429184308964.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+这里因为只有<code>resource</code>，因此走如下断点处方式解析mapper<br>
+<img src="https://img-blog.csdnimg.cn/20200429185254187.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+进入<code>mapperParser.parse()</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429191254362.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+这里因此我们的sql是select语句，因此直接进入<code>buildStatementFromContext(context.evalNodes("select|insert|update|delete"))</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429192141656.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+注意此时list中的就是我们mapper中的sql语句<br>
+<img src="https://img-blog.csdnimg.cn/20200429192418302.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+然后进入<code>statementParser.parseStatementNode()</code>看看mybatis拿到sql内容之后又是怎么做的呢</p>
+<p>可以看见mybatis是将<code>context</code>中的sql内容一个一个解析成临时的局部变量<br>
+<img src="https://img-blog.csdnimg.cn/20200429192913605.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+再走到下面，发现解析的变量是在这里被使用，因此进入<code>builderAssistant.addMappedStatement(...)</code>方法<br>
+<img src="https://img-blog.csdnimg.cn/20200429193221801.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+最终可以看见这些变量是存到了<code>MappedStatement</code>类中，然后传给<code>org.apache.ibatis.session.Configuration#mappedStatements</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429194330443.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="mybatis_86"></a>六、mybatis操作数据库</h3>
+<p><img src="https://img-blog.csdnimg.cn/20200429203246788.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+进入<code>configuration.newExecutor(tx, execType)</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429204000427.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+这里可以看见默认返回一个<code>SimpleExecutor</code>简单执行器，以及我们的mybatis在这里默认开启一级缓存<br>
+<img src="https://img-blog.csdnimg.cn/2020042920424252.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+执行完这里会返回一个<code>DefaultSqlSession</code><br>
+<img src="https://img-blog.csdnimg.cn/202004292045432.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+然后调用<code>selectOne</code>方法<br>
+<img src="https://img-blog.csdnimg.cn/20200429204718976.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+进入<code>selectList</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429204904762.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+这里<code>ms</code>中含之前获取的sql执行语句，然后进入<code>executor.query</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429205644862.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/2020042921043951.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200429210628300.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+这里可以看见<code>prepareStatement</code>方法中拿到我们的<code>connection</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429211531274.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+然后进入<code>handler.query(stmt, resultHandler)</code>可以看到拿到了<code>PreparedStatement</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429212329985.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+然后进入<code>resultSetHandler.handleResultSets(ps)</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429213018892.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+进入<code>getFirstResultSet(stmt)</code>方法<br>
+<img src="https://img-blog.csdnimg.cn/20200429213112349.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+进入<code>ResultSetWrapper</code><br>
+<img src="https://img-blog.csdnimg.cn/20200429213328776.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+到这里我们就可以明白什么是ORM了！！！</p>
+<p><code>用于实现面向对象编程语言里不同类型系统数据之间的转换</code></p>
+<p><code>username</code>字段在数据库中为<code>VARCHAR</code>类型，而在Java对象中为<code>String</code>类型<br>
+<img src="https://img-blog.csdnimg.cn/2020042921411580.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+最后回到<code>org.apache.ibatis.executor.BaseExecutor#queryFromDatabase</code>方法处，<code>list</code>中的数据也就是最后sql查询到的结果<br>
+<img src="https://img-blog.csdnimg.cn/2020042921523318.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+debug结束后，最终完美拿到了我们的数据<br>
+<img src="https://img-blog.csdnimg.cn/2020042921560443.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+现在再来看看这幅图，应该会更容易理解了<br>
+<img src="https://img-blog.csdnimg.cn/20200429221006595.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="mybatis_126"></a>七、mybatis执行流程</h3>
+<p><img src="https://img-blog.csdnimg.cn/20200429221516123.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+参考：<a href="https://www.jianshu.com/p/6b957c494fa8">MyBatis体系结构源码解读</a></p>
+</div>
+</body>
+
+</html>
