@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(28) 整合JustAuth实现第三方登录</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p><code>JustAuth</code>：一个第三方授权登录的工具类库 <a href="https://gitee.com/yadong.zhang/JustAuth">https://gitee.com/yadong.zhang/JustAuth</a></p>
+<h3><a id="_SpringBootJustAuth__4"></a>二、 基于SpringBoot整合JustAuth 三步曲</h3>
+<h4><a id="1pomxml_6"></a>1、<code>pom.xml</code>中引入相关依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- reids --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-data-redis<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- 对象池，使用redis时必须引入 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.apache.commons<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>commons-pool2<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- oauth工具类 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.xkcoding<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>justauth-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.1.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- lombok插件 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.projectlombok<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>lombok<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>optional</span><span class="token punctuation">&gt;</span></span>true<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>optional</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/cn.hutool/hutool-all --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>cn.hutool<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>hutool-all<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>5.3.8<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/com.google.guava/guava --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.google.guava<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>guava<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>29.0-jre<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_49"></a>2、<code>application.yml</code>中相关配置</h4>
+<pre><code class="prism language-yml"><span class="token key atrule">server</span><span class="token punctuation">:</span>
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">80</span>
+  <span class="token key atrule">servlet</span><span class="token punctuation">:</span>
+    <span class="token key atrule">context-path</span><span class="token punctuation">:</span> /demo
+
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">application</span><span class="token punctuation">:</span>
+    <span class="token key atrule">name</span><span class="token punctuation">:</span> demo
+
+  <span class="token comment"># ======================== ↓↓↓↓↓↓ redis相关配置 ↓↓↓↓↓↓ ===============================</span>
+  <span class="token key atrule">redis</span><span class="token punctuation">:</span>
+    <span class="token comment"># Redis服务器地址</span>
+    <span class="token key atrule">host</span><span class="token punctuation">:</span> 127.0.0.1
+    <span class="token comment"># Redis服务器连接端口</span>
+    <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">6379</span>
+    <span class="token comment"># 连接超时时间（毫秒</span>
+    <span class="token key atrule">timeout</span><span class="token punctuation">:</span> 10000ms
+    <span class="token comment"># Redis服务器连接密码（默认为空）</span>
+    <span class="token key atrule">password</span><span class="token punctuation">:</span>
+    <span class="token comment"># Redis数据库索引（默认为0）</span>
+    <span class="token key atrule">database</span><span class="token punctuation">:</span> <span class="token number">1</span>
+    <span class="token key atrule">lettuce</span><span class="token punctuation">:</span>
+      <span class="token key atrule">pool</span><span class="token punctuation">:</span>
+        <span class="token comment"># 连接池最大连接数（使用负值表示没有限制） 默认 8</span>
+        <span class="token key atrule">max-active</span><span class="token punctuation">:</span> <span class="token number">8</span>
+        <span class="token comment"># 连接池最大阻塞等待时间（使用负值表示没有限制） 默认 -1</span>
+        <span class="token key atrule">max-wait</span><span class="token punctuation">:</span> <span class="token punctuation">-</span>1ms
+        <span class="token comment"># 连接池中的最大空闲连接 默认 8</span>
+        <span class="token key atrule">max-idle</span><span class="token punctuation">:</span> <span class="token number">8</span>
+        <span class="token comment"># 连接池中的最小空闲连接 默认 0</span>
+        <span class="token key atrule">min-idle</span><span class="token punctuation">:</span> <span class="token number">0</span>
+      <span class="token key atrule">cache</span><span class="token punctuation">:</span>
+        <span class="token comment"># 一般来说是不用配置的，Spring Cache 会根据依赖的包自行装配</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> redis
+
+<span class="token key atrule">justauth</span><span class="token punctuation">:</span>
+  <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">type</span><span class="token punctuation">:</span>
+    <span class="token key atrule">github</span><span class="token punctuation">:</span>
+      <span class="token key atrule">client-id</span><span class="token punctuation">:</span> 101d************<span class="token important">*8b3a</span>
+      <span class="token key atrule">client-secret</span><span class="token punctuation">:</span> 58e************************<span class="token important">*5edd</span>
+      <span class="token key atrule">redirect-uri</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//127.0.0.1/demo/oauth/github/callback
+    <span class="token key atrule">qq</span><span class="token punctuation">:</span>
+      <span class="token key atrule">client-id</span><span class="token punctuation">:</span> 10*****<span class="token important">*85</span>
+      <span class="token key atrule">client-secret</span><span class="token punctuation">:</span> 1f7d***********************<span class="token important">*d629e</span>
+      <span class="token key atrule">redirect-uri</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//127.0.0.1/demo/oauth/qq/callback
+    <span class="token key atrule">wechat</span><span class="token punctuation">:</span>
+      <span class="token key atrule">client-id</span><span class="token punctuation">:</span> wxdcb*****<span class="token important">*4ff4</span>
+      <span class="token key atrule">client-secret</span><span class="token punctuation">:</span> b4e9dc***********************<span class="token important">*a08ed6d</span>
+      <span class="token key atrule">redirect-uri</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//127.0.0.1/demo/oauth/wechat/callback
+    <span class="token key atrule">google</span><span class="token punctuation">:</span>
+      <span class="token key atrule">client-id</span><span class="token punctuation">:</span> 716*****<span class="token important">*17</span><span class="token punctuation">-</span>6db*****<span class="token important">*vh</span>*****<span class="token important">*ttj320i</span>*****<span class="token important">*userco</span>*****<span class="token important">*t</span>.com
+      <span class="token key atrule">client-secret</span><span class="token punctuation">:</span> 9IBorn***********<span class="token important">*7</span><span class="token punctuation">-</span>E
+      <span class="token key atrule">redirect-uri</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//127.0.0.1/demo/oauth/google/callback
+    <span class="token key atrule">microsoft</span><span class="token punctuation">:</span>
+      <span class="token key atrule">client-id</span><span class="token punctuation">:</span> 7bdce8*****************<span class="token important">*e194ad76c1b</span>
+      <span class="token key atrule">client-secret</span><span class="token punctuation">:</span> Iu0zZ4***********************<span class="token important">*tl9PWan_</span>.
+      <span class="token key atrule">redirect-uri</span><span class="token punctuation">:</span> https<span class="token punctuation">:</span>//127.0.0.1/demo/oauth/microsoft/callback
+    <span class="token key atrule">mi</span><span class="token punctuation">:</span>
+      <span class="token key atrule">client-id</span><span class="token punctuation">:</span> 288***********<span class="token important">*2994</span>
+      <span class="token key atrule">client-secret</span><span class="token punctuation">:</span> nFeTt89************************==
+      <span class="token key atrule">redirect-uri</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//127.0.0.1/demo/oauth/mi/callback
+    <span class="token key atrule">wechat_enterprise</span><span class="token punctuation">:</span>
+      <span class="token key atrule">client-id</span><span class="token punctuation">:</span> ww58*****<span class="token important">*f3</span>***********<span class="token important">*fbc</span>
+      <span class="token key atrule">client-secret</span><span class="token punctuation">:</span> 8G6PCr00j***********************<span class="token important">*rgk</span>***********<span class="token important">*AyzaPc78</span>
+      <span class="token key atrule">redirect-uri</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//127.0.0.1/demo/oauth/wechat_enterprise/callback
+      <span class="token key atrule">agent-id</span><span class="token punctuation">:</span> 1******<span class="token important">*2</span>
+  <span class="token key atrule">cache</span><span class="token punctuation">:</span>
+    <span class="token key atrule">type</span><span class="token punctuation">:</span> redis
+    <span class="token key atrule">prefix</span><span class="token punctuation">:</span> <span class="token string">'SOCIAL::STATE::'</span>
+    <span class="token key atrule">timeout</span><span class="token punctuation">:</span> 1h
+</code></pre>
+<h4><a id="3Controller_125"></a>3、编写第三方登录Controller类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/oauth"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@RequiredArgsConstructor</span><span class="token punctuation">(</span>onConstructor_ <span class="token operator">=</span> <span class="token annotation punctuation">@Autowired</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">OauthController</span> <span class="token punctuation">{</span>
+
+  <span class="token keyword">private</span> <span class="token keyword">final</span> AuthRequestFactory factory<span class="token punctuation">;</span>
+
+  <span class="token comment">/**
+   * 登录类型
+   */</span>
+  <span class="token annotation punctuation">@GetMapping</span>
+  <span class="token keyword">public</span> Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span> <span class="token function">loginType</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    List<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> oauthList <span class="token operator">=</span> factory<span class="token punctuation">.</span><span class="token function">oauthList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> oauthList<span class="token punctuation">.</span><span class="token function">stream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">collect</span><span class="token punctuation">(</span>Collectors
+        <span class="token punctuation">.</span><span class="token function">toMap</span><span class="token punctuation">(</span>oauth <span class="token operator">-</span><span class="token operator">&gt;</span> oauth<span class="token punctuation">.</span><span class="token function">toLowerCase</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">"登录"</span><span class="token punctuation">,</span>
+            oauth <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token string">"http://127.0.0.1/demo/oauth/login/"</span> <span class="token operator">+</span> oauth<span class="token punctuation">.</span><span class="token function">toLowerCase</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token comment">/**
+   * 登录
+   *
+   * @param oauthType 第三方登录类型
+   * @param response  response
+   * @throws IOException
+   */</span>
+  <span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/login/{oauthType}"</span><span class="token punctuation">)</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">renderAuth</span><span class="token punctuation">(</span><span class="token annotation punctuation">@PathVariable</span> String oauthType<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span>
+      <span class="token keyword">throws</span> IOException <span class="token punctuation">{</span>
+    AuthRequest authRequest <span class="token operator">=</span> factory<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token function">getAuthSource</span><span class="token punctuation">(</span>oauthType<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    response<span class="token punctuation">.</span><span class="token function">sendRedirect</span><span class="token punctuation">(</span>authRequest<span class="token punctuation">.</span><span class="token function">authorize</span><span class="token punctuation">(</span>oauthType <span class="token operator">+</span> <span class="token string">"::"</span> <span class="token operator">+</span> AuthStateUtils<span class="token punctuation">.</span><span class="token function">createState</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token comment">/**
+   * 登录成功后的回调
+   *
+   * @param oauthType 第三方登录类型
+   * @param callback  携带返回的信息
+   * @return 登录成功后的信息
+   */</span>
+  <span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/{oauthType}/callback"</span><span class="token punctuation">)</span>
+  <span class="token keyword">public</span> AuthResponse <span class="token function">login</span><span class="token punctuation">(</span><span class="token annotation punctuation">@PathVariable</span> String oauthType<span class="token punctuation">,</span> AuthCallback callback<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    AuthRequest authRequest <span class="token operator">=</span> factory<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token function">getAuthSource</span><span class="token punctuation">(</span>oauthType<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    AuthResponse response <span class="token operator">=</span> authRequest<span class="token punctuation">.</span><span class="token function">login</span><span class="token punctuation">(</span>callback<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"【response】= {}"</span><span class="token punctuation">,</span> JSONUtil<span class="token punctuation">.</span><span class="token function">toJsonStr</span><span class="token punctuation">(</span>response<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> response<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">private</span> AuthSource <span class="token function">getAuthSource</span><span class="token punctuation">(</span>String type<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>StrUtil<span class="token punctuation">.</span><span class="token function">isNotBlank</span><span class="token punctuation">(</span>type<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> AuthSource<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>type<span class="token punctuation">.</span><span class="token function">toUpperCase</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+      <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">"不支持的类型"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_187"></a>三、测试登录</h3>
+<p>运行项目后访问： <a href="http://127.0.0.1/demo/oauth">http://127.0.0.1/demo/oauth</a><br>
+<img src="https://img-blog.csdnimg.cn/20200701104506663.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+举例点击github登录会跳转进入授权页面<br>
+<img src="https://img-blog.csdnimg.cn/20200701104656163.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+授权成功后就会跳转到我们在<code>application.yml</code>中配置的回调地址<br>
+<img src="https://img-blog.csdnimg.cn/20200701104931383.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<hr>
+<h3><a id="demo_198"></a>本文案例demo项目地址</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
