@@ -123,6 +123,18 @@ justauth:
     timeout: 1h
 ```
 
+###### ex: 获取GitHub的`Client ID`和`Client Secret`
+
+> 其它平台自行百度了解，本文只是单纯记录一个实现方式~
+
+1. 申请地址：[https://github.com/settings/developers](https://github.com/settings/developers)
+2. 点击`New OAuth App`
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702090432881.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702090543945.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+3. 申请之后点击应用我们就可以拿到自己所需的了
+  ![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702090847450.png)
+  ![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702091005237.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+
 #### 3、编写第三方登录Controller类
 
 ```java

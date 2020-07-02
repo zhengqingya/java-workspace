@@ -125,7 +125,20 @@
     <span class="token key atrule">prefix</span><span class="token punctuation">:</span> <span class="token string">'SOCIAL::STATE::'</span>
     <span class="token key atrule">timeout</span><span class="token punctuation">:</span> 1h
 </code></pre>
-<h4><a id="3Controller_125"></a>3、编写第三方登录Controller类</h4>
+<h6><a id="ex_GitHubClient_IDClient_Secret_125"></a>ex: 获取GitHub的<code>Client ID</code>和<code>Client Secret</code></h6>
+<blockquote>
+<p>其它平台自行百度了解，本文只是单纯记录一个实现方式~</p>
+</blockquote>
+<ol>
+<li>申请地址：<a href="https://github.com/settings/developers">https://github.com/settings/developers</a></li>
+<li>点击<code>New OAuth App</code><br>
+<img src="https://img-blog.csdnimg.cn/20200702090432881.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200702090543945.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
+<li>申请之后点击应用我们就可以拿到自己所需的了<br>
+<img src="https://img-blog.csdnimg.cn/20200702090847450.png" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200702091005237.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
+</ol>
+<h4><a id="3Controller_137"></a>3、编写第三方登录Controller类</h4>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
 <span class="token annotation punctuation">@RestController</span>
 <span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/oauth"</span><span class="token punctuation">)</span>
@@ -184,7 +197,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h3><a id="_187"></a>三、测试登录</h3>
+<h3><a id="_199"></a>三、测试登录</h3>
 <p>运行项目后访问： <a href="http://127.0.0.1/demo/oauth">http://127.0.0.1/demo/oauth</a><br>
 <img src="https://img-blog.csdnimg.cn/20200701104506663.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
 举例点击github登录会跳转进入授权页面<br>
@@ -192,7 +205,7 @@
 授权成功后就会跳转到我们在<code>application.yml</code>中配置的回调地址<br>
 <img src="https://img-blog.csdnimg.cn/20200701104931383.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 <hr>
-<h3><a id="demo_198"></a>本文案例demo项目地址</h3>
+<h3><a id="demo_210"></a>本文案例demo项目地址</h3>
 <p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
 </div>
 </body>
