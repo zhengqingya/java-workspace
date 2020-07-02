@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(29) 整合WebMagic实现爬取和解析CSDN文章数据</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li><code>WebMagic</code>：一款简单灵活的爬虫框架，基于它我们可以非常容易的编写一个爬虫。</li>
+<li>官网文档地址：<a href="http://webmagic.io/docs/zh/">http://webmagic.io/docs/zh/</a></li>
+</ol>
+<p><img src="https://img-blog.csdnimg.cn/20200702103750586.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<blockquote>
+<p>下面小编将通过爬取+解析自己的csdn文章数据来演示一个简单的爬虫案例demo</p>
+</blockquote>
+<h3><a id="SpringBoot__WebMagic_9"></a>二、SpringBoot 整合 WebMagic</h3>
+<h4><a id="1pomxml_11"></a>1、<code>pom.xml</code>中引入相关依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- WebMagic：爬虫 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>us.codecraft<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>webmagic-core<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>0.7.3<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>us.codecraft<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>webmagic-extension<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>0.7.3<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2_27"></a>2、定义全局常用变量-博主博客地址</h4>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Constants</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * csdn博主博客地址
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String CSDN_URL <span class="token operator">=</span> <span class="token string">"https://blog.csdn.net/qq_38225558/article/list/1"</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3CSDN_40"></a>3、CSDN博客文章信息实体类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Csdn</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * id
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">int</span> id<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 文章标题
+     */</span>
+    <span class="token keyword">private</span> String title<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 文章发布时间
+     */</span>
+    <span class="token keyword">private</span> String time<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 文章所属分类
+     */</span>
+    <span class="token keyword">private</span> String category<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 文章内容
+     */</span>
+    <span class="token keyword">private</span> String content<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4_72"></a>4、编写一个简单的爬虫</h4>
+<p>实现<code>PageProcessor</code>类</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SamplePageProcessor</span> <span class="token keyword">implements</span> <span class="token class-name">PageProcessor</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 记录总分页列表url数
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> List<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> urlList <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 文章详情信息
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> List<span class="token generics function"><span class="token punctuation">&lt;</span>Csdn<span class="token punctuation">&gt;</span></span> articleDetailInfoList <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 【部分一】：抓取网站的相关配置，包括编码、抓取间隔、重试次数等
+     */</span>
+    <span class="token keyword">private</span> Site site <span class="token operator">=</span> Site<span class="token punctuation">.</span><span class="token function">me</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>
+    <span class="token comment">// 重试次数</span>
+        <span class="token function">setRetryTimes</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">.</span>
+        <span class="token comment">// 抓取间隔</span>
+        <span class="token function">setSleepTime</span><span class="token punctuation">(</span><span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">.</span>
+        <span class="token comment">// 超时时间</span>
+        <span class="token function">setTimeOut</span><span class="token punctuation">(</span><span class="token number">100</span> <span class="token operator">*</span> <span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * process是定制爬虫逻辑的核心接口，在这里编写抽取逻辑
+     *
+     * @param page:
+     *            页面数据
+     * @return: void
+     * @author : zhengqing
+     * @date : 2020/7/1 16:43
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">process</span><span class="token punctuation">(</span>Page page<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 【部分二】：定义如何抽取页面信息，并保存下来</span>
+        Html html <span class="token operator">=</span> page<span class="token punctuation">.</span><span class="token function">getHtml</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 根据url判断该页面属于列表页还是文章详情页面</span>
+        String url <span class="token operator">=</span> page<span class="token punctuation">.</span><span class="token function">getUrl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"页面url地址：【{}】"</span><span class="token punctuation">,</span> url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>url<span class="token punctuation">.</span><span class="token function">contains</span><span class="token punctuation">(</span><span class="token string">"article/details"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment">// 详情页面处理逻辑...</span>
+            <span class="token comment">// 文章id</span>
+            <span class="token keyword">int</span> articleId <span class="token operator">=</span> Integer<span class="token punctuation">.</span><span class="token function">parseInt</span><span class="token punctuation">(</span>url<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>url<span class="token punctuation">.</span><span class="token function">lastIndexOf</span><span class="token punctuation">(</span><span class="token string">'/'</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 文章标题</span>
+            String articleTitle <span class="token operator">=</span> html<span class="token punctuation">.</span><span class="token function">xpath</span><span class="token punctuation">(</span><span class="token string">"//h1[@class='title-article']//text()"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 文章发布时间</span>
+            String articleTime <span class="token operator">=</span> html<span class="token punctuation">.</span><span class="token function">xpath</span><span class="token punctuation">(</span><span class="token string">"//div[@class='bar-content']//span[@class='time']//text()"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 文章所属分类</span>
+            String articleCategory <span class="token operator">=</span> html<span class="token punctuation">.</span><span class="token function">xpath</span><span class="token punctuation">(</span><span class="token string">"//a[@class='tag-link']//text()"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 文章内容</span>
+            String articleContent <span class="token operator">=</span> html<span class="token punctuation">.</span><span class="token function">xpath</span><span class="token punctuation">(</span><span class="token string">"//article[@class='baidu_pl']"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"文章id：【{}】  文章标题：【{}】 文章所属分类：【{}】"</span><span class="token punctuation">,</span> articleId<span class="token punctuation">,</span> articleTitle<span class="token punctuation">,</span> articleCategory<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            Csdn csdn <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Csdn</span><span class="token punctuation">(</span>articleId<span class="token punctuation">,</span> articleTitle<span class="token punctuation">,</span> articleTime<span class="token punctuation">,</span> articleCategory<span class="token punctuation">,</span> articleContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>articleDetailInfoList<span class="token punctuation">.</span><span class="token function">contains</span><span class="token punctuation">(</span>csdn<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            articleDetailInfoList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>csdn<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>url<span class="token punctuation">.</span><span class="token function">contains</span><span class="token punctuation">(</span><span class="token string">"article/list"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment">// 列表页面处理逻辑...</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>urlList<span class="token punctuation">.</span><span class="token function">contains</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            urlList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            List<span class="token generics function"><span class="token punctuation">&lt;</span>Selectable<span class="token punctuation">&gt;</span></span> articleList <span class="token operator">=</span> html
+                <span class="token punctuation">.</span><span class="token function">xpath</span><span class="token punctuation">(</span><span class="token string">"//div[@class='article-list']//div[@class='article-item-box csdn-tracking-statistics']"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">nodes</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>CollectionUtils<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span>articleList<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token comment">// 这里移除最后一条错误元素</span>
+                urlList<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>urlList<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>urlList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"总列表数：【{}】  总文章数：【{}】"</span><span class="token punctuation">,</span> urlList<span class="token punctuation">,</span> articleDetailInfoList<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// 开始解析每一篇文章数据【文章标题，发送时间，文章详情url地址】</span>
+            articleList<span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span>article <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">{</span>
+                <span class="token comment">// 文章标题</span>
+                String articleTitle <span class="token operator">=</span> article<span class="token punctuation">.</span>$<span class="token punctuation">(</span><span class="token string">"a"</span><span class="token punctuation">,</span> <span class="token string">"text"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// 文章详情url地址</span>
+                String articleUrl <span class="token operator">=</span> article<span class="token punctuation">.</span><span class="token function">links</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// 文章发布时间</span>
+                String articleTime <span class="token operator">=</span>
+                    article<span class="token punctuation">.</span><span class="token function">xpath</span><span class="token punctuation">(</span><span class="token string">"//div[@class='info-box d-flex align-content-center']//span[@class='date']/text()"</span><span class="token punctuation">)</span>
+                        <span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"文章标题：【{}】 文章地址：【{}】 文章发布时间：【{}】"</span><span class="token punctuation">,</span> articleTitle<span class="token punctuation">,</span> articleUrl<span class="token punctuation">,</span> articleTime<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                <span class="token comment">// 进入文章内部获取文章详情内容</span>
+                page<span class="token punctuation">.</span><span class="token function">addTargetRequests</span><span class="token punctuation">(</span>article<span class="token punctuation">.</span><span class="token function">links</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">all</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token comment">// 【部分三】：从页面发现后续的url地址来抓取 (这里因csdn暂时拿不了页面尾部的分页数，因此手动模拟了一下数据...)</span>
+            <span class="token keyword">int</span> nextPage <span class="token operator">=</span> Integer<span class="token punctuation">.</span><span class="token function">parseInt</span><span class="token punctuation">(</span>url<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>url<span class="token punctuation">.</span><span class="token function">lastIndexOf</span><span class="token punctuation">(</span><span class="token string">'/'</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">;</span>
+            String newUrl <span class="token operator">=</span> <span class="token string">"https://blog.csdn.net/qq_38225558/article/list/"</span> <span class="token operator">+</span> nextPage<span class="token punctuation">;</span>
+            page<span class="token punctuation">.</span><span class="token function">addTargetRequest</span><span class="token punctuation">(</span>newUrl<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token comment">// Other ...</span>
+            log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"该页面url【{}】无法解析..."</span><span class="token punctuation">,</span> url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> Site <span class="token function">getSite</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> site<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Spider<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">SamplePageProcessor</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token comment">// 从指定的url地址开始抓</span>
+            <span class="token punctuation">.</span><span class="token function">addUrl</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>CSDN_URL<span class="token punctuation">)</span>
+            <span class="token comment">// 开启5个线程抓取</span>
+            <span class="token punctuation">.</span><span class="token function">thread</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span>
+            <span class="token comment">// 启动爬虫</span>
+            <span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="5_195"></a>5、定时器定时爬取数据</h4>
+<blockquote>
+<p>这部分看自己需求，不是必要…</p>
+</blockquote>
+<p>① 启动类开启定时任务</p>
+<p><img src="https://img-blog.csdnimg.cn/2020070210523416.png" alt="在这里插入图片描述"></p>
+<p>② 编写定时任务</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AppScheduledJobs</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 每10秒执行一次
+     *
+     * @return: void
+     * @author : zhengqing
+     * @date : 2020/7/1 11:44
+     */</span>
+    <span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>cron <span class="token operator">=</span> <span class="token string">"*/10 * * * * ?"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">cralwer</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"&lt;&lt;&lt;&lt;&lt;&lt; Start: 【{}】 &gt;&gt;&gt;&gt;&gt;&gt;"</span><span class="token punctuation">,</span> LocalDateTime<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Spider<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">SamplePageProcessor</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token comment">// .setDownloader(new HttpClientDownloader())</span>
+            <span class="token comment">// 从指定的url地址开始抓</span>
+            <span class="token punctuation">.</span><span class="token function">addUrl</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>CSDN_URL<span class="token punctuation">)</span>
+            <span class="token comment">// 开启5个线程抓取</span>
+            <span class="token punctuation">.</span><span class="token function">thread</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span>
+            <span class="token comment">// 启动爬虫</span>
+            <span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_233"></a>三、运行项目测试</h3>
+<p>可以看到我们解析获取到的文章标题，文章内容，文章发布时间等一系列信息…<br>
+<img src="https://img-blog.csdnimg.cn/20200702105452361.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<hr>
+<h3><a id="demo_240"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
