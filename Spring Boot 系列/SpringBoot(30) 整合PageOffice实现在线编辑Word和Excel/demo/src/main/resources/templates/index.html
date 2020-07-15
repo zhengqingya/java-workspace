@@ -1,0 +1,42 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>HelloWorld</title>
+  <style>
+    #main {
+      width: 15%;
+      text-align: center;
+    }
+
+    ol {
+      text-align: left;
+      border: solid 1px gray;
+    "
+    }
+
+    ol li {
+      text-align: left;
+      border-bottom: dotted 1px gray;
+      height: 30px;
+      margin-top: 10px;
+    }
+  </style>
+  <!-- 引用后端项目中的pageoffice.js文件 -->
+  <script type="text/javascript" src="http://localhost:8080/pageoffice.js"></script>
+</head>
+<body>
+<div id="main">
+  <h3>HelloWorld</h3>
+  <ol>
+    <li>
+      <!-- openWindowModeless用法参考：http://www.zhuozhengsoft.com/help/js3/pobrowser/function/openwindowmodeless.htm -->
+      <a href="javascript:POBrowser.openWindowModeless('http://localhost:8080/api/word','width=1200px;height=800px;');">打开Word文档</a>
+    </li>
+    <li>
+      <a href="javascript:POBrowser.openWindowModeless('http://localhost:8080/api/excel','width=1200px;height=800px;');">打开Excel文档</a>
+    </li>
+  </ol>
+</div>
+</body>
+</html>

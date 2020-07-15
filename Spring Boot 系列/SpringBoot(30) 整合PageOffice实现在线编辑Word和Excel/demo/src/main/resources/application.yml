@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev
+  application:
+    name: demo
+  # THYMELEAF (ThymeleafAutoConfiguration)
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+
+# ======================== ↓↓↓↓↓↓ PageOffice相关配置 ↓↓↓↓↓↓ ===============================
+pageoffice:
+  # 本地文件所在磁盘位置
+  docpath: /pageoffice/doc/
+  # 设置PageOffice自带印章管理程序的登录密码
+  popassword: 123456
+  # 指定一个磁盘目录用来存放PageOffice注册成功之后生成的license.lic文件
+  posyspath: /pageoffice/lic/
+

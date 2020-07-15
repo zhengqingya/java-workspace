@@ -1,0 +1,386 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(30) 整合PageOffice实现在线编辑Word和Excel</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li>PageOffice官网： <a href="http://www.zhuozhengsoft.com/">http://www.zhuozhengsoft.com/</a></li>
+<li>PageOffice集成说明: <a href="https://www.kancloud.cn/pageoffice_course_group/pageoffice_course/652260">https://www.kancloud.cn/pageoffice_course_group/pageoffice_course/652260</a></li>
+</ol>
+<h6><a id="_5"></a>准备集成环境</h6>
+<p>下载jar依赖：<a href="http://www.zhuozhengsoft.com/dowm/">http://www.zhuozhengsoft.com/dowm/</a><br>
+<img src="https://img-blog.csdnimg.cn/20200715152425822.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/2020071515250252.png" alt="在这里插入图片描述"></p>
+<h3><a id="SpringBootPageOfficeWordExcel_11"></a>二、SpringBoot整合PageOffice实现在线编辑Word和Excel</h3>
+<blockquote>
+<p>本文基于springboot<code>2.3.1.RELEASE</code>版本集成pageoffice</p>
+</blockquote>
+<h4><a id="1pomxml_15"></a>1、<code>pom.xml</code>中新增相关依赖</h4>
+<blockquote>
+<p>将下载的jar依赖放进项目的lib包下 （ 注：这里也可以自定义存放位置，然后修改本地引入位置<code>${project.basedir}/lib/pageoffice4.6.0.4.jar</code>即可 ）<br>
+<img src="https://img-blog.csdnimg.cn/20200715152656429.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+</blockquote>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- =================================== ↓↓↓↓↓↓ PageOffice所需依赖 start ↓↓↓↓↓↓ ==================================== --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-thymeleaf<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- 添加Sqlite依赖（可选：如果不需要使用印章功能的话，不需要添加此依赖）--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.xerial<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>sqlite-jdbc<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>3.7.2<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- 添加PageOffice依赖（必须） --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.zhuozheng<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>pageoffice<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>4.6.0.4<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>scope</span><span class="token punctuation">&gt;</span></span>system<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>scope</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>systemPath</span><span class="token punctuation">&gt;</span></span>${project.basedir}/lib/pageoffice4.6.0.4.jar<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>systemPath</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- =================================== ↑↑↑↑↑↑ PageOffice所需依赖 end ↑↑↑↑↑↑ ==================================== --&gt;</span>
+</code></pre>
+<p>本地jar包引入需再新增如下，可参考文末源码demo<br>
+<img src="https://img-blog.csdnimg.cn/2020071515294759.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="2applicationymlpageoffice_48"></a>2、<code>application.yml</code>中新增pageoffice配置</h4>
+<pre><code class="prism language-yml"><span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token comment"># THYMELEAF (ThymeleafAutoConfiguration)</span>
+  <span class="token key atrule">thymeleaf</span><span class="token punctuation">:</span>
+    <span class="token key atrule">prefix</span><span class="token punctuation">:</span> classpath<span class="token punctuation">:</span>/templates/
+    <span class="token key atrule">suffix</span><span class="token punctuation">:</span> .html
+    <span class="token key atrule">cache</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+
+<span class="token comment"># ======================== ↓↓↓↓↓↓ PageOffice相关配置 ↓↓↓↓↓↓ ===============================</span>
+<span class="token key atrule">pageoffice</span><span class="token punctuation">:</span>
+  <span class="token comment"># 本地文件所在磁盘位置</span>
+  <span class="token key atrule">docpath</span><span class="token punctuation">:</span> /pageoffice/doc/
+  <span class="token comment"># 设置PageOffice自带印章管理程序的登录密码</span>
+  <span class="token key atrule">popassword</span><span class="token punctuation">:</span> <span class="token number">123456</span>
+  <span class="token comment"># 指定一个磁盘目录用来存放PageOffice注册成功之后生成的license.lic文件</span>
+  <span class="token key atrule">posyspath</span><span class="token punctuation">:</span> /pageoffice/lic/
+</code></pre>
+<h4><a id="3resourcestemplates3_68"></a>3、<code>resources/templates</code>下新增如下3个文件</h4>
+<p><img src="https://img-blog.csdnimg.cn/20200715153305864.png" alt="在这里插入图片描述"></p>
+<h6><a id="_Excelhtml_72"></a>① Excel.html</h6>
+<pre><code class="prism language-html"><span class="token doctype">&lt;!DOCTYPE html&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>html</span> <span class="token attr-name">xmlns</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://www.w3.org/1999/xhtml<span class="token punctuation">"</span></span> <span class="token attr-name"><span class="token namespace">xmlns:</span>th</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://www.thymeleaf.org<span class="token punctuation">"</span></span>
+      <span class="token attr-name"><span class="token namespace">xmlns:</span>sec</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://www.thymeleaf.org/thymeleaf-extras-springsecurity3<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>head</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>title</span><span class="token punctuation">&gt;</span></span>打开Excel文件<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>title</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>script</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>text/javascript<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token script language-javascript">
+    <span class="token keyword">function</span> <span class="token function">Save</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      document<span class="token punctuation">.</span><span class="token function">getElementById</span><span class="token punctuation">(</span><span class="token string">"PageOfficeCtrl1"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">WebSave</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>script</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>script</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>text/javascript<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token script language-javascript">
+    <span class="token keyword">function</span> <span class="token function">AddSeal</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        document<span class="token punctuation">.</span><span class="token function">getElementById</span><span class="token punctuation">(</span><span class="token string">"PageOfficeCtrl1"</span><span class="token punctuation">)</span><span class="token punctuation">.</span>ZoomSeal<span class="token punctuation">.</span><span class="token function">AddSeal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">e</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>script</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>head</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span><span class="token style-attr language-css"><span class="token attr-name"> <span class="token attr-name">style</span></span><span class="token punctuation">="</span><span class="token attr-value"><span class="token property">width</span><span class="token punctuation">:</span>auto<span class="token punctuation">;</span><span class="token property">height</span><span class="token punctuation">:</span>700px<span class="token punctuation">;</span></span><span class="token punctuation">"</span></span> <span class="token attr-name"><span class="token namespace">th:</span>utext</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>${pageoffice}<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>html</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h6><a id="_Wordhtml_101"></a>② Word.html</h6>
+<pre><code class="prism language-html"><span class="token doctype">&lt;!DOCTYPE html&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>html</span> <span class="token attr-name">xmlns</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://www.w3.org/1999/xhtml<span class="token punctuation">"</span></span> <span class="token attr-name"><span class="token namespace">xmlns:</span>th</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://www.thymeleaf.org<span class="token punctuation">"</span></span>
+      <span class="token attr-name"><span class="token namespace">xmlns:</span>sec</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://www.thymeleaf.org/thymeleaf-extras-springsecurity3<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>head</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>title</span><span class="token punctuation">&gt;</span></span>打开Word文件<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>title</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>script</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>text/javascript<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token script language-javascript">
+    <span class="token keyword">function</span> <span class="token function">Save</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      document<span class="token punctuation">.</span><span class="token function">getElementById</span><span class="token punctuation">(</span><span class="token string">"PageOfficeCtrl1"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">WebSave</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+  </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>script</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>script</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>text/javascript<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token script language-javascript">
+    <span class="token keyword">function</span> <span class="token function">AddSeal</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        document<span class="token punctuation">.</span><span class="token function">getElementById</span><span class="token punctuation">(</span><span class="token string">"PageOfficeCtrl1"</span><span class="token punctuation">)</span><span class="token punctuation">.</span>ZoomSeal<span class="token punctuation">.</span><span class="token function">AddSeal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">e</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>script</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>head</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span><span class="token style-attr language-css"><span class="token attr-name"> <span class="token attr-name">style</span></span><span class="token punctuation">="</span><span class="token attr-value"><span class="token property">width</span><span class="token punctuation">:</span>auto<span class="token punctuation">;</span><span class="token property">height</span><span class="token punctuation">:</span>700px<span class="token punctuation">;</span></span><span class="token punctuation">"</span></span> <span class="token attr-name"><span class="token namespace">th:</span>utext</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>${pageoffice}<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>html</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h6><a id="_indexhtml_131"></a>③ index.html</h6>
+<pre><code class="prism language-html"><span class="token doctype">&lt;!DOCTYPE html&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>html</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>head</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>meta</span> <span class="token attr-name">charset</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>utf-8<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>title</span><span class="token punctuation">&gt;</span></span>HelloWorld<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>title</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>style</span><span class="token punctuation">&gt;</span></span><span class="token style language-css">
+    <span class="token selector">#main</span> <span class="token punctuation">{</span>
+      <span class="token property">width</span><span class="token punctuation">:</span> 15%<span class="token punctuation">;</span>
+      <span class="token property">text-align</span><span class="token punctuation">:</span> center<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token selector">ol</span> <span class="token punctuation">{</span>
+      <span class="token property">text-align</span><span class="token punctuation">:</span> left<span class="token punctuation">;</span>
+      <span class="token property">border</span><span class="token punctuation">:</span> solid 1px gray<span class="token punctuation">;</span>
+    "
+    <span class="token punctuation">}</span>
+
+    <span class="token selector">ol li</span> <span class="token punctuation">{</span>
+      <span class="token property">text-align</span><span class="token punctuation">:</span> left<span class="token punctuation">;</span>
+      <span class="token property">border-bottom</span><span class="token punctuation">:</span> dotted 1px gray<span class="token punctuation">;</span>
+      <span class="token property">height</span><span class="token punctuation">:</span> 30px<span class="token punctuation">;</span>
+      <span class="token property">margin-top</span><span class="token punctuation">:</span> 10px<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>style</span><span class="token punctuation">&gt;</span></span>
+  <span class="token comment">&lt;!-- 引用后端项目中的pageoffice.js文件 --&gt;</span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>script</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>text/javascript<span class="token punctuation">"</span></span> <span class="token attr-name">src</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://localhost:8080/pageoffice.js<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token script language-javascript"></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>script</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>head</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>main<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h3</span><span class="token punctuation">&gt;</span></span>HelloWorld<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h3</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>ol</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span class="token punctuation">&gt;</span></span>
+      <span class="token comment">&lt;!-- openWindowModeless用法参考：http://www.zhuozhengsoft.com/help/js3/pobrowser/function/openwindowmodeless.htm --&gt;</span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>javascript:POBrowser.openWindowModeless(<span class="token punctuation">'</span>http://localhost:8080/api/word<span class="token punctuation">'</span>,<span class="token punctuation">'</span>width=1200px;height=800px;<span class="token punctuation">'</span>);<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>打开Word文档<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>li</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>li</span><span class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>javascript:POBrowser.openWindowModeless(<span class="token punctuation">'</span>http://localhost:8080/api/excel<span class="token punctuation">'</span>,<span class="token punctuation">'</span>width=1200px;height=800px;<span class="token punctuation">'</span>);<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>打开Excel文档<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>li</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>ol</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>html</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="4_178"></a>4、全局常用变量</h4>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Constants</span> <span class="token punctuation">{</span>
+    <span class="token comment">/**
+     * 项目根目录
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String PROJECT_ROOT_DIRECTORY <span class="token operator">=</span> System<span class="token punctuation">.</span><span class="token function">getProperty</span><span class="token punctuation">(</span><span class="token string">"user.dir"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * word文件名
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String FILE_NAME_WORD <span class="token operator">=</span> <span class="token string">"test.doc"</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * excel文件名
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String FILE_NAME_EXCEL <span class="token operator">=</span> <span class="token string">"test.xls"</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="5Controller_197"></a>5、编写测试Controller</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DemoController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${pageoffice.posyspath}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String poSysPath<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${pageoffice.popassword}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String poPassWord<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${pageoffice.docpath}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String docPath<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 被`@PostConstruct`修饰的方法会在服务器加载Servlet的时候运行，并且只会被服务器执行一次。PostConstruct在构造函数之后执行，init()方法之前执行。
+     */</span>
+    <span class="token annotation punctuation">@PostConstruct</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        poSysPath <span class="token operator">=</span> Constants<span class="token punctuation">.</span>PROJECT_ROOT_DIRECTORY <span class="token operator">+</span> poSysPath<span class="token punctuation">;</span>
+        docPath <span class="token operator">=</span> Constants<span class="token punctuation">.</span>PROJECT_ROOT_DIRECTORY <span class="token operator">+</span> docPath<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/hello"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> String <span class="token function">hello</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"hello ..."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"HelloWorld~"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"/word"</span><span class="token punctuation">,</span> method <span class="token operator">=</span> RequestMethod<span class="token punctuation">.</span>GET<span class="token punctuation">)</span>
+    <span class="token keyword">public</span> ModelAndView <span class="token function">showWord</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span> map<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"编辑word ..."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        PageOfficeCtrl poCtrl <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">PageOfficeCtrl</span><span class="token punctuation">(</span>request<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置服务页面</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">setServerPage</span><span class="token punctuation">(</span><span class="token string">"/poserver.zz"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 添加自定义保存按钮</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">addCustomToolButton</span><span class="token punctuation">(</span><span class="token string">"保存"</span><span class="token punctuation">,</span> <span class="token string">"Save"</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 添加自定义盖章按钮</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">addCustomToolButton</span><span class="token punctuation">(</span><span class="token string">"盖章"</span><span class="token punctuation">,</span> <span class="token string">"AddSeal"</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 拿到请求前缀做拼接保存文件方法</span>
+        String requestApiPrefix <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getServletPath</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"/word"</span><span class="token punctuation">,</span> <span class="token string">""</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置处理文件保存的请求方法</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">setSaveFilePage</span><span class="token punctuation">(</span>requestApiPrefix <span class="token operator">+</span> <span class="token string">"/save"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 打开word</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">webOpen</span><span class="token punctuation">(</span><span class="token string">"file://"</span> <span class="token operator">+</span> docPath <span class="token operator">+</span> Constants<span class="token punctuation">.</span>FILE_NAME_WORD<span class="token punctuation">,</span> OpenModeType<span class="token punctuation">.</span>docAdmin<span class="token punctuation">,</span> <span class="token string">"张三"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"pageoffice"</span><span class="token punctuation">,</span> poCtrl<span class="token punctuation">.</span><span class="token function">getHtmlCode</span><span class="token punctuation">(</span><span class="token string">"PageOfficeCtrl1"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        ModelAndView mv <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ModelAndView</span><span class="token punctuation">(</span><span class="token string">"Word"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> mv<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"/excel"</span><span class="token punctuation">,</span> method <span class="token operator">=</span> RequestMethod<span class="token punctuation">.</span>GET<span class="token punctuation">)</span>
+    <span class="token keyword">public</span> ModelAndView <span class="token function">showExcel</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span> map<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"编辑excel ..."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        PageOfficeCtrl poCtrl <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">PageOfficeCtrl</span><span class="token punctuation">(</span>request<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置服务页面</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">setServerPage</span><span class="token punctuation">(</span><span class="token string">"/poserver.zz"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 添加自定义保存按钮</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">addCustomToolButton</span><span class="token punctuation">(</span><span class="token string">"保存"</span><span class="token punctuation">,</span> <span class="token string">"Save"</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 添加自定义盖章按钮</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">addCustomToolButton</span><span class="token punctuation">(</span><span class="token string">"盖章"</span><span class="token punctuation">,</span> <span class="token string">"AddSeal"</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 拿到请求前缀做拼接保存文件方法</span>
+        String requestApiPrefix <span class="token operator">=</span> request<span class="token punctuation">.</span><span class="token function">getServletPath</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"/excel"</span><span class="token punctuation">,</span> <span class="token string">""</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置处理文件保存的请求方法</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">setSaveFilePage</span><span class="token punctuation">(</span>requestApiPrefix <span class="token operator">+</span> <span class="token string">"/save"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 打开word</span>
+        poCtrl<span class="token punctuation">.</span><span class="token function">webOpen</span><span class="token punctuation">(</span><span class="token string">"file://"</span> <span class="token operator">+</span> docPath <span class="token operator">+</span> Constants<span class="token punctuation">.</span>FILE_NAME_EXCEL<span class="token punctuation">,</span> OpenModeType<span class="token punctuation">.</span>xlsNormalEdit<span class="token punctuation">,</span> <span class="token string">"张三"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"pageoffice"</span><span class="token punctuation">,</span> poCtrl<span class="token punctuation">.</span><span class="token function">getHtmlCode</span><span class="token punctuation">(</span><span class="token string">"PageOfficeCtrl1"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        ModelAndView mv <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ModelAndView</span><span class="token punctuation">(</span><span class="token string">"Excel"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> mv<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/save"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">saveFile</span><span class="token punctuation">(</span>HttpServletRequest request<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"保存文件 ..."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        FileSaver fs <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FileSaver</span><span class="token punctuation">(</span>request<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        fs<span class="token punctuation">.</span><span class="token function">saveToFile</span><span class="token punctuation">(</span>docPath <span class="token operator">+</span> fs<span class="token punctuation">.</span><span class="token function">getFileName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        fs<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 添加PageOffice的服务器端授权程序Servlet（必须）
+     *
+     * @return
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> ServletRegistrationBean <span class="token function">servletRegistrationBean</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        com<span class="token punctuation">.</span>zhuozhengsoft<span class="token punctuation">.</span>pageoffice<span class="token punctuation">.</span>poserver<span class="token punctuation">.</span>Server poserver <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">com<span class="token punctuation">.</span>zhuozhengsoft<span class="token punctuation">.</span>pageoffice<span class="token punctuation">.</span>poserver<span class="token punctuation">.</span>Server</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置PageOffice注册成功后,license.lic文件存放的目录</span>
+        poserver<span class="token punctuation">.</span><span class="token function">setSysPath</span><span class="token punctuation">(</span>poSysPath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        ServletRegistrationBean srb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ServletRegistrationBean</span><span class="token punctuation">(</span>poserver<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        srb<span class="token punctuation">.</span><span class="token function">addUrlMappings</span><span class="token punctuation">(</span><span class="token string">"/poserver.zz"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        srb<span class="token punctuation">.</span><span class="token function">addUrlMappings</span><span class="token punctuation">(</span><span class="token string">"/posetup.exe"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        srb<span class="token punctuation">.</span><span class="token function">addUrlMappings</span><span class="token punctuation">(</span><span class="token string">"/pageoffice.js"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        srb<span class="token punctuation">.</span><span class="token function">addUrlMappings</span><span class="token punctuation">(</span><span class="token string">"/jquery.min.js"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        srb<span class="token punctuation">.</span><span class="token function">addUrlMappings</span><span class="token punctuation">(</span><span class="token string">"/pobstyle.css"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        srb<span class="token punctuation">.</span><span class="token function">addUrlMappings</span><span class="token punctuation">(</span><span class="token string">"/sealsetup.exe"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> srb<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 添加印章管理程序Servlet（可选）
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> ServletRegistrationBean <span class="token function">servletRegistrationBean2</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        com<span class="token punctuation">.</span>zhuozhengsoft<span class="token punctuation">.</span>pageoffice<span class="token punctuation">.</span>poserver<span class="token punctuation">.</span>AdminSeal adminSeal <span class="token operator">=</span>
+            <span class="token keyword">new</span> <span class="token class-name">com<span class="token punctuation">.</span>zhuozhengsoft<span class="token punctuation">.</span>pageoffice<span class="token punctuation">.</span>poserver<span class="token punctuation">.</span>AdminSeal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置印章管理员admin的登录密码</span>
+        adminSeal<span class="token punctuation">.</span><span class="token function">setAdminPassword</span><span class="token punctuation">(</span>poPassWord<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置印章数据库文件poseal.db存放的目录</span>
+        adminSeal<span class="token punctuation">.</span><span class="token function">setSysPath</span><span class="token punctuation">(</span>poSysPath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        ServletRegistrationBean srb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ServletRegistrationBean</span><span class="token punctuation">(</span>adminSeal<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        srb<span class="token punctuation">.</span><span class="token function">addUrlMappings</span><span class="token punctuation">(</span><span class="token string">"/adminseal.zz"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        srb<span class="token punctuation">.</span><span class="token function">addUrlMappings</span><span class="token punctuation">(</span><span class="token string">"/sealimage.zz"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        srb<span class="token punctuation">.</span><span class="token function">addUrlMappings</span><span class="token punctuation">(</span><span class="token string">"/loginseal.zz"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> srb<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="6wordexcel_321"></a>6、准备测试word和excel文件</h4>
+<p>注意将测试word和excel文件(<code>文件不能为0字节</code>)放在<code>项目根目录/pageoffice/doc</code>目录下，以及新建<code>lic</code>文件夹…</p>
+<p><img src="https://img-blog.csdnimg.cn/20200715163408359.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_327"></a>三、测试</h3>
+<p>访问<a href="http://localhost:8080/">http://localhost:8080/</a>，点击<code>打开Word文档</code><br>
+<img src="https://img-blog.csdnimg.cn/20200715150935401.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+第一次使用的时候会提示<code>安装PageOffice</code>，直接下一步安装即可~</p>
+<blockquote>
+<p>可参考PageOffice客户端安装步骤：<a href="https://www.kancloud.cn/pageoffice_course_group/pageoffice_course/654031">https://www.kancloud.cn/pageoffice_course_group/pageoffice_course/654031</a></p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/20200715150848551.png" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200715151233340.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200715151243505.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+安装完成之后回到页面再次点击<code>打开Word文档</code>，这时候需要填写注册信息，序列号在之前下载的包里面可以找到<br>
+<img src="https://img-blog.csdnimg.cn/20200715161238202.png" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20200715161425308.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+注册成功后，正常打开Word文件，之后就可以进行自己的神操作了…<br>
+<img src="https://img-blog.csdnimg.cn/2020071509410059.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<code>打开Excel文档</code>如下：<br>
+<img src="https://img-blog.csdnimg.cn/20200715161527567.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="VuePageOffice_346"></a>四、Vue页面集成PageOffice</h3>
+<h4><a id="1indexhtmlpageofficejs_348"></a>1、项目的<code>index.html</code>中引入<code>pageoffice.js</code></h4>
+<pre><code class="prism language-html"><span class="token comment">&lt;!-- 引用后端项目中的pageoffice.js文件 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>script</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>text/javascript<span class="token punctuation">"</span></span> <span class="token attr-name">src</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://localhost:8080/pageoffice.js<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token script language-javascript"></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>script</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2_355"></a>2、页面</h4>
+<pre><code class="prism language-html"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>template</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>app-container<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>el-button</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>javascript:POBrowser.openWindowModeless(<span class="token punctuation">'</span>http://localhost:8080/api/word<span class="token punctuation">'</span>,<span class="token punctuation">'</span>width=1200px;height=800px;<span class="token punctuation">'</span>);<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>打开Word文档<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>el-button</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>el-button</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>javascript:POBrowser.openWindowModeless(<span class="token punctuation">'</span>http://localhost:8080/api/excel<span class="token punctuation">'</span>,<span class="token punctuation">'</span>width=1200px;height=800px;<span class="token punctuation">'</span>);<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>打开Excel文档<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>el-button</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>template</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>style</span> <span class="token attr-name">lang</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>scss<span class="token punctuation">"</span></span> <span class="token attr-name">scoped</span><span class="token punctuation">&gt;</span></span><span class="token style language-css"></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>style</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>这里页面很简单就2个按钮…<br>
+<img src="https://img-blog.csdnimg.cn/20200715162820214.png" alt="在这里插入图片描述"><br>
+主要通过<code>openWindowModeless</code> 使用非模态框的形式打开文件</p>
+<blockquote>
+<p>用法可参考：<a href="http://www.zhuozhengsoft.com/help/js3/pobrowser/function/openwindowmodeless.htm">http://www.zhuozhengsoft.com/help/js3/pobrowser/function/openwindowmodeless.htm</a></p>
+</blockquote>
+<h4><a id="3_373"></a>3、后端解决前后端分离情况下跨域问题</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">CorsConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">private</span> CorsConfiguration <span class="token function">config</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        CorsConfiguration corsConfiguration <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">CorsConfiguration</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        corsConfiguration<span class="token punctuation">.</span><span class="token function">setAllowCredentials</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// ① 设置你要允许的网站域名，如果全允许则设为 *</span>
+        corsConfiguration<span class="token punctuation">.</span><span class="token function">addAllowedOrigin</span><span class="token punctuation">(</span><span class="token string">"*"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// corsConfiguration.addAllowedOrigin("http://www.zhengqingya.com");</span>
+        <span class="token comment">// ② 如果要限制 HEADER 或 METHOD 请自行更改</span>
+        corsConfiguration<span class="token punctuation">.</span><span class="token function">addAllowedHeader</span><span class="token punctuation">(</span><span class="token string">"*"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        corsConfiguration<span class="token punctuation">.</span><span class="token function">addAllowedMethod</span><span class="token punctuation">(</span><span class="token string">"*"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> corsConfiguration<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> CorsFilter <span class="token function">corsFilter</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        UrlBasedCorsConfigurationSource source <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">UrlBasedCorsConfigurationSource</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        source<span class="token punctuation">.</span><span class="token function">registerCorsConfiguration</span><span class="token punctuation">(</span><span class="token string">"/**"</span><span class="token punctuation">,</span> <span class="token function">config</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">CorsFilter</span><span class="token punctuation">(</span>source<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="__PageofficeWord0x80040154_401"></a>五、问题 -&gt; 使用Pageoffice打开Word时报<code>0x80040154</code>错误</h3>
+<p>问题出现可能原因：安装WPS时关联了.doc.xls.ppt等文件，导致Office无法自动关联</p>
+<p>解决：</p>
+<ol>
+<li>想办法去掉默认关联</li>
+<li>直接卸载WPS</li>
+<li>自行谷歌</li>
+</ol>
+<hr>
+<h3><a id="demo_415"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</div>
+</body>
+
+</html>
