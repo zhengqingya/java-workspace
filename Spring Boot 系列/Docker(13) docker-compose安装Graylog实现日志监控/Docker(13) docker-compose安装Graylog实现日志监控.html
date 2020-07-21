@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker(13) docker-compose安装Graylog实现日志监控</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li>Graylog官网：<a href="https://www.graylog.org/">https://www.graylog.org/</a></li>
+<li>Graylog Docker安装文档：<a href="https://docs.graylog.org/en/3.3/pages/installation/docker.html">https://docs.graylog.org/en/3.3/pages/installation/docker.html</a></li>
+</ol>
+<h6><a id="Graylog_5"></a>Graylog是什么？</h6>
+<p>一个比<code>ELK</code>轻的分布式日志管理平台…</p>
+<p><img src="https://img-blog.csdnimg.cn/20200721223036396.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="dockercomposeGraylog_12"></a>二、<code>docker-compose</code>安装<code>Graylog</code></h3>
+<pre><code class="prism language-shell"><span class="token comment"># 环境准备</span>
+<span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+
+<span class="token comment"># Liunx系统走此路径</span>
+<span class="token function">cd</span> docker-compose/Liunx
+<span class="token comment"># Windows系统走此路径</span>
+<span class="token function">cd</span> docker-compose/Windows
+
+<span class="token comment"># 运行服务</span>
+docker-compose -f docker-compose-graylog.yml -p graylog_demo up -d
+</code></pre>
+<p>等待运行完成…<br>
+<img src="https://img-blog.csdnimg.cn/20200721224826691.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="Graylog_30"></a>三、Graylog配置</h3>
+<p>访问地址：<a href="http://127.0.0.1:9001"><code>http://127.0.0.1:9001</code></a><br>
+默认登录账号密码：<code>admin/admin</code><br>
+<img src="https://img-blog.csdnimg.cn/20200721225349475.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+① <code>System</code> -&gt; <code>Inputs</code><br>
+<img src="https://img-blog.csdnimg.cn/20200721225524732.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+② 选择<code>GELF UDP</code><br>
+<img src="https://img-blog.csdnimg.cn/2020072122572258.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+③ <code>Launch new input</code><br>
+<img src="https://img-blog.csdnimg.cn/20200721225912896.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+④ 如下图完成配置<br>
+<img src="https://img-blog.csdnimg.cn/20200721230106144.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="SpringBoot__Logbackdemo_44"></a>四、SpringBoot - Logback日志案例demo</h3>
+<blockquote>
+<p>项目基于springboot2.3.1.RELEASE</p>
+</blockquote>
+<h4><a id="1pomxmllogbackgelf_48"></a>1、<code>pom.xml</code>中新增<code>logback-gelf</code>依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- logback-gelf --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/de.siegmar/logback-gelf --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>de.siegmar<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>logback-gelf<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>3.0.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2logbackxml_60"></a>2、<code>logback.xml</code>日志文件中新增如下配置</h4>
+<p><img src="https://img-blog.csdnimg.cn/20200721230452788.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>appender</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>GELF<span class="token punctuation">"</span></span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>de.siegmar.logbackgelf.GelfUdpAppender<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>graylogHost</span><span class="token punctuation">&gt;</span></span>127.0.0.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>graylogHost</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>graylogPort</span><span class="token punctuation">&gt;</span></span>12201<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>graylogPort</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>appender</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- 日志输出级别 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>root</span> <span class="token attr-name">level</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>DEBUG<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>appender-ref</span> <span class="token attr-name">ref</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>GELF<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>root</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="3_76"></a>3、编写定时器测试日志输出</h4>
+<blockquote>
+<p>每3秒执行1次</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token annotation punctuation">@EnableScheduling</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AppScheduledJobs</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>cron <span class="token operator">=</span> <span class="token string">"*/3 * * * * ?"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"=================================================================================="</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"&lt;&lt;&lt;&lt;&lt;&lt; error Start: 【{}】 &gt;&gt;&gt;&gt;&gt;&gt;"</span><span class="token punctuation">,</span> LocalDateTime<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">warn</span><span class="token punctuation">(</span><span class="token string">"&lt;&lt;&lt;&lt;&lt;&lt; warn Start: 【{}】 &gt;&gt;&gt;&gt;&gt;&gt;"</span><span class="token punctuation">,</span> LocalDateTime<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"&lt;&lt;&lt;&lt;&lt;&lt; info Start: 【{}】 &gt;&gt;&gt;&gt;&gt;&gt;"</span><span class="token punctuation">,</span> LocalDateTime<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"&lt;&lt;&lt;&lt;&lt;&lt; debug Start: 【{}】 &gt;&gt;&gt;&gt;&gt;&gt;"</span><span class="token punctuation">,</span> LocalDateTime<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4_98"></a>4、启动项目</h4>
+<p><img src="https://img-blog.csdnimg.cn/20200721230930803.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="Graylog_102"></a>五、Graylog中查看日志输出</h3>
+<p><a href="http://127.0.0.1:9001/search">http://127.0.0.1:9001/search</a></p>
+<p><img src="https://img-blog.csdnimg.cn/20200721231055288.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_108"></a>六、问题</h3>
+<p>docker-compose v2和v3版本之间的编排命令有所差异，刚开始在graylog官网看的2.x的compose v2版本的编排命令直接拿来在小编的v3版本中跑，出现坑… 最后习惯性的再查看graylog最新版本的文档，重新来了一次，成功！  造成耗时原因在于纠结在那一个版本上了… (害~ 年轻人不能太钻牛角尖!!!)</p>
+<hr>
+<h3><a id="demo_114"></a>本文案例demo源码地址</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：一个人最大的智慧是透过别人的阅历而读懂自己的未来。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
