@@ -123,11 +123,11 @@ docker-demo
 
 ```shell
 docker run \
--d -p 88:88 --name graylog-java-demo \
+-d -p 88:88 --name log-java-demo \
 --log-driver=gelf \
 --log-opt gelf-address=udp://127.0.0.1:12201 \
 --log-opt tag="{{.ImageName}}/{{.Name}}/{{.ID}}" \
-registry.cn-hangzhou.aliyuncs.com/zhengqing/graylog-java-demo:latest
+registry.cn-hangzhou.aliyuncs.com/zhengqing/log-java-demo:latest
 ```
 
 #### 2、docker-compose
@@ -145,16 +145,16 @@ docker-compose-demo
 ```yml
 version: '3'
 services:
-  graylog-java-demo:
-    image: registry.cn-hangzhou.aliyuncs.com/zhengqing/graylog-java-demo:latest
-    container_name: graylog-java-demo 
+  log-java-demo:
+    image: registry.cn-hangzhou.aliyuncs.com/zhengqing/log-java-demo:latest
+    container_name: log-java-demo 
     ports:
       - "88:88"
     logging:
       driver: "gelf"
       options:
         gelf-address: "udp://127.0.0.1:12201"
-        tag: graylog-java-demo
+        tag: log-java-demo
 ```
 
 运行后回到graylog中查看相应日志信息

@@ -104,11 +104,11 @@ docker run -d \
 </code></pre>
 <p>docker-demo</p>
 <pre><code class="prism language-shell">docker run \
--d -p 88:88 --name graylog-java-demo \
+-d -p 88:88 --name log-java-demo \
 --log-driver<span class="token operator">=</span>gelf \
 --log-opt gelf-address<span class="token operator">=</span>udp://127.0.0.1:12201 \
 --log-opt tag<span class="token operator">=</span><span class="token string">"{{.ImageName}}/{{.Name}}/{{.ID}}"</span> \
-registry.cn-hangzhou.aliyuncs.com/zhengqing/graylog-java-demo:latest
+registry.cn-hangzhou.aliyuncs.com/zhengqing/log-java-demo:latest
 </code></pre>
 <h4><a id="2dockercompose_132"></a>2、docker-compose</h4>
 <pre><code class="prism language-yml"><span class="token key atrule">logging</span><span class="token punctuation">:</span>
@@ -120,16 +120,16 @@ registry.cn-hangzhou.aliyuncs.com/zhengqing/graylog-java-demo:latest
 <p>docker-compose-demo</p>
 <pre><code class="prism language-yml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
 <span class="token key atrule">services</span><span class="token punctuation">:</span>
-  <span class="token key atrule">graylog-java-demo</span><span class="token punctuation">:</span>
-    <span class="token key atrule">image</span><span class="token punctuation">:</span> registry.cn<span class="token punctuation">-</span>hangzhou.aliyuncs.com/zhengqing/graylog<span class="token punctuation">-</span>java<span class="token punctuation">-</span>demo<span class="token punctuation">:</span>latest
-    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> graylog<span class="token punctuation">-</span>java<span class="token punctuation">-</span>demo 
+  <span class="token key atrule">log-java-demo</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> registry.cn<span class="token punctuation">-</span>hangzhou.aliyuncs.com/zhengqing/log<span class="token punctuation">-</span>java<span class="token punctuation">-</span>demo<span class="token punctuation">:</span>latest
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> log<span class="token punctuation">-</span>java<span class="token punctuation">-</span>demo 
     <span class="token key atrule">ports</span><span class="token punctuation">:</span>
       <span class="token punctuation">-</span> <span class="token string">"88:88"</span>
     <span class="token key atrule">logging</span><span class="token punctuation">:</span>
       <span class="token key atrule">driver</span><span class="token punctuation">:</span> <span class="token string">"gelf"</span>
       <span class="token key atrule">options</span><span class="token punctuation">:</span>
         <span class="token key atrule">gelf-address</span><span class="token punctuation">:</span> <span class="token string">"udp://127.0.0.1:12201"</span>
-        <span class="token key atrule">tag</span><span class="token punctuation">:</span> graylog<span class="token punctuation">-</span>java<span class="token punctuation">-</span>demo
+        <span class="token key atrule">tag</span><span class="token punctuation">:</span> log<span class="token punctuation">-</span>java<span class="token punctuation">-</span>demo
 </code></pre>
 <p>运行后回到graylog中查看相应日志信息<br>
 <img src="https://img-blog.csdnimg.cn/20200722130408239.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
