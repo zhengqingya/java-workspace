@@ -10,13 +10,18 @@
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
   <groupId>com.zhengqing</groupId>
-  <artifactId>demo</artifactId>
+  <artifactId>graylog-java-demo</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>demo</name>
   <description>Demo project for Spring Boot</description>
 
   <properties>
     <logback-gelf.version>3.0.0</logback-gelf.version>
+
+    <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
+    <docker.plugin.version>1.1.0</docker.plugin.version>
+    <docker.repostory>registry.cn-hangzhou.aliyuncs.com</docker.repostory>
+    <docker.registry.name>zhengqing</docker.registry.name>
   </properties>
 
   <dependencies>
@@ -73,6 +78,72 @@
         </configuration>
       </plugin>
       <!--添加配置跳过测试-->
+
+      <!-- 通过docker构建部署到服务器 【 mvn clean package -Dmaven.test.skip=true docker:build 】 -->
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <version>${docker.plugin.version}</version>
+        <configuration>
+          <!-- 生成的docker镜像名称  -->
+          <imageName>${docker.repostory}/${docker.registry.name}/${project.artifactId}:latest
+          </imageName>
+
+          <!-- 指定Dockerfile路径-->
+          <dockerDirectory>${project.basedir}/docker</dockerDirectory>
+
+          <!-- 这里是复制jar包到docker容器指定目录配置 -->
+          <resources>
+            <resource>
+              <targetPath>/</targetPath>
+              <directory>${project.build.directory}</directory>
+              <include>${project.build.finalName}.jar</include>
+            </resource>
+          </resources>
+
+          <!-- build 时，指定 –no-cache 不使用缓存 -->
+          <noCache>true</noCache>
+
+          <registryUrl>${docker.repostory}</registryUrl>
+          <!-- serverId与maven的`setting.xml`配置文件的servers id一致，主要用于认证阿里云仓库 -->
+          <serverId>docker-aliyun-zhengqing</serverId>
+          <!-- build 完成后 push 镜像 -->
+          <pushImage>true</pushImage>
+
+          <!-- 强制docker在每次新的构建上覆盖镜像tags -->
+          <forceTags>true</forceTags>
+          <imageTags>
+            <imageTag>latest</imageTag>
+          </imageTags>
+          <!-- build 完成后，push 指定 tag 的镜像，配合 imageTags 使用 -->
+          <pushImageTag>true</pushImageTag>
+
+          <!-- push 镜像失败，重试次数 -->
+          <retryPushCount>3</retryPushCount>
+          <!-- push 镜像失败，重试时间 -->
+          <retryPushTimeout>10</retryPushTimeout>
+        </configuration>
+      </plugin>
+
+      <!-- 复制jar包到指定目录 -->
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <configuration>
+              <tasks>
+                <copy todir="docker"
+                  file="target/${project.artifactId}-${project.version}.${project.packaging}"></copy>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
 
   </build>
