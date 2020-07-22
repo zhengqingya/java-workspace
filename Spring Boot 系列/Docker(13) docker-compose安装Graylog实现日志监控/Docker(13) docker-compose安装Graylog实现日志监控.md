@@ -106,9 +106,64 @@ public class AppScheduledJobs {
 
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721231055288.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
 
-### 六、问题
+### 六、Docker容器日志测试
 
-docker-compose v2和v3版本之间的编排命令有所差异，刚开始在graylog官网看的2.x的compose v2版本的编排命令直接拿来在小编的v3版本中跑，出现坑... 最后习惯性的再查看graylog最新版本的文档，重新来了一次，成功！  造成耗时原因在于纠结在那一个版本上了... (害~ 年轻人不能太钻牛角尖!!!)
+#### 1、docker
+
+```shell
+# 启动一个docker测试日志:  ->  设置docker的log驱动为GELF
+docker run -d \
+--log-driver=gelf \
+--log-opt gelf-address=udp://graylog服务器地址:12201 \
+--log-opt tag=<容器服务标签 -> graylog查询分类使用> \
+<IMAGE> <COMMAND>
+```
+
+docker-demo
+
+```shell
+docker run \
+-d -p 88:88 --name graylog-java-demo \
+--log-driver=gelf \
+--log-opt gelf-address=udp://127.0.0.1:12201 \
+--log-opt tag="{{.ImageName}}/{{.Name}}/{{.ID}}" \
+registry.cn-hangzhou.aliyuncs.com/zhengqing/graylog-java-demo:latest
+```
+
+#### 2、docker-compose
+
+```yml
+logging:
+  driver:"gelf"
+  options:
+    gelf-address:"udp://graylog服务器地址:12201"
+    tag:"容器服务标签"
+```
+
+docker-compose-demo
+
+```yml
+version: '3'
+services:
+  nginx:
+    image: registry.cn-hangzhou.aliyuncs.com/zhengqing/graylog-java-demo:latest
+    container_name: graylog-java-demo 
+    ports:
+      - "88:88"
+    logging:
+      driver: "gelf"
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: graylog-java-demo
+```
+
+运行后回到graylog中查看相应日志信息
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200722130408239.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+
+
+### 七、问题
+
+docker-compose v2和v3版本之间的编排命令有所差异，刚开始在graylog官网看的2.x的compose v2版本的编排命令直接拿来在小编的v3版本中跑，出现坑... 最后习惯性的再查看graylog最新3.x版本的文档，重新来了一次，成功！  造成耗时原因在于纠结在那一个版本上了... (害~ 年轻人不能太钻牛角尖!!!)
 
 ---
 
