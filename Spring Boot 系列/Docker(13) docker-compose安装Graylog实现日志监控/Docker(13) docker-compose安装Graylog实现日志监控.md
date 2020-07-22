@@ -145,7 +145,7 @@ docker-compose-demo
 ```yml
 version: '3'
 services:
-  nginx:
+  graylog-java-demo:
     image: registry.cn-hangzhou.aliyuncs.com/zhengqing/graylog-java-demo:latest
     container_name: graylog-java-demo 
     ports:
