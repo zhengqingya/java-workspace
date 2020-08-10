@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aviator(2) 自定义函数ADD</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/107913810">Aviator(1) SpringBoot整合Aviator入门体验</a></li>
+<li>自定义函数和调用Java方法可参考：<a href="https://www.yuque.com/boyan-avfmj/aviatorscript/xbdgg2">https://www.yuque.com/boyan-avfmj/aviatorscript/xbdgg2</a></li>
+</ol>
+<h3><a id="Aviator_ADD_5"></a>二、Aviator 自定义函数<code>ADD</code></h3>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestAviator_ADD</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 注册函数`ADD`</span>
+        AviatorEvaluator<span class="token punctuation">.</span><span class="token function">addFunction</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Function_ADD</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Object execute1 <span class="token operator">=</span> AviatorEvaluator<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span><span class="token string">"ADD(10.5, 20)"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Object execute2 <span class="token operator">=</span> AviatorEvaluator<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span><span class="token string">"ADD(ADD(1, 2), 100)"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>execute1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>execute2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+<span class="token comment">/**
+ * &lt;p&gt;
+ * 自定义函数`ADD`
+ * &lt;/p&gt;
+ *
+ * @author : zhengqing
+ * @description : 继承`com.googlecode.aviator.runtime.function.AbstractFunction`,并覆写对应参数个数的方法即可
+ * @date : 2020/8/10 21:30
+ */</span>
+<span class="token keyword">class</span> <span class="token class-name">Function_ADD</span> <span class="token keyword">extends</span> <span class="token class-name">AbstractFunction</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 实现将两个参数相加，返回浮点结果 AviatorDouble
+     *
+     * @param env:当前执行的上下文
+     * @param arg1:
+     *            左参数
+     * @param arg2:
+     *            右参数
+     * @return: com.googlecode.aviator.runtime.type.AviatorObject
+     * @date : 2020/8/10 21:33
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> AviatorObject <span class="token function">call</span><span class="token punctuation">(</span>Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span> env<span class="token punctuation">,</span> AviatorObject arg1<span class="token punctuation">,</span> AviatorObject arg2<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Number left <span class="token operator">=</span> FunctionUtils<span class="token punctuation">.</span><span class="token function">getNumberValue</span><span class="token punctuation">(</span>arg1<span class="token punctuation">,</span> env<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Number right <span class="token operator">=</span> FunctionUtils<span class="token punctuation">.</span><span class="token function">getNumberValue</span><span class="token punctuation">(</span>arg2<span class="token punctuation">,</span> env<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">AviatorDouble</span><span class="token punctuation">(</span>left<span class="token punctuation">.</span><span class="token function">doubleValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> right<span class="token punctuation">.</span><span class="token function">doubleValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 返回方法名
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> String <span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token string">"ADD"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>运行结果如下：<br>
+<img src="https://img-blog.csdnimg.cn/20200810214257836.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<hr>
+<h3><a id="demo_67"></a>本文案例demo源码地址</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+人生每天都要笑，生活的下一秒发生什么，我们谁也不知道。所以，放下心里的纠结，放下脑中的烦恼，放下生活的不愉快，活在当下。人生喜怒哀乐，百般形态，不如在心里全部淡然处之，轻轻一笑，让心更自在，生命更恒久。积极者相信只有推动自己才能推动世界，只要推动自己就能推动世界。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
