@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aviator(3) 自定义函数IF</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/107913810">Aviator(1) SpringBoot整合Aviator入门体验</a></li>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/107921112">Aviator(2) 自定义函数ADD</a></li>
+<li>自定义函数和调用Java方法可参考：<a href="https://www.yuque.com/boyan-avfmj/aviatorscript/xbdgg2">https://www.yuque.com/boyan-avfmj/aviatorscript/xbdgg2</a></li>
+</ol>
+<h3><a id="Aviator_IF_6"></a>二、Aviator 自定义函数<code>IF</code></h3>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestAviator_IF</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 注册函数`IF`</span>
+        AviatorEvaluator<span class="token punctuation">.</span><span class="token function">addFunction</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Function_IF</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Object execute1 <span class="token operator">=</span> AviatorEvaluator<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span><span class="token string">" IF(1.0==1.0,100,200)"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Object execute2 <span class="token operator">=</span> AviatorEvaluator<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span><span class="token string">"IF(1==1,IF(1&gt;=2,10,20),IF(10&lt;=20,30,40))"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>execute1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>execute2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+<span class="token comment">/**
+ * &lt;p&gt;
+ * Aviator 自定义函数`IF`
+ * &lt;/p&gt;
+ *
+ * @author : zhengqing
+ * @description : 继承`com.googlecode.aviator.runtime.function.AbstractFunction`,并覆写对应参数个数的方法即可
+ * @date : 2020/8/11 9:15
+ */</span>
+<span class="token keyword">class</span> <span class="token class-name">Function_IF</span> <span class="token keyword">extends</span> <span class="token class-name">AbstractFunction</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * IF函数实现逻辑处理
+     *
+     * @param env:
+     *            当前执行的上下文
+     * @param arg1:
+     *            if函数中的判断逻辑
+     * @param arg2:
+     *            arg1为true时的结果
+     * @param arg3:
+     *            arg1为false时的结果
+     * @return: com.googlecode.aviator.runtime.type.AviatorObject
+     * @author : zhengqing
+     * @date : 2020/8/11 9:17
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> AviatorObject <span class="token function">call</span><span class="token punctuation">(</span>Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span> env<span class="token punctuation">,</span> AviatorObject arg1<span class="token punctuation">,</span> AviatorObject arg2<span class="token punctuation">,</span> AviatorObject arg3<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Boolean ifResult <span class="token operator">=</span> FunctionUtils<span class="token punctuation">.</span><span class="token function">getBooleanValue</span><span class="token punctuation">(</span>arg1<span class="token punctuation">,</span> env<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Number ifTrue <span class="token operator">=</span> FunctionUtils<span class="token punctuation">.</span><span class="token function">getNumberValue</span><span class="token punctuation">(</span>arg2<span class="token punctuation">,</span> env<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Number ifFalse <span class="token operator">=</span> FunctionUtils<span class="token punctuation">.</span><span class="token function">getNumberValue</span><span class="token punctuation">(</span>arg3<span class="token punctuation">,</span> env<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>ifResult<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">AviatorDouble</span><span class="token punctuation">(</span>ifTrue<span class="token punctuation">.</span><span class="token function">doubleValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">AviatorDouble</span><span class="token punctuation">(</span>ifFalse<span class="token punctuation">.</span><span class="token function">doubleValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 返回方法名
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> String <span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token string">"IF"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>运行结果如下：<br>
+<img src="https://img-blog.csdnimg.cn/20200811092310371.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<hr>
+<h3><a id="demo_77"></a>本文案例demo源码地址</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+当热诚变成习惯，恐惧和忧虑即无处容身。缺乏热诚的人也没有明确的目标。热诚使想象的轮子转动。一个人缺乏热诚就象汽车没有汽油。善于安排玩乐和工作，两者保持热诚，就是最快乐的人。热诚使平凡的话题变得生动。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
