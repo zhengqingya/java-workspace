@@ -1,0 +1,13 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+
+# ====================== ↓↓↓↓↓↓ MinIO文件服务器 ↓↓↓↓↓↓ ======================
+minio:
+  url: http://127.0.0.1:9001
+  accessKey: root
+  secretKey: password
+  bucketName: test

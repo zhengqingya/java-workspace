@@ -1,0 +1,298 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(31) 整合MinIO实现文件上传与下载</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p><code>MinIO</code> 是一个基于<code>Apache License v2.0</code>开源协议的<code>对象存储</code>服务。它兼容亚马逊S3云存储服务接口，非常适合于存储<code>大容量非结构化</code>的数据，例如<code>图片</code>、<code>视频</code>、<code>日志文件</code>、<code>备份数据</code>和<code>容器/虚拟机镜像</code>等，而一个对象文件可以是任意大小，从几kb到最大5T不等。</p>
+<p>MinIO官方文档：<a href="https://docs.min.io/cn/">https://docs.min.io/cn/</a></p>
+<h3><a id="DockerMinIO_6"></a>二、Docker安装MinIO</h3>
+<pre><code class="prism language-shell"><span class="token comment"># 环境准备</span>
+<span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+
+<span class="token comment"># Liunx系统走此路径</span>
+<span class="token function">cd</span> docker-compose/Liunx
+<span class="token comment"># Windows系统走此路径</span>
+<span class="token function">cd</span> docker-compose/Windows
+
+<span class="token comment"># 运行服务</span>
+docker-compose -f docker-compose-minio.yml -p minio up -d
+</code></pre>
+<p>访问地址：<a href="http://127.0.0.1:9001/minio"><code>http://127.0.0.1:9001/minio</code></a><br>
+登录账号密码：<code>root/password</code></p>
+<p><img src="https://img-blog.csdnimg.cn/20200817012304733.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<h3><a id="SpringBootMinIO_27"></a>三、SpringBoot整合MinIO实现文件上传与下载</h3>
+<h4><a id="1pomxmlMinIO_29"></a>1、<code>pom.xml</code>中引入<code>MinIO</code>依赖</h4>
+<pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>io.minio<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>minio<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>7.1.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationymlMinIO_39"></a>2、<code>application.yml</code>中配置<code>MinIO</code></h4>
+<pre><code class="prism language-yml"><span class="token comment"># ====================== ↓↓↓↓↓↓ MinIO文件服务器 ↓↓↓↓↓↓ ======================</span>
+<span class="token key atrule">minio</span><span class="token punctuation">:</span>
+  <span class="token key atrule">url</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span><span class="token number">9001</span>
+  <span class="token key atrule">accessKey</span><span class="token punctuation">:</span> root
+  <span class="token key atrule">secretKey</span><span class="token punctuation">:</span> password
+  <span class="token key atrule">bucketName</span><span class="token punctuation">:</span> test
+</code></pre>
+<h4><a id="3MinIO_50"></a>3、MinIO属性类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@Configuration</span>
+<span class="token annotation punctuation">@ConfigurationProperties</span><span class="token punctuation">(</span>prefix <span class="token operator">=</span> <span class="token string">"minio"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MinIoProperties</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * minio地址+端口号
+     */</span>
+    <span class="token keyword">private</span> String url<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * minio用户名
+     */</span>
+    <span class="token keyword">private</span> String accessKey<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * minio密码
+     */</span>
+    <span class="token keyword">private</span> String secretKey<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 文件桶的名称
+     */</span>
+    <span class="token keyword">private</span> String bucketName<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4MinIO_81"></a>4、MinIO工具类</h4>
+<blockquote>
+<p>Java Client API参考文档：https://docs.min.io/cn/java-client-api-reference.html</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MinIoUtil</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    MinIoProperties minIoProperties<span class="token punctuation">;</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> MinioClient minioClient<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 初始化minio配置
+     *
+     * @param :
+     * @return: void
+     * @date : 2020/8/16 20:56
+     */</span>
+    <span class="token annotation punctuation">@PostConstruct</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            minioClient <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MinioClient</span><span class="token punctuation">(</span>minIoProperties<span class="token punctuation">.</span><span class="token function">getUrl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> minIoProperties<span class="token punctuation">.</span><span class="token function">getAccessKey</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                minIoProperties<span class="token punctuation">.</span><span class="token function">getSecretKey</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token function">createBucket</span><span class="token punctuation">(</span>minIoProperties<span class="token punctuation">.</span><span class="token function">getBucketName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"初始化minio配置异常: 【{}】"</span><span class="token punctuation">,</span> e<span class="token punctuation">.</span><span class="token function">fillInStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 判断 bucket是否存在
+     *
+     * @param bucketName:
+     *            桶名
+     * @return: boolean
+     * @date : 2020/8/16 20:53
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">bucketExists</span><span class="token punctuation">(</span>String bucketName<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> minioClient<span class="token punctuation">.</span><span class="token function">bucketExists</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 创建 bucket
+     *
+     * @param bucketName:
+     *            桶名
+     * @return: void
+     * @date : 2020/8/16 20:53
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">createBucket</span><span class="token punctuation">(</span>String bucketName<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">boolean</span> isExist <span class="token operator">=</span> minioClient<span class="token punctuation">.</span><span class="token function">bucketExists</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>isExist<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            minioClient<span class="token punctuation">.</span><span class="token function">makeBucket</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 获取全部bucket
+     *
+     * @param :
+     * @return: java.util.List&lt;io.minio.messages.Bucket&gt;
+     * @date : 2020/8/16 23:28
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> List<span class="token generics function"><span class="token punctuation">&lt;</span>Bucket<span class="token punctuation">&gt;</span></span> <span class="token function">getAllBuckets</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> minioClient<span class="token punctuation">.</span><span class="token function">listBuckets</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 文件上传
+     *
+     * @param bucketName:
+     *            桶名
+     * @param fileName:
+     *            文件名
+     * @param filePath:
+     *            文件路径
+     * @return: void
+     * @date : 2020/8/16 20:53
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">upload</span><span class="token punctuation">(</span>String bucketName<span class="token punctuation">,</span> String fileName<span class="token punctuation">,</span> String filePath<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        minioClient<span class="token punctuation">.</span><span class="token function">putObject</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">,</span> fileName<span class="token punctuation">,</span> filePath<span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 文件上传
+     *
+     * @param bucketName:
+     *            桶名
+     * @param fileName:
+     *            文件名
+     * @param stream:
+     *            文件流
+     * @return: java.lang.String : 文件url地址
+     * @date : 2020/8/16 23:40
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">upload</span><span class="token punctuation">(</span>String bucketName<span class="token punctuation">,</span> String fileName<span class="token punctuation">,</span> InputStream stream<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        minioClient<span class="token punctuation">.</span><span class="token function">putObject</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">,</span> fileName<span class="token punctuation">,</span> stream<span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">PutObjectOptions</span><span class="token punctuation">(</span>stream<span class="token punctuation">.</span><span class="token function">available</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token function">getFileUrl</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">,</span> fileName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 文件上传
+     *
+     * @param bucketName:
+     *            桶名
+     * @param file:
+     *            文件
+     * @return: java.lang.String : 文件url地址
+     * @date : 2020/8/16 23:40
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">upload</span><span class="token punctuation">(</span>String bucketName<span class="token punctuation">,</span> MultipartFile file<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">final</span> InputStream is <span class="token operator">=</span> file<span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">final</span> String fileName <span class="token operator">=</span> file<span class="token punctuation">.</span><span class="token function">getOriginalFilename</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        minioClient<span class="token punctuation">.</span><span class="token function">putObject</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">,</span> fileName<span class="token punctuation">,</span> is<span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">PutObjectOptions</span><span class="token punctuation">(</span>is<span class="token punctuation">.</span><span class="token function">available</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        is<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token function">getFileUrl</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">,</span> fileName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 删除文件
+     *
+     * @param bucketName:
+     *            桶名
+     * @param fileName:
+     *            文件名
+     * @return: void
+     * @date : 2020/8/16 20:53
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">deleteFile</span><span class="token punctuation">(</span>String bucketName<span class="token punctuation">,</span> String fileName<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        minioClient<span class="token punctuation">.</span><span class="token function">removeObject</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">,</span> fileName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 下载文件
+     *
+     * @param bucketName:
+     *            桶名
+     * @param fileName:
+     *            文件名
+     * @param response:
+     * @return: void
+     * @date : 2020/8/17 0:34
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">download</span><span class="token punctuation">(</span>String bucketName<span class="token punctuation">,</span> String fileName<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 获取对象的元数据</span>
+        <span class="token keyword">final</span> ObjectStat stat <span class="token operator">=</span> minioClient<span class="token punctuation">.</span><span class="token function">statObject</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">,</span> fileName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">setContentType</span><span class="token punctuation">(</span>stat<span class="token punctuation">.</span><span class="token function">contentType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">setCharacterEncoding</span><span class="token punctuation">(</span><span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">setHeader</span><span class="token punctuation">(</span><span class="token string">"Content-Disposition"</span><span class="token punctuation">,</span> <span class="token string">"attachment;filename="</span> <span class="token operator">+</span> URLEncoder<span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span>fileName<span class="token punctuation">,</span> <span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        InputStream is <span class="token operator">=</span> minioClient<span class="token punctuation">.</span><span class="token function">getObject</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">,</span> fileName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        IOUtils<span class="token punctuation">.</span><span class="token function">copy</span><span class="token punctuation">(</span>is<span class="token punctuation">,</span> response<span class="token punctuation">.</span><span class="token function">getOutputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        is<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 获取minio文件的下载地址
+     *
+     * @param bucketName:
+     *            桶名
+     * @param fileName:
+     *            文件名
+     * @return: java.lang.String
+     * @date : 2020/8/16 22:07
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">getFileUrl</span><span class="token punctuation">(</span>String bucketName<span class="token punctuation">,</span> String fileName<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> minioClient<span class="token punctuation">.</span><span class="token function">presignedGetObject</span><span class="token punctuation">(</span>bucketName<span class="token punctuation">,</span> fileName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="5MinIO_265"></a>5、MinIO测试接口</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api/minio"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"MinIO测试接口"</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MinIoController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    MinIoProperties minIoProperties<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"上传文件"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@PostMapping</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"/upload"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> String <span class="token function">upload</span><span class="token punctuation">(</span><span class="token annotation punctuation">@RequestParam</span><span class="token punctuation">(</span><span class="token string">"file"</span><span class="token punctuation">)</span> MultipartFile file<span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+        String fileUrl <span class="token operator">=</span> MinIoUtil<span class="token punctuation">.</span><span class="token function">upload</span><span class="token punctuation">(</span>minIoProperties<span class="token punctuation">.</span><span class="token function">getBucketName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> file<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"文件下载地址："</span> <span class="token operator">+</span> fileUrl<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"下载文件"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"/download"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">download</span><span class="token punctuation">(</span><span class="token annotation punctuation">@RequestParam</span><span class="token punctuation">(</span><span class="token string">"fileName"</span><span class="token punctuation">)</span> String fileName<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        MinIoUtil<span class="token punctuation">.</span><span class="token function">download</span><span class="token punctuation">(</span>minIoProperties<span class="token punctuation">.</span><span class="token function">getBucketName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> fileName<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"删除文件"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"/delete"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> String <span class="token function">delete</span><span class="token punctuation">(</span><span class="token annotation punctuation">@RequestParam</span><span class="token punctuation">(</span><span class="token string">"fileName"</span><span class="token punctuation">)</span> String fileName<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        MinIoUtil<span class="token punctuation">.</span><span class="token function">deleteFile</span><span class="token punctuation">(</span>minIoProperties<span class="token punctuation">.</span><span class="token function">getBucketName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> fileName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"删除成功"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<hr>
+<h3><a id="demo_301"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+努力是一种生活态度，与年龄无关。所以，无论什么时候，千万不可放纵自己，给自己找懒散和拖延的借口，对自己严格一点儿，时间长了，努力便成为一种心理习惯，一种生活方式！</p>
+</blockquote>
+</div>
+</body>
+
+</html>
