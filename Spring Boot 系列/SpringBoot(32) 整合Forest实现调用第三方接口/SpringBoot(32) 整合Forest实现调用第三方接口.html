@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(32) 整合Forest实现调用第三方接口</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<h6><a id="Forest_2"></a>Forest是什么？</h6>
+<p><code>Forest</code>是一个<code>高层</code>的、<code>极简</code>的<code>轻量级</code> <code>HTTP调用API框架</code>，让Java发送<code>HTTP/HTTPS</code>请求不再难。它比OkHttp和HttpClient更高层，比Feign更轻量，是封装调用第三方restful api client接口的好帮手。</p>
+<blockquote>
+<p>相比于直接使用Httpclient我们不再写一大堆重复的代码了，而是像调用本地方法一样去发送HTTP请求。</p>
+</blockquote>
+<ol>
+<li>项目地址：<a href="https://gitee.com/dt_flys/forest">https://gitee.com/dt_flys/forest</a></li>
+<li>中文文档：<a href="https://dt_flys.gitee.io/forest/">https://dt_flys.gitee.io/forest/</a></li>
+</ol>
+<p><img src="https://img-blog.csdnimg.cn/20200827135141821.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<h3><a id="SpringBootForest_14"></a>二、SpringBoot整合Forest实现调用第三方接口</h3>
+<h4><a id="1pomxml_16"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- Forest --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.dtflys.forest<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-forest<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.4.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_27"></a>2、<code>application.yml</code>中相关配置</h4>
+<pre><code class="prism language-yml"><span class="token comment"># ========================== ↓↓↓↓↓↓ forest配置 ↓↓↓↓↓↓ ==========================</span>
+<span class="token key atrule">forest</span><span class="token punctuation">:</span>
+  <span class="token key atrule">bean-id</span><span class="token punctuation">:</span> config0 <span class="token comment"># 在spring上下文中bean的id, 默认值为forestConfiguration</span>
+  <span class="token key atrule">backend</span><span class="token punctuation">:</span> okhttp3 <span class="token comment"># 后端HTTP API： okhttp3 【支持`okhttp3`/`httpclient`】</span>
+  <span class="token key atrule">max-connections</span><span class="token punctuation">:</span> <span class="token number">1000 </span><span class="token comment"># 连接池最大连接数，默认值为500</span>
+  <span class="token key atrule">max-route-connections</span><span class="token punctuation">:</span> <span class="token number">500 </span><span class="token comment"># 每个路由的最大连接数，默认值为500</span>
+  <span class="token key atrule">timeout</span><span class="token punctuation">:</span> <span class="token number">3000 </span><span class="token comment"># 请求超时时间，单位为毫秒, 默认值为3000</span>
+  <span class="token key atrule">connect-timeout</span><span class="token punctuation">:</span> <span class="token number">3000 </span><span class="token comment"># 连接超时时间，单位为毫秒, 默认值为2000</span>
+  <span class="token key atrule">retry-count</span><span class="token punctuation">:</span> <span class="token number">0 </span><span class="token comment"># 请求失败后重试次数，默认为0次不重试</span>
+  <span class="token key atrule">ssl-protocol</span><span class="token punctuation">:</span> SSLv3 <span class="token comment"># 单向验证的HTTPS的默认SSL协议，默认为SSLv3</span>
+  <span class="token key atrule">logEnabled</span><span class="token punctuation">:</span> <span class="token boolean important">true </span><span class="token comment"># 打开或关闭日志，默认为true</span>
+</code></pre>
+<h4><a id="3_43"></a>3、配置扫描接口</h4>
+<p>在启动类上加上<code>@ForestScan</code>注解，并在<code>basePackages</code>属性中填写远程接口所在的包名</p>
+<pre><code class="prism language-java"><span class="token comment">// forest扫描远程接口所在的包名</span>
+<span class="token annotation punctuation">@ForestScan</span><span class="token punctuation">(</span>basePackages <span class="token operator">=</span> <span class="token string">"com.zhengqing.demo.rpc.client"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@SpringBootApplication</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DemoApplication</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        SpringApplication<span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span>DemoApplication<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/20200827143630280.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<h4><a id="4_62"></a>4、构建请求接口</h4>
+<blockquote>
+<p>温馨小提示：下面只是简单请求模拟测试，更多可参考官方文档！</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">MyClient</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 本地测试接口
+     */</span>
+    <span class="token annotation punctuation">@Get</span><span class="token punctuation">(</span>url <span class="token operator">=</span> <span class="token string">"http://127.0.0.1:80/demo/index"</span><span class="token punctuation">)</span>
+    String <span class="token function">index</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Get</span><span class="token punctuation">(</span>url <span class="token operator">=</span> <span class="token string">"http://127.0.0.1:80/demo/hello?msg=${msg}"</span><span class="token punctuation">)</span>
+    String <span class="token function">hello</span><span class="token punctuation">(</span><span class="token annotation punctuation">@DataVariable</span><span class="token punctuation">(</span><span class="token string">"msg"</span><span class="token punctuation">)</span> String msg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 高德地图API
+     */</span>
+    <span class="token annotation punctuation">@Get</span><span class="token punctuation">(</span>url <span class="token operator">=</span> <span class="token string">"http://ditu.amap.com/service/regeo?longitude=${longitude}&amp;latitude=${latitude}"</span><span class="token punctuation">)</span>
+    Map <span class="token function">getLocation</span><span class="token punctuation">(</span><span class="token annotation punctuation">@DataVariable</span><span class="token punctuation">(</span><span class="token string">"longitude"</span><span class="token punctuation">)</span> String longitude<span class="token punctuation">,</span> <span class="token annotation punctuation">@DataVariable</span><span class="token punctuation">(</span><span class="token string">"latitude"</span><span class="token punctuation">)</span> String latitude<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="5_87"></a>5、测试</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RunWith</span><span class="token punctuation">(</span>SpringRunner<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@SpringBootTest</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DemoTest</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> MyClient myClient<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Test</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testForest</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+        <span class="token comment">// 调用接口</span>
+        String index <span class="token operator">=</span> myClient<span class="token punctuation">.</span><span class="token function">index</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"index: 【{}】"</span><span class="token punctuation">,</span> index<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        
+        String hello <span class="token operator">=</span> myClient<span class="token punctuation">.</span><span class="token function">hello</span><span class="token punctuation">(</span><span class="token string">"测试..."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"hello: 【{}】"</span><span class="token punctuation">,</span> hello<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        Map location <span class="token operator">=</span> myClient<span class="token punctuation">.</span><span class="token function">getLocation</span><span class="token punctuation">(</span><span class="token string">"121.475078"</span><span class="token punctuation">,</span> <span class="token string">"31.223577"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"location: 【{}】"</span><span class="token punctuation">,</span> location<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/20200827143857676.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<hr>
+<h3><a id="demo_117"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+能力配不上野心，是所有烦扰的根源。这个世界是公平的，你要想得到，就得学会付出和坚持。每个人都是通过自己的努力，去决定生活的样子。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
