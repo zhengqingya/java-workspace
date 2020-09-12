@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workbook>
+  <!-- ① 指定读取哪一个sheet： name="测试" ② 如果只是读取第一个的话，可使用： idx="0" -->
+  <worksheet name="测试">
+    <!-- 表头开始至结束行 -->
+    <section startRow="1" endRow="1"/>
+    <!--
+    开始循环读取文件数据，配置开始行，items映射的list var映射的bean varType 类路径
+      startRow：开始循环的行数
+      endRow-startRow：循环体的大小，0代表一行，依次论推
+      每循环一次，判断是否结束，不结束继续循环，直至结束
+     -->
+    <loop startRow="2" endRow="2" items="dataList" var="item"
+      varType="com.zhengqing.demo.bo.UserInfoBO">
+      <!-- 循环开始行 -->
+      <section startRow="2" endRow="2">
+        <!-- 循环中每一次的节点属性配置 -->
+        <mapping row="2" col="0">item.id</mapping>
+        <mapping row="2" col="1">item.name</mapping>
+        <mapping row="2" col="2">item.age</mapping>
+      </section>
+      <!-- 结束条件配置 -->
+      <loopbreakcondition>
+        <rowcheck offset="0">
+          <!-- 空白结束不填 -->
+          <cellcheck offset="0"/>
+        </rowcheck>
+      </loopbreakcondition>
+    </loop>
+  </worksheet>
+</workbook>

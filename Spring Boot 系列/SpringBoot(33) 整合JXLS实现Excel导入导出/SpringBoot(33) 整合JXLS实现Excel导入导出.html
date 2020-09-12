@@ -1,0 +1,426 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(33) 整合JXLS实现Excel导入导出</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li>jxls官网：<a href="http://jxls.sourceforge.net/">http://jxls.sourceforge.net/</a></li>
+<li>本文将基于<code>springboot2.3.3.RELEASE</code>去整合<code>jxls</code>实现excel导入导出功能</li>
+</ol>
+<p><img src="https://img-blog.csdnimg.cn/20200912122140136.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<h3><a id="SpringBootJXLSExcel_7"></a>二、SpringBoot整合JXLS实现Excel导入导出</h3>
+<h4><a id="1pomxml_9"></a>1、<code>pom.xml</code>中引入相关依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- jxls导出导入读取excel报表 --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/org.jxls/jxls --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.jxls<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>jxls<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.8.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/org.jxls/jxls-poi --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.jxls<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>jxls-poi<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.8.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/org.jxls/jxls-jexcel --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.jxls<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>jxls-jexcel<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.0.9<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/org.jxls/jxls-reader --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.jxls<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>jxls-reader<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.0.6<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2Excel_39"></a>2、Excel导入导出工具类</h4>
+<pre><code class="prism language-java"><span class="token keyword">import</span> cn<span class="token punctuation">.</span>hutool<span class="token punctuation">.</span>core<span class="token punctuation">.</span>io<span class="token punctuation">.</span>FileUtil<span class="token punctuation">;</span>
+<span class="token keyword">import</span> com<span class="token punctuation">.</span>zhengqing<span class="token punctuation">.</span>demo<span class="token punctuation">.</span>Constants<span class="token punctuation">;</span>
+<span class="token keyword">import</span> com<span class="token punctuation">.</span>zhengqing<span class="token punctuation">.</span>demo<span class="token punctuation">.</span>enums<span class="token punctuation">.</span>ExcelExportFileTypeEnum<span class="token punctuation">;</span>
+<span class="token keyword">import</span> com<span class="token punctuation">.</span>zhengqing<span class="token punctuation">.</span>demo<span class="token punctuation">.</span>enums<span class="token punctuation">.</span>ExcelImportFileTypeEnum<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>File<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>FileInputStream<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>FileOutputStream<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>IOException<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>InputStream<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>io<span class="token punctuation">.</span>OutputStream<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>net<span class="token punctuation">.</span>URLEncoder<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>util<span class="token punctuation">.</span>HashMap<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>util<span class="token punctuation">.</span>List<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>util<span class="token punctuation">.</span>Map<span class="token punctuation">;</span>
+<span class="token keyword">import</span> javax<span class="token punctuation">.</span>servlet<span class="token punctuation">.</span>http<span class="token punctuation">.</span>HttpServletResponse<span class="token punctuation">;</span>
+<span class="token keyword">import</span> lombok<span class="token punctuation">.</span>SneakyThrows<span class="token punctuation">;</span>
+<span class="token keyword">import</span> lombok<span class="token punctuation">.</span>extern<span class="token punctuation">.</span>slf4j<span class="token punctuation">.</span>Slf4j<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>poi<span class="token punctuation">.</span>ss<span class="token punctuation">.</span>usermodel<span class="token punctuation">.</span>Workbook<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>poi<span class="token punctuation">.</span>ss<span class="token punctuation">.</span>usermodel<span class="token punctuation">.</span>WorkbookFactory<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>jxls<span class="token punctuation">.</span>common<span class="token punctuation">.</span>Context<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>jxls<span class="token punctuation">.</span>reader<span class="token punctuation">.</span>ReaderBuilder<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>jxls<span class="token punctuation">.</span>reader<span class="token punctuation">.</span>XLSReadStatus<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>jxls<span class="token punctuation">.</span>reader<span class="token punctuation">.</span>XLSReader<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>jxls<span class="token punctuation">.</span>transform<span class="token punctuation">.</span>poi<span class="token punctuation">.</span>PoiTransformer<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>jxls<span class="token punctuation">.</span>util<span class="token punctuation">.</span>JxlsHelper<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>core<span class="token punctuation">.</span>io<span class="token punctuation">.</span>ClassPathResource<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>core<span class="token punctuation">.</span>io<span class="token punctuation">.</span>Resource<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>springframework<span class="token punctuation">.</span>web<span class="token punctuation">.</span>multipart<span class="token punctuation">.</span>MultipartFile<span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &lt;p&gt;
+ * 导入导出Excel报表工具类
+ * &lt;/p&gt;
+ *
+ * @author : zhengqing
+ * @description :
+ * @date : 2020/9/7 14:26
+ */</span>
+<span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ExcelUtil</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 读取上传文件数据
+     *
+     * @param dataList:
+     *            数据
+     * @param excelImportFileTypeEnum:
+     *            导入报表模板类型
+     * @param file:
+     *            上传文件数据
+     * @param isThrowException:
+     *            遇到错误是否抛出异常信息 true:抛出 false：不抛，继续处理数据
+     * @return: 装满数据的dataList
+     * @author : zhengqing
+     * @date : 2020/9/7 13:59
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token generics function"><span class="token punctuation">&lt;</span>E<span class="token punctuation">,</span> T<span class="token punctuation">&gt;</span></span> List<span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> <span class="token function">read</span><span class="token punctuation">(</span>List<span class="token generics function"><span class="token punctuation">&lt;</span>T<span class="token punctuation">&gt;</span></span> dataList<span class="token punctuation">,</span> ExcelImportFileTypeEnum excelImportFileTypeEnum<span class="token punctuation">,</span>
+        MultipartFile file<span class="token punctuation">,</span> <span class="token keyword">boolean</span> isThrowException<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        String fileName <span class="token operator">=</span> file<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        InputStream inputXLS <span class="token operator">=</span> null<span class="token punctuation">;</span>
+        InputStream inputXML <span class="token operator">=</span> null<span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            Resource resource <span class="token operator">=</span>
+                <span class="token keyword">new</span> <span class="token class-name">ClassPathResource</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>DEFAULT_REPORT_IMPORT_FOLDER <span class="token operator">+</span> excelImportFileTypeEnum<span class="token punctuation">.</span><span class="token function">getMappingXml</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 上传文件流</span>
+            inputXLS <span class="token operator">=</span> file<span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// xml配置文件流</span>
+            inputXML <span class="token operator">=</span> resource<span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 执行解析</span>
+            XLSReader mainReader <span class="token operator">=</span> ReaderBuilder<span class="token punctuation">.</span><span class="token function">buildFromXML</span><span class="token punctuation">(</span>inputXML<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span> beans <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token operator">&lt;</span><span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            beans<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"dataList"</span><span class="token punctuation">,</span> dataList<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            XLSReadStatus readStatus <span class="token operator">=</span> mainReader<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span>inputXLS<span class="token punctuation">,</span> beans<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>readStatus<span class="token punctuation">.</span><span class="token function">isStatusOK</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"读取excel文件成功: 【{}】"</span><span class="token punctuation">,</span> fileName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment">// ① 记录错误位置</span>
+            String errorCell <span class="token operator">=</span> e<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">" "</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token comment">// ② 记录错误原因</span>
+            String errorMsg <span class="token operator">=</span> e<span class="token punctuation">.</span><span class="token function">getCause</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            String<span class="token punctuation">[</span><span class="token punctuation">]</span> causeMsgArray <span class="token operator">=</span> errorMsg<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">":"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            errorMsg <span class="token operator">=</span> errorMsg<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>causeMsgArray<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">":"</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token keyword">switch</span> <span class="token punctuation">(</span>errorMsg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">case</span> <span class="token string">"For input string"</span><span class="token operator">:</span>
+                    errorMsg <span class="token operator">=</span> <span class="token string">"时间格式不正确"</span><span class="token punctuation">;</span>
+                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+                <span class="token keyword">case</span> <span class="token string">"Error converting from 'String' to 'Integer' For input string"</span><span class="token operator">:</span>
+                    errorMsg <span class="token operator">=</span> <span class="token string">"请填写数字类型"</span><span class="token punctuation">;</span>
+                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+                <span class="token keyword">default</span><span class="token operator">:</span>
+                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            errorMsg <span class="token operator">=</span> <span class="token string">"读取"</span> <span class="token operator">+</span> fileName <span class="token operator">+</span> <span class="token string">"文件异常: "</span> <span class="token operator">+</span> errorCell <span class="token operator">+</span> errorMsg<span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>isThrowException<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span>errorMsg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span>errorMsg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+            <span class="token keyword">try</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>inputXLS <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    inputXLS<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>inputXML <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    inputXML<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"parse excel error : 【{}】"</span><span class="token punctuation">,</span> e<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> dataList<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 导出EXCEL到指定路径
+     *
+     * @param dataList:
+     *            数据
+     * @param excelExportFileTypeEnum:
+     *            导出报表模板类型
+     * @param exportPath:
+     *            导出路径
+     * @return: 文件下载地址信息
+     * @author : zhengqing
+     * @date : 2020/9/7 13:59
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">export</span><span class="token punctuation">(</span>List<span class="token operator">&lt;</span>Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span><span class="token operator">&gt;</span> dataList<span class="token punctuation">,</span> ExcelExportFileTypeEnum excelExportFileTypeEnum<span class="token punctuation">,</span>
+        String exportPath<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 处理导出</span>
+        File exportFile <span class="token operator">=</span> <span class="token function">handleExport</span><span class="token punctuation">(</span>dataList<span class="token punctuation">,</span> excelExportFileTypeEnum<span class="token punctuation">,</span> exportPath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String fileName <span class="token operator">=</span> excelExportFileTypeEnum<span class="token punctuation">.</span><span class="token function">getSheetName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">".xls"</span><span class="token punctuation">;</span>
+        <span class="token comment">// TODO 这里可以对`exportFile`做文件上传处理，然后返回一个文件下载地址 或其它业务处理...</span>
+        <span class="token keyword">return</span> exportFile<span class="token punctuation">.</span><span class="token function">getAbsolutePath</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 导出EXCEL给前端直接下载
+     *
+     * @param dataList:
+     *            数据
+     * @param excelExportFileTypeEnum:
+     *            导出报表模板类型
+     * @param exportPath:
+     *            导出路径
+     * @param response:
+     * @return: void
+     * @author : zhengqing
+     * @date : 2020/9/8 14:59
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">export</span><span class="token punctuation">(</span>List<span class="token operator">&lt;</span>Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span><span class="token operator">&gt;</span> dataList<span class="token punctuation">,</span> ExcelExportFileTypeEnum excelExportFileTypeEnum<span class="token punctuation">,</span>
+        String exportPath<span class="token punctuation">,</span> HttpServletResponse response<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 处理导出</span>
+        <span class="token function">handleExport</span><span class="token punctuation">(</span>dataList<span class="token punctuation">,</span> excelExportFileTypeEnum<span class="token punctuation">,</span> exportPath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// ======================= ↓↓↓↓↓↓ 响应给前端 ↓↓↓↓↓↓ =======================</span>
+        <span class="token comment">// 文件名 - 解决中文乱码问题</span>
+        String filename <span class="token operator">=</span> URLEncoder<span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span>excelExportFileTypeEnum<span class="token punctuation">.</span><span class="token function">getTemplateFile</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置响应编码</span>
+        response<span class="token punctuation">.</span><span class="token function">setCharacterEncoding</span><span class="token punctuation">(</span><span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">setContentType</span><span class="token punctuation">(</span><span class="token string">"application/x-download"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        response<span class="token punctuation">.</span><span class="token function">setHeader</span><span class="token punctuation">(</span><span class="token string">"Content-Disposition"</span><span class="token punctuation">,</span> <span class="token string">"attachment;filename="</span> <span class="token operator">+</span> filename<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        OutputStream outputStream <span class="token operator">=</span> response<span class="token punctuation">.</span><span class="token function">getOutputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        InputStream inputStream <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FileInputStream</span><span class="token punctuation">(</span>exportPath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> buffer <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">byte</span><span class="token punctuation">[</span><span class="token number">1024</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>i <span class="token operator">=</span> inputStream<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span>buffer<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            outputStream<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>buffer<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        outputStream<span class="token punctuation">.</span><span class="token function">flush</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        outputStream<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        inputStream<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 处理导出数据逻辑
+     *
+     * @param dataList:
+     *            数据
+     * @param excelExportFileTypeEnum:
+     *            导出报表模板类型
+     * @param exportPath:
+     *            导出路径
+     * @return: 导出数据文件
+     * @author : zhengqing
+     * @date : 2020/9/8 15:49
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> File <span class="token function">handleExport</span><span class="token punctuation">(</span>List<span class="token operator">&lt;</span>Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span><span class="token operator">&gt;</span> dataList<span class="token punctuation">,</span>
+        ExcelExportFileTypeEnum excelExportFileTypeEnum<span class="token punctuation">,</span> String exportPath<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Resource resource <span class="token operator">=</span>
+            <span class="token keyword">new</span> <span class="token class-name">ClassPathResource</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>DEFAULT_REPORT_EXPORT_FOLDER <span class="token operator">+</span> excelExportFileTypeEnum<span class="token punctuation">.</span><span class="token function">getTemplateFile</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        InputStream templateInputStream <span class="token operator">=</span> resource<span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        log<span class="token punctuation">.</span><span class="token function">debug</span><span class="token punctuation">(</span><span class="token string">"导出文件地址为:{}"</span><span class="token punctuation">,</span> exportPath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 创建文件</span>
+        File exportFile <span class="token operator">=</span> FileUtil<span class="token punctuation">.</span><span class="token function">touch</span><span class="token punctuation">(</span>exportPath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 列表数据将存储到指定的excel文件路径</span>
+        OutputStream out <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FileOutputStream</span><span class="token punctuation">(</span>exportPath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 这里的context是jxls框架上的context内容</span>
+        Context context <span class="token operator">=</span> PoiTransformer<span class="token punctuation">.</span><span class="token function">createInitialContext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 将列表参数放入context中</span>
+        context<span class="token punctuation">.</span><span class="token function">putVar</span><span class="token punctuation">(</span><span class="token string">"dataList"</span><span class="token punctuation">,</span> dataList<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Workbook workbook <span class="token operator">=</span> WorkbookFactory<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span>templateInputStream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// Changing name of the first sheet</span>
+        workbook<span class="token punctuation">.</span><span class="token function">setSheetName</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> excelExportFileTypeEnum<span class="token punctuation">.</span><span class="token function">getSheetName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        PoiTransformer transformer <span class="token operator">=</span> PoiTransformer<span class="token punctuation">.</span><span class="token function">createTransformer</span><span class="token punctuation">(</span>workbook<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        transformer<span class="token punctuation">.</span><span class="token function">setOutputStream</span><span class="token punctuation">(</span>out<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 将列表数据按照模板文件中的格式生成</span>
+        JxlsHelper<span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">processTemplate</span><span class="token punctuation">(</span>context<span class="token punctuation">,</span> transformer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        templateInputStream<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        out<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> exportFile<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_265"></a>3、其中全局常用变量+导入导出所需枚举类+测试业务数据类</h4>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Constants</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 导入导出文件相关
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String DEFAULT_REPORT_IMPORT_FOLDER <span class="token operator">=</span> <span class="token string">"/report/import"</span><span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String DEFAULT_REPORT_EXPORT_FOLDER <span class="token operator">=</span> <span class="token string">"/report/export"</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 系统分隔符
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String SYSTEM_SEPARATOR <span class="token operator">=</span> <span class="token string">"/"</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 获取项目根目录
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String PROJECT_ROOT_DIRECTORY <span class="token operator">=</span> System<span class="token punctuation">.</span><span class="token function">getProperty</span><span class="token punctuation">(</span><span class="token string">"user.dir"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">replaceAll</span><span class="token punctuation">(</span><span class="token string">"\\\\"</span><span class="token punctuation">,</span> SYSTEM_SEPARATOR<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * excel导出测试临时存储路径
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String FILE_PATH_TEST_EXPORT_EXCEL <span class="token operator">=</span> PROJECT_ROOT_DIRECTORY <span class="token operator">+</span> <span class="token string">"/excel.xls"</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Getter</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token keyword">public</span> <span class="token keyword">enum</span> ExcelImportFileTypeEnum <span class="token punctuation">{</span>
+
+    测试<span class="token punctuation">(</span><span class="token string">"/测试.xml"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 导入映射文件XML
+     */</span>
+    <span class="token keyword">private</span> String mappingXml<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Getter</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token keyword">public</span> <span class="token keyword">enum</span> ExcelExportFileTypeEnum <span class="token punctuation">{</span>
+
+    测试<span class="token punctuation">(</span><span class="token string">"/测试导出模板.xls"</span><span class="token punctuation">,</span> <span class="token string">"测试"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 导出模板文件
+     */</span>
+    <span class="token keyword">private</span> String templateFile<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 导出表格名
+     */</span>
+    <span class="token keyword">private</span> String sheetName<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@Builder</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">UserInfoBO</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">private</span> String id<span class="token punctuation">;</span>
+
+    <span class="token keyword">private</span> String name<span class="token punctuation">;</span>
+
+    <span class="token keyword">private</span> String age<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4Excel_344"></a>4、导出Excel模板配置</h4>
+<p><img src="https://img-blog.csdnimg.cn/20200912123039478.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<h6><a id="_jxarea_348"></a>① <code>jx:area</code>标识区域最后一个单元格的引用</h6>
+<p><img src="https://img-blog.csdnimg.cn/20200912123517920.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<h6><a id="_jxeach_352"></a>② <code>jx:each</code>标识数据循环处理</h6>
+<p><img src="https://img-blog.csdnimg.cn/20200912123724175.png#pic_center" alt="在这里插入图片描述"></p>
+<h4><a id="5Excel_356"></a>5、导入Excel解析配置</h4>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>workbook</span><span class="token punctuation">&gt;</span></span>
+  <span class="token comment">&lt;!-- ① 指定读取哪一个sheet： name="测试" ② 如果只是读取第一个的话，可使用： idx="0" --&gt;</span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>worksheet</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>测试<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token comment">&lt;!-- 表头开始至结束行 --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>section</span> <span class="token attr-name">startRow</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>1<span class="token punctuation">"</span></span> <span class="token attr-name">endRow</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>1<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+    <span class="token comment">&lt;!--
+    开始循环读取文件数据，配置开始行，items映射的list var映射的bean varType 类路径
+      startRow：开始循环的行数
+      endRow-startRow：循环体的大小，0代表一行，依次论推
+      每循环一次，判断是否结束，不结束继续循环，直至结束
+     --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>loop</span> <span class="token attr-name">startRow</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>2<span class="token punctuation">"</span></span> <span class="token attr-name">endRow</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>2<span class="token punctuation">"</span></span> <span class="token attr-name">items</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>dataList<span class="token punctuation">"</span></span> <span class="token attr-name">var</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>item<span class="token punctuation">"</span></span>
+      <span class="token attr-name">varType</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>com.zhengqing.demo.bo.UserInfoBO<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+      <span class="token comment">&lt;!-- 循环开始行 --&gt;</span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>section</span> <span class="token attr-name">startRow</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>2<span class="token punctuation">"</span></span> <span class="token attr-name">endRow</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>2<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!-- 循环中每一次的节点属性配置 --&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>mapping</span> <span class="token attr-name">row</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>2<span class="token punctuation">"</span></span> <span class="token attr-name">col</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>0<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>item.id<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>mapping</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>mapping</span> <span class="token attr-name">row</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>2<span class="token punctuation">"</span></span> <span class="token attr-name">col</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>1<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>item.name<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>mapping</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>mapping</span> <span class="token attr-name">row</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>2<span class="token punctuation">"</span></span> <span class="token attr-name">col</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>2<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>item.age<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>mapping</span><span class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>section</span><span class="token punctuation">&gt;</span></span>
+      <span class="token comment">&lt;!-- 结束条件配置 --&gt;</span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>loopbreakcondition</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rowcheck</span> <span class="token attr-name">offset</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>0<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+          <span class="token comment">&lt;!-- 空白结束不填 --&gt;</span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>cellcheck</span> <span class="token attr-name">offset</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>0<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rowcheck</span><span class="token punctuation">&gt;</span></span>
+      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>loopbreakcondition</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>loop</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>worksheet</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>workbook</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="6api_392"></a>6、测试api</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api/test"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/exportData"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">exportData</span><span class="token punctuation">(</span>HttpServletResponse response<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        List<span class="token generics function"><span class="token punctuation">&lt;</span>UserInfoBO<span class="token punctuation">&gt;</span></span> userInfoList <span class="token operator">=</span> Lists<span class="token punctuation">.</span><span class="token function">newArrayList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">&lt;=</span> <span class="token number">10</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            userInfoList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">UserInfoBO</span><span class="token punctuation">(</span>String<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"张三"</span> <span class="token operator">+</span> i<span class="token punctuation">,</span> String<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>i <span class="token operator">*</span> <span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        List<span class="token operator">&lt;</span>Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span><span class="token operator">&gt;</span> dataList <span class="token operator">=</span>
+            JSON<span class="token punctuation">.</span><span class="token function">parseObject</span><span class="token punctuation">(</span>JSON<span class="token punctuation">.</span><span class="token function">toJSONString</span><span class="token punctuation">(</span>userInfoList<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">TypeReference</span><span class="token operator">&lt;</span>List<span class="token operator">&lt;</span>Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span><span class="token operator">&gt;&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        ExcelUtil<span class="token punctuation">.</span><span class="token function">export</span><span class="token punctuation">(</span>dataList<span class="token punctuation">,</span> ExcelExportFileTypeEnum<span class="token punctuation">.</span>测试<span class="token punctuation">,</span> Constants<span class="token punctuation">.</span>FILE_PATH_TEST_EXPORT_EXCEL<span class="token punctuation">,</span> response<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// @PostMapping("/importData")</span>
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/importData"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> String <span class="token function">importData</span><span class="token punctuation">(</span><span class="token annotation punctuation">@RequestParam</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"file"</span><span class="token punctuation">,</span> required <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">)</span> MultipartFile file<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        List<span class="token generics function"><span class="token punctuation">&lt;</span>UserInfoBO<span class="token punctuation">&gt;</span></span> userInfoList <span class="token operator">=</span> Lists<span class="token punctuation">.</span><span class="token function">newArrayList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            <span class="token comment">// 本地File文件转MultipartFile作临时测试前端上传文件导入数据</span>
+            File fileLocal <span class="token operator">=</span> FileUtil<span class="token punctuation">.</span><span class="token function">newFile</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>FILE_PATH_TEST_EXPORT_EXCEL<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            InputStream inputStream <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FileInputStream</span><span class="token punctuation">(</span>fileLocal<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            MultipartFile multipartFile <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MockMultipartFile</span><span class="token punctuation">(</span>fileLocal<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> inputStream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            ExcelUtil<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span>userInfoList<span class="token punctuation">,</span> ExcelImportFileTypeEnum<span class="token punctuation">.</span>测试<span class="token punctuation">,</span> multipartFile<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>userInfoList<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> e<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token string">"SUCCESS"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<hr>
+<h3><a id="demo_434"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<p><img src="https://img-blog.csdnimg.cn/20200912124119866.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+学会下一次进步，是做大自己的有效法则。因此千万不要让自己睡在已有的成功温床上。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
