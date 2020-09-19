@@ -17,22 +17,22 @@
 </blockquote>
 <h4><a id="1POP3SMTP_8"></a>1、开启<code>POP3/SMTP服务</code>，并生成<code>授权码</code></h4>
 <p><code>登录QQ邮箱</code><a href="https://mail.qq.com">https://mail.qq.com</a> -&gt; <code>设置</code> -&gt; <code>账号</code></p>
-<p><img src="https://img-blog.csdnimg.cn/2020091910512595.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"><br>
-滑到下面有个<code>POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV服务</code>，然后开启<code>POP3/SMTP服务</code><br>
+<p><img src="https://img-blog.csdnimg.cn/20200919112203805.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<p>滑到下面有个<code>POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV服务</code>，然后开启<code>POP3/SMTP服务</code><br>
 <img src="https://img-blog.csdnimg.cn/20200919105620459.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"><br>
 然后点击<code>生成授权码</code></p>
 <blockquote>
 <p>注：这个授权码是之后需要配置的一项，先复制出来保存着~</p>
 </blockquote>
 <p><img src="https://img-blog.csdnimg.cn/20200919105811405.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
-<h4><a id="2pomxml_21"></a>2、<code>pom.xml</code>中引入所需依赖</h4>
+<h4><a id="2pomxml_22"></a>2、<code>pom.xml</code>中引入所需依赖</h4>
 <pre><code class="prism language-xml"><span class="token comment">&lt;!--发送邮件 --&gt;</span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
   <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
   <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-mail<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<h4><a id="3applicationyml_31"></a>3、<code>application.yml</code>中相关配置</h4>
+<h4><a id="3applicationyml_32"></a>3、<code>application.yml</code>中相关配置</h4>
 <pre><code class="prism language-yml"><span class="token key atrule">server</span><span class="token punctuation">:</span>
   <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">80</span>
 
@@ -52,7 +52,7 @@
             <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
             <span class="token key atrule">required</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
 </code></pre>
-<h3><a id="_54"></a>三、发送邮件工具类</h3>
+<h3><a id="_55"></a>三、发送邮件工具类</h3>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@Component</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">EmailUtil</span> <span class="token punctuation">{</span>
 
@@ -139,7 +139,7 @@
 
 <span class="token punctuation">}</span>
 </code></pre>
-<h3><a id="_144"></a>四、测试</h3>
+<h3><a id="_145"></a>四、测试</h3>
 <pre><code class="prism language-java"><span class="token annotation punctuation">@RestController</span>
 <span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api/test"</span><span class="token punctuation">)</span>
 <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestController</span> <span class="token punctuation">{</span>
@@ -158,7 +158,7 @@
 <a href="http://127.0.0.1/api/test/sendEmailTest">http://127.0.0.1/api/test/sendEmailTest</a></p>
 <p><img src="https://img-blog.csdnimg.cn/20200919110531131.png#pic_center" alt="在这里插入图片描述"></p>
 <hr>
-<h3><a id="demo_169"></a>本文案例demo源码</h3>
+<h3><a id="demo_170"></a>本文案例demo源码</h3>
 <p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
 <hr>
 <blockquote>
