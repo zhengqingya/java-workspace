@@ -1,0 +1,18 @@
+server:
+  port: 80
+
+spring:
+  # ========================== ↓↓↓↓↓↓ 发送邮件配置（QQ邮箱） ↓↓↓↓↓↓ ==========================
+  mail:
+    host: smtp.qq.com
+    username: xxx@qq.com # TODO 账号
+    password: xxxxxxxxxx # TODO 注：这里填写 在邮箱 设置 -> 账号 里面生成的`授权码` !!!
+    default-encoding: UTF-8
+    form: xxx@qq.com     # TODO 邮件发送人地址
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true

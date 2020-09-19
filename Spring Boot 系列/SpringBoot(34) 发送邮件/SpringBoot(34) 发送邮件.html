@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(34) 发送邮件</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p>本文主要基于<code>springboot2.3.3.RELEASE</code>和<code>spring-boot-starter-mail</code>实现发送纯文本与带附件的邮件</p>
+<h3><a id="_4"></a>二、环境集成准备</h3>
+<blockquote>
+<p>以QQ邮箱为例</p>
+</blockquote>
+<h4><a id="1POP3SMTP_8"></a>1、开启<code>POP3/SMTP服务</code>，并生成<code>授权码</code></h4>
+<p><code>登录QQ邮箱</code><a href="https://mail.qq.com">https://mail.qq.com</a> -&gt; <code>设置</code> -&gt; <code>账号</code></p>
+<p><img src="https://img-blog.csdnimg.cn/2020091910512595.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"><br>
+滑到下面有个<code>POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV服务</code>，然后开启<code>POP3/SMTP服务</code><br>
+<img src="https://img-blog.csdnimg.cn/20200919105620459.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"><br>
+然后点击<code>生成授权码</code></p>
+<blockquote>
+<p>注：这个授权码是之后需要配置的一项，先复制出来保存着~</p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/20200919105811405.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"></p>
+<h4><a id="2pomxml_21"></a>2、<code>pom.xml</code>中引入所需依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!--发送邮件 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-mail<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="3applicationyml_31"></a>3、<code>application.yml</code>中相关配置</h4>
+<pre><code class="prism language-yml"><span class="token key atrule">server</span><span class="token punctuation">:</span>
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">80</span>
+
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token comment"># ========================== ↓↓↓↓↓↓ 发送邮件配置（QQ邮箱） ↓↓↓↓↓↓ ==========================</span>
+  <span class="token key atrule">mail</span><span class="token punctuation">:</span>
+    <span class="token key atrule">host</span><span class="token punctuation">:</span> smtp.qq.com
+    <span class="token key atrule">username</span><span class="token punctuation">:</span> xxx@qq.com <span class="token comment"># TODO 账号</span>
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> xxxxxxxxxx <span class="token comment"># TODO 注：这里填写 在邮箱 设置 -&gt; 账号 里面生成的`授权码` !!!</span>
+    <span class="token key atrule">default-encoding</span><span class="token punctuation">:</span> UTF<span class="token punctuation">-</span><span class="token number">8</span>
+    <span class="token key atrule">form</span><span class="token punctuation">:</span> xxx@qq.com     <span class="token comment"># TODO 邮件发送人地址</span>
+    <span class="token key atrule">properties</span><span class="token punctuation">:</span>
+      <span class="token key atrule">mail</span><span class="token punctuation">:</span>
+        <span class="token key atrule">smtp</span><span class="token punctuation">:</span>
+          <span class="token key atrule">auth</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+          <span class="token key atrule">starttls</span><span class="token punctuation">:</span>
+            <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+            <span class="token key atrule">required</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+</code></pre>
+<h3><a id="_54"></a>三、发送邮件工具类</h3>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">EmailUtil</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> JavaMailSender javaMailSender<span class="token punctuation">;</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> String formEmail<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${spring.mail.form}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String formEmail2<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> JavaMailSender javaMailSender2<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@PostConstruct</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">beforeInit</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        javaMailSender <span class="token operator">=</span> javaMailSender2<span class="token punctuation">;</span>
+        formEmail <span class="token operator">=</span> formEmail2<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 发送邮件 - 不带附件
+     *
+     * @param title：邮件标题
+     * @param content：
+     *            邮件内容
+     * @param sendTo:
+     *            收件人
+     * @return: void
+     * @author : zhengqing
+     * @date : 2020/8/14 19:28
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">sendMail</span><span class="token punctuation">(</span>String title<span class="token punctuation">,</span> String content<span class="token punctuation">,</span> String<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> sendTo<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        MimeMessage message <span class="token operator">=</span> javaMailSender<span class="token punctuation">.</span><span class="token function">createMimeMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        MimeMessageHelper helper <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MimeMessageHelper</span><span class="token punctuation">(</span>message<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 发送人邮件地址</span>
+        helper<span class="token punctuation">.</span><span class="token function">setFrom</span><span class="token punctuation">(</span>formEmail<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 接收人邮件地址</span>
+        helper<span class="token punctuation">.</span><span class="token function">setTo</span><span class="token punctuation">(</span>sendTo<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 主题</span>
+        helper<span class="token punctuation">.</span><span class="token function">setSubject</span><span class="token punctuation">(</span>title<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// html内容 (设置true标识发送html邮件)</span>
+        helper<span class="token punctuation">.</span><span class="token function">setText</span><span class="token punctuation">(</span>content<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        javaMailSender<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span>message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 发送邮件 - 带附件
+     *
+     * @param title：邮件标题
+     * @param content：
+     *            邮件内容
+     * @param attachmentFilename：附件文件名
+     * @param file：附件
+     * @param sendTo:
+     *            收件人
+     * @return: void
+     * @author : zhengqing
+     * @date : 2020/8/14 19:28
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span>Exception<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">sendMail</span><span class="token punctuation">(</span>String title<span class="token punctuation">,</span> String content<span class="token punctuation">,</span> String attachmentFilename<span class="token punctuation">,</span> File file<span class="token punctuation">,</span> String<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> sendTo<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        MimeMessage message <span class="token operator">=</span> javaMailSender<span class="token punctuation">.</span><span class="token function">createMimeMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        MimeMessageHelper helper <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MimeMessageHelper</span><span class="token punctuation">(</span>message<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 发送人邮件地址</span>
+        helper<span class="token punctuation">.</span><span class="token function">setFrom</span><span class="token punctuation">(</span>formEmail<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 接收人邮件地址</span>
+        helper<span class="token punctuation">.</span><span class="token function">setTo</span><span class="token punctuation">(</span>sendTo<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 主题</span>
+        helper<span class="token punctuation">.</span><span class="token function">setSubject</span><span class="token punctuation">(</span>title<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// ① html内容 (设置true标识发送html邮件)</span>
+        helper<span class="token punctuation">.</span><span class="token function">setText</span><span class="token punctuation">(</span>content<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// ② 附件</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>StringUtils<span class="token punctuation">.</span><span class="token function">isNotBlank</span><span class="token punctuation">(</span>attachmentFilename<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            helper<span class="token punctuation">.</span><span class="token function">addAttachment</span><span class="token punctuation">(</span>attachmentFilename<span class="token punctuation">,</span> file<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        javaMailSender<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span>message<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_144"></a>四、测试</h3>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/api/test"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/sendEmailTest"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> String <span class="token function">sendEmailTest</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        EmailUtil<span class="token punctuation">.</span><span class="token function">sendMail</span><span class="token punctuation">(</span><span class="token string">"测试发送普通邮件"</span><span class="token punctuation">,</span> <span class="token string">"test..."</span><span class="token punctuation">,</span> <span class="token string">"xxx@qq.com"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        File file <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">File</span><span class="token punctuation">(</span><span class="token string">"C:\\Users\\Administrator\\Desktop\\临时垃圾站\\test.docx"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        EmailUtil<span class="token punctuation">.</span><span class="token function">sendMail</span><span class="token punctuation">(</span><span class="token string">"测试发送带附件邮件"</span><span class="token punctuation">,</span> <span class="token string">"test..."</span><span class="token punctuation">,</span> <span class="token string">"test.docx"</span><span class="token punctuation">,</span> file<span class="token punctuation">,</span> <span class="token string">"xxx@qq.com"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"SUCCESS ~"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>浏览器请求测试api接口发送邮件<br>
+<a href="http://127.0.0.1/api/test/sendEmailTest">http://127.0.0.1/api/test/sendEmailTest</a></p>
+<p><img src="https://img-blog.csdnimg.cn/20200919110531131.png#pic_center" alt="在这里插入图片描述"></p>
+<hr>
+<h3><a id="demo_169"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+生活不能等待别人来安排，要自己去争取和奋斗，而不论其结果是喜是悲，你总不枉在这世界上活了一场人。有了这样的认识，你就会珍重生活，而不会玩世不恭；同时也会给人自身注入一种强大的内在力量。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
