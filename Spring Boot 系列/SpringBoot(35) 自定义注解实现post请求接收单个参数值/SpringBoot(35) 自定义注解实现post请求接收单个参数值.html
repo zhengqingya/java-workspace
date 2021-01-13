@@ -1,0 +1,187 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(35) 自定义注解实现post请求接收单个参数值</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p>本文将基于<code>springboot2.4.0</code>实现自定义注解<code>RequestPostSingleParam</code>接收post请求单个参数值</p>
+<p><img src="https://img-blog.csdnimg.cn/20210113170547329.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="RequestPostSingleParam_8"></a>二、自定义注解<code>RequestPostSingleParam</code></h3>
+<blockquote>
+<p>处理接收单个参数的<code>post</code>请求</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Target</span><span class="token punctuation">(</span>ElementType<span class="token punctuation">.</span>PARAMETER<span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Retention</span><span class="token punctuation">(</span>RetentionPolicy<span class="token punctuation">.</span>RUNTIME<span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Documented</span>
+<span class="token keyword">public</span> @<span class="token keyword">interface</span> <span class="token class-name">RequestPostSingleParam</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * Alias for {@link #name}.
+     */</span>
+    <span class="token annotation punctuation">@AliasFor</span><span class="token punctuation">(</span><span class="token string">"name"</span><span class="token punctuation">)</span>
+    String <span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">""</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * The name of the request parameter to bind to.
+     *
+     * @since 4.2
+     */</span>
+    <span class="token annotation punctuation">@AliasFor</span><span class="token punctuation">(</span><span class="token string">"value"</span><span class="token punctuation">)</span>
+    String <span class="token function">name</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token string">""</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * Whether the parameter is required.
+     * &lt;p&gt;
+     * Defaults to {@code true}, leading to an exception being thrown if the parameter is missing in the request. Switch
+     * this to {@code false} if you prefer a {@code null} value if the parameter is not present in the request.
+     * &lt;p&gt;
+     * Alternatively, provide a {@link #defaultValue}, which implicitly sets this flag to {@code false}.
+     */</span>
+    <span class="token keyword">boolean</span> <span class="token function">required</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * The default value to use as a fallback when the request parameter is not provided or has an empty value.
+     * &lt;p&gt;
+     * Supplying a default value implicitly sets {@link #required} to {@code false}.
+     */</span>
+    String <span class="token function">defaultValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">default</span> ValueConstants<span class="token punctuation">.</span>DEFAULT_NONE<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_52"></a>三、参数解析器</h3>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RequestPostSingleParamMethodArgumentResolver</span> <span class="token keyword">implements</span> <span class="token class-name">HandlerMethodArgumentResolver</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String POST <span class="token operator">=</span> <span class="token string">"post"</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String APPLICATION_JSON <span class="token operator">=</span> <span class="token string">"application/json"</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 判断是否需要处理该参数
+     *
+     * @param parameter
+     *            the method parameter to check
+     * @return {@code true} if this resolver supports the supplied parameter; {@code false} otherwise
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">supportsParameter</span><span class="token punctuation">(</span>MethodParameter parameter<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 只处理带有@RequestPostSingleParam注解的参数</span>
+        <span class="token keyword">return</span> parameter<span class="token punctuation">.</span><span class="token function">hasParameterAnnotation</span><span class="token punctuation">(</span>RequestPostSingleParam<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> Object <span class="token function">resolveArgument</span><span class="token punctuation">(</span>MethodParameter parameter<span class="token punctuation">,</span> ModelAndViewContainer mavContainer<span class="token punctuation">,</span>
+        NativeWebRequest webRequest<span class="token punctuation">,</span> WebDataBinderFactory binderFactory<span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+        HttpServletRequest servletRequest <span class="token operator">=</span> webRequest<span class="token punctuation">.</span><span class="token function">getNativeRequest</span><span class="token punctuation">(</span>HttpServletRequest<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String contentType <span class="token operator">=</span> Objects<span class="token punctuation">.</span><span class="token function">requireNonNull</span><span class="token punctuation">(</span>servletRequest<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getContentType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>contentType <span class="token operator">==</span> null <span class="token operator">||</span> <span class="token operator">!</span>contentType<span class="token punctuation">.</span><span class="token function">contains</span><span class="token punctuation">(</span>APPLICATION_JSON<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"《RequestPostSingleParam》 contentType需为【{}】"</span><span class="token punctuation">,</span> APPLICATION_JSON<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">"《RequestPostSingleParam》 contentType需为application/json"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>POST<span class="token punctuation">.</span><span class="token function">equalsIgnoreCase</span><span class="token punctuation">(</span>servletRequest<span class="token punctuation">.</span><span class="token function">getMethod</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"《RequestPostSingleParam》 请求类型必须为post"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">"《RequestPostSingleParam》 请求类型必须为post"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">bindRequestParams</span><span class="token punctuation">(</span>parameter<span class="token punctuation">,</span> servletRequest<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> Object <span class="token function">bindRequestParams</span><span class="token punctuation">(</span>MethodParameter parameter<span class="token punctuation">,</span> HttpServletRequest servletRequest<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        RequestPostSingleParam requestPostSingleParam <span class="token operator">=</span> parameter<span class="token punctuation">.</span><span class="token function">getParameterAnnotation</span><span class="token punctuation">(</span>RequestPostSingleParam<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">&gt;</span> parameterType <span class="token operator">=</span> parameter<span class="token punctuation">.</span><span class="token function">getParameterType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String requestBody <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getRequestBody</span><span class="token punctuation">(</span>servletRequest<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Map paramObj <span class="token operator">=</span> JSONObject<span class="token punctuation">.</span><span class="token function">parseObject</span><span class="token punctuation">(</span>requestBody<span class="token punctuation">,</span> Map<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>paramObj <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            paramObj <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">JSONObject</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// if (paramObj.size() &gt; 1) {</span>
+        <span class="token comment">// throw new RuntimeException("《RequestPostSingleParam》 post请求只支持接收单个参数!");</span>
+        <span class="token comment">// }</span>
+
+        String parameterName <span class="token operator">=</span> StringUtils<span class="token punctuation">.</span><span class="token function">isBlank</span><span class="token punctuation">(</span>requestPostSingleParam<span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">?</span> parameter<span class="token punctuation">.</span><span class="token function">getParameterName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token operator">:</span> requestPostSingleParam<span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Object value <span class="token operator">=</span> paramObj<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>parameterName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>requestPostSingleParam<span class="token punctuation">.</span><span class="token function">required</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>value <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"《RequestPostSingleParam》 require=true,参数【{}】不能为空!"</span><span class="token punctuation">,</span> parameterName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">"《RequestPostSingleParam》 "</span> <span class="token operator">+</span> parameterName <span class="token operator">+</span> <span class="token string">"不能为空!"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> ConvertUtils<span class="token punctuation">.</span><span class="token function">convert</span><span class="token punctuation">(</span>value<span class="token punctuation">,</span> parameterType<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 获取请求body
+     *
+     * @param servletRequest:
+     *            request
+     * @return: 请求body
+     */</span>
+    <span class="token keyword">private</span> String <span class="token function">getRequestBody</span><span class="token punctuation">(</span>HttpServletRequest servletRequest<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        StringBuilder stringBuilder <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            BufferedReader reader <span class="token operator">=</span> servletRequest<span class="token punctuation">.</span><span class="token function">getReader</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">char</span><span class="token punctuation">[</span><span class="token punctuation">]</span> buf <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">char</span><span class="token punctuation">[</span><span class="token number">1024</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+            <span class="token keyword">int</span> length<span class="token punctuation">;</span>
+            <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>length <span class="token operator">=</span> reader<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span>buf<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                stringBuilder<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>buf<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> length<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"《RequestPostSingleParam》 读取流异常"</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">"《RequestPostSingleParam》 读取流异常"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> stringBuilder<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_144"></a>四、注册参数解析器</h3>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">RequestPostSingleParamResolverConfig</span> <span class="token keyword">implements</span> <span class="token class-name">WebMvcConfigurer</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addArgumentResolvers</span><span class="token punctuation">(</span>List<span class="token generics function"><span class="token punctuation">&lt;</span>HandlerMethodArgumentResolver<span class="token punctuation">&gt;</span></span> resolvers<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        resolvers<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">RequestPostSingleParamMethodArgumentResolver</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        WebMvcConfigurer<span class="token punctuation">.</span><span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">addArgumentResolvers</span><span class="token punctuation">(</span>resolvers<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_159"></a>五、测试</h3>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/test"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"测试api"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@PostMapping</span><span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"测试post请求接收单个参数"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> Integer <span class="token function">testPostParam</span><span class="token punctuation">(</span><span class="token annotation punctuation">@ApiParam</span><span class="token punctuation">(</span><span class="token string">"id值"</span><span class="token punctuation">)</span> <span class="token annotation punctuation">@RequestPostSingleParam</span> Integer id<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"id: 【{}】"</span><span class="token punctuation">,</span> id<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> id<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p><a href="http://127.0.0.1/doc.html">http://127.0.0.1/doc.html</a></p>
+<p><img src="https://img-blog.csdnimg.cn/20210113170935207.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20210113171002369.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="demo_185"></a>六、本文案例demo</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+每天安静的坐十五分钟，倾听你的气息，感觉它，感觉你自己，并且试着什么都不想。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
