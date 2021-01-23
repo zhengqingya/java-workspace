@@ -1,0 +1,229 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nepxion Discovery(1) 全链路蓝绿发布</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<blockquote>
+<p><a href="https://github.com/Nepxion/Discovery">https://github.com/Nepxion/Discovery</a></p>
+</blockquote>
+<p>Discovery【探索】微服务框架，基于Spring Cloud &amp; Spring Cloud Alibaba，Discovery服务注册发现、Ribbon负载均衡、Feign和RestTemplate调用、Spring Cloud Gateway和Zuul过滤等组件全方位增强的企业级微服务开源解决方案，更贴近企业级需求，更具有企业级的插件引入、开箱即用特征…</p>
+<h3><a id="_6"></a>二、环境准备</h3>
+<ol>
+<li>
+<p>运行nacos服务</p>
+<blockquote>
+<p>基于docker环境运行nacos可参考：<a href="https://gitee.com/zhengqingya/docker-compose">https://gitee.com/zhengqingya/docker-compose</a></p>
+</blockquote>
+</li>
+<li>
+<p>下载代码：<a href="https://github.com/Nepxion/DiscoveryGuide">https://github.com/Nepxion/DiscoveryGuide</a> (注：用simple分支)</p>
+<blockquote>
+<p>温馨小提示：如果依赖下载不了，尝试将<code>discovery</code>版本修改为<code>6.5.0</code><br>
+也可直接用小编的代码：<a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</blockquote>
+</li>
+<li>
+<p>代码导入idea中启动运行所需服务</p>
+<blockquote>
+<p><img src="https://img-blog.csdnimg.cn/2021012402221556.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+</blockquote>
+</li>
+</ol>
+<h3><a id="_18"></a>三、全链路蓝绿发布</h3>
+<blockquote>
+<p><strong>经典场景</strong>：当调用请求从网关或者服务发起的时候，通过<code>Header</code> | <code>Parameter</code> | <code>Cookie</code>一种或者几种参数进行驱动，在路由过滤中，根据这些参数，选择在配置中心配置的<code>蓝路由</code> | <code>绿路由</code> | <code>兜底路由</code>的规则策略（Json格式），并把命中的规则策略转化为策略路由Header（n-d-开头），实现全链路传递。每个端到端服务接收到策略路由Header后，执行负载均衡时，该Header跟注册中心的对应元数据进行相关比较，不符合条件的实例进行过滤，从而实现全链路蓝绿发布</p>
+</blockquote>
+<blockquote>
+<p><strong>实施概要</strong>：只涉及当前正在发布的服务，例如，对于 <code>〔网关〕</code>-&gt;<code>〔A服务〕</code>-&gt;<code>〔B服务〕</code>-&gt;<code>〔C服务〕</code>-&gt;<code>〔D服务〕</code>调用链来说，如果当前只是B服务和C服务正在实施发布，那么，只需要把B服务和C服务配置到规则策略中，其它则不需要配置。发布结束后，即B服务和C服务的所有实例都完全一致，例如，版本号都只有唯一一个，那么清除掉在配置中心配置的规则策略即可，从而进行下一轮全链路蓝绿发布</p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/20210124014500650.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="1_27"></a>1、全链路<code>版本匹配</code>蓝绿发布</h4>
+<p><img src="https://img-blog.csdnimg.cn/20210124024518359.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>nacos中增加Spring Cloud Gateway的版本匹配蓝绿发布策略配置<br>
+<img src="https://img-blog.csdnimg.cn/20210124022650940.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data ID</td>
+<td>discovery-guide-gateway</td>
+</tr>
+<tr>
+<td>Group</td>
+<td>discovery-guide-group</td>
+</tr>
+<tr>
+<td>配置格式</td>
+<td>XML</td>
+</tr>
+</tbody>
+</table><p><img src="https://img-blog.csdnimg.cn/20210124023248924.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="_Spring_Cloud_Gateway10_44"></a>策略①-<code>每个服务的版本统一指定</code>: 从Spring Cloud Gateway发起的<code>调用全链路</code>都走<code>1.0</code>版本服务，配置内容如下</h6>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>访问测试 <a href="http://127.0.0.1:15001/discovery-guide-service-a/invoke/gateway">http://127.0.0.1:15001/discovery-guide-service-a/invoke/gateway</a><br>
+<img src="https://img-blog.csdnimg.cn/20210124030813166.png" alt="在这里插入图片描述"></p>
+<h6><a id="_Spring_Cloud_Gateway10a__11b_60"></a>策略②-<code>每个服务的版本分别指定</code>: 从Spring Cloud Gateway发起的调用走<code>1.0版本的a服务</code> -&gt; <code>走1.1版本的b服务</code>，配置内容如下</h6>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>{"discovery-guide-service-a":"1.0", "discovery-guide-service-b":"1.1"}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/20210124023958185.png" alt="在这里插入图片描述"></p>
+<p>如果上述表达式还未满足需求，可以采用<code>通配表达式</code>方式</p>
+<pre><code>* - 表示调用范围为所有版本
+1.* - 表示调用范围为1开头的所有版本
+</code></pre>
+<p>ex：</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>{"discovery-guide-service-a":"1.0*", "discovery-guide-service-b":"1.?"}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2_91"></a>2、全链路<code>区域匹配</code>蓝绿发布</h4>
+<p><img src="https://img-blog.csdnimg.cn/20210124025115793.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>nacos中增加Zuul的区域匹配蓝绿发布策略配置</p>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data ID</td>
+<td>discovery-guide-zuul</td>
+</tr>
+<tr>
+<td>Group</td>
+<td>discovery-guide-group</td>
+</tr>
+<tr>
+<td>配置格式</td>
+<td>XML</td>
+</tr>
+</tbody>
+</table><p><img src="https://img-blog.csdnimg.cn/20210124025035264.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="_Zuuldev_106"></a>策略①-<code>每个服务的区域统一指定</code>: 从Zuul发起的<code>调用全链路</code>都走<code>dev区域</code>服务，配置内容如下</h6>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>region</span><span class="token punctuation">&gt;</span></span>dev<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>region</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>访问测试 <a href="http://127.0.0.1:15002/discovery-guide-service-a/invoke/gateway">http://127.0.0.1:15002/discovery-guide-service-a/invoke/gateway</a><br>
+<img src="https://img-blog.csdnimg.cn/20210124030612706.png" alt="在这里插入图片描述"></p>
+<h6><a id="_Zuuldeva__qab_121"></a>策略②-<code>每个服务的区域分别指定</code>: 从Zuul发起的调用走<code>dev区域的a服务</code> -&gt; <code>走qa区域的b服务</code>，配置内容如下</h6>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>region</span><span class="token punctuation">&gt;</span></span>{"discovery-guide-service-a":"dev", "discovery-guide-service-b":"qa"}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>region</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/20210124030531253.png" alt="在这里插入图片描述"></p>
+<p>如果上述表达式还未满足需求，可以采用<code>通配表达式</code>方式</p>
+<pre><code>* - 表示调用范围为所有区域
+d* - 表示调用范围为d开头的所有区域
+</code></pre>
+<p>ex：</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>region</span><span class="token punctuation">&gt;</span></span>{"discovery-guide-service-a":"d*;q?", "discovery-guide-service-b":"dev"}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>region</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="3IP_152"></a>3、全链路<code>IP地址和端口匹配</code>蓝绿发布</h4>
+<p><img src="https://img-blog.csdnimg.cn/20210124031319995.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>nacos中增加Zuul的IP地址和端口匹配蓝绿发布策略配置</p>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data ID</td>
+<td>discovery-guide-zuul</td>
+</tr>
+<tr>
+<td>Group</td>
+<td>discovery-guide-group</td>
+</tr>
+<tr>
+<td>配置格式</td>
+<td>XML</td>
+</tr>
+</tbody>
+</table><h6><a id="IP_ZuulIPIP_166"></a>策略①-<code>每个服务的IP地址或端口统一指定</code>: 从Zuul发起的调用走<code>指定IP地址和端口</code>/<code>IP地址</code>/<code>端口</code>，配置内容如下</h6>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!-- 注：ip不能为127.0.0.1或localhost --&gt;</span>
+        <span class="token comment">&lt;!-- &lt;address&gt;3001&lt;/address&gt; --&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>address</span><span class="token punctuation">&gt;</span></span>192.168.0.111<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>address</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!-- &lt;address&gt;192.168.0.111:3001&lt;/address&gt; --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>访问测试 <a href="http://127.0.0.1:15002/discovery-guide-service-a/invoke/gateway">http://127.0.0.1:15002/discovery-guide-service-a/invoke/gateway</a><br>
+<img src="https://img-blog.csdnimg.cn/20210124032106651.png" alt="在这里插入图片描述"></p>
+<h6><a id="IP_Zuul3001a4001b_185"></a>策略②-<code>每个服务的IP地址或端口分别指定</code>: 从Zuul发起的调用走<code>3001端口的a服务</code>-&gt;<code>走4001端口的b服务</code>，配置内容如下</h6>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>address</span><span class="token punctuation">&gt;</span></span>{"discovery-guide-service-a":"3002", "discovery-guide-service-b":"4001"}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>address</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/20210124032321772.png" alt="在这里插入图片描述"></p>
+<p>如果上述表达式还未满足需求，可以采用<code>通配表达式</code>方式</p>
+<pre><code>* - 表示调用范围为所有端口
+3* - 表示调用范围为3开头的所有端口
+</code></pre>
+<p>ex：</p>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>address</span><span class="token punctuation">&gt;</span></span>{"discovery-guide-service-a":"3*;400?", "discovery-guide-service-b":"4001"}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>address</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+我发现，一个人在放弃给别人留好印象的负担之后，原来心里会如此踏实。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
