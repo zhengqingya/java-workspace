@@ -1,0 +1,159 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nepxion Discovery(2) 全链路条件蓝绿发布</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p>全链路蓝绿发布参考：<a href="https://zhengqing.blog.csdn.net/article/details/113065844">https://zhengqing.blog.csdn.net/article/details/113065844</a></p>
+<p>本文将基于之前的环境来进行<code>全链路条件蓝绿发布</code></p>
+<h3><a id="_6"></a>二、全链路条件蓝绿发布</h3>
+<h4><a id="1_8"></a>1、全链路<code>版本条件匹配</code>蓝绿发布</h4>
+<p>nacos中增加Spring Cloud Gateway的版本条件匹配蓝绿发布策略配置</p>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data ID</td>
+<td>discovery-guide-gateway</td>
+</tr>
+<tr>
+<td>Group</td>
+<td>discovery-guide-group</td>
+</tr>
+<tr>
+<td>配置格式</td>
+<td>XML</td>
+</tr>
+</tbody>
+</table><p><img src="https://img-blog.csdnimg.cn/20210124164346785.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h5><a id="_20"></a>规则策略配置</h5>
+<pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
+    <span class="token comment">&lt;!-- 基于Http Header传递的策略路由，全局缺省路由（第三优先级） --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>{"discovery-guide-service-a":"1.0", "discovery-guide-service-b":"1.0"}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token comment">&lt;!-- 基于Http Header传递的定制化策略路由，支持蓝绿部署和灰度发布两种模式。如果都不命中，则执行上面的全局缺省路由 --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy-customization</span><span class="token punctuation">&gt;</span></span>
+        <span class="token comment">&lt;!-- 全链路蓝绿部署：条件命中的匹配方式（第一优先级），支持版本匹配、区域匹配、IP地址和端口匹配、版本权重匹配、区域权重匹配 --&gt;</span>
+        <span class="token comment">&lt;!-- header节点不允许缺失 --&gt;</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>conditions</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>blue-green<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>condition</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>blue-condition<span class="token punctuation">"</span></span> <span class="token attr-name">header</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>#H[<span class="token punctuation">'</span>a<span class="token punctuation">'</span>] == <span class="token punctuation">'</span>1<span class="token punctuation">'</span><span class="token punctuation">"</span></span> <span class="token attr-name">version-id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>blue-version-route<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>condition</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>green-condition<span class="token punctuation">"</span></span> <span class="token attr-name">header</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>#H[<span class="token punctuation">'</span>a<span class="token punctuation">'</span>] == <span class="token punctuation">'</span>1<span class="token punctuation">'</span> <span class="token entity" title="&amp;">&amp;amp;</span><span class="token entity" title="&amp;">&amp;amp;</span> #H[<span class="token punctuation">'</span>b<span class="token punctuation">'</span>] == <span class="token punctuation">'</span>2<span class="token punctuation">'</span><span class="token punctuation">"</span></span> <span class="token attr-name">version-id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>green-version-route<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>conditions</span><span class="token punctuation">&gt;</span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>routes</span><span class="token punctuation">&gt;</span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>route</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>blue-version-route<span class="token punctuation">"</span></span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>version<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>{"discovery-guide-service-a":"1.1", "discovery-guide-service-b":"1.1"}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>route</span><span class="token punctuation">&gt;</span></span>    
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>route</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>green-version-route<span class="token punctuation">"</span></span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>version<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>{"discovery-guide-service-a":"1.0", "discovery-guide-service-b":"1.0"}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>route</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>routes</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy-customization</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>测试：<br>
+打开<code>Postman</code>，导入Postman的测试脚本<code>postman.json</code>（位于根目录下）<br>
+<img src="https://img-blog.csdnimg.cn/20210124164545978.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+在Postman中执行目录结构下<code>〔Nepxion〕</code>-&gt;<code>〔Discovery指南网关接口〕</code>-&gt;<code>〔Gateway网关调用示例〕</code>，调用地址为<a href="http://localhost:5001/discovery-guide-service-a/invoke/gateway">http://localhost:5001/discovery-guide-service-a/invoke/gateway</a>，相关的Header值已经预设，供开发者修改。执行通过Spring Cloud Gateway网关发起的调用，结果如下:<br>
+<img src="https://img-blog.csdnimg.cn/2021012416484825.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20210124164924957.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h5><a id="_53"></a>规则策略解释</h5>
+<blockquote>
+<p>温馨小提示：为准确体现相关变量（例如上文中的 a ）支持<code>Header</code>/<code>Parameter</code>/<code>Cookie</code></p>
+</blockquote>
+
+<table>
+<thead>
+<tr>
+<th>版本</th>
+<th>表达式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>6.6.0版本之前</td>
+<td><code>header="#H['a'] == '1'"</code></td>
+</tr>
+<tr>
+<td>6.6.0版本开始</td>
+<td><code>expression="#H['a'] == '1'"</code>，兼容<code>header="#H['a'] == '1'"</code></td>
+</tr>
+</tbody>
+</table><h6><a id="_HeaderParameterCookiesa1__b2_62"></a>① 当外部调用带有的Header/Parameter/Cookies中的值<code>a=1 &amp;&amp; b=2</code>，执行<code>绿路由</code></h6>
+<p><code>&lt;condition&gt;</code>节点中 <code>header="#H['a'] == '1' &amp;amp;&amp;amp; #H['b'] == '2'"</code> 对应的 <code>version-id="green-version-route"</code> ，找到下面<code>&lt;route&gt;</code>节点中 <code>id="green-version-route" type="version"</code> 的那项，那么路由即为</p>
+<pre><code>{"discovery-guide-service-a":"1.0", "discovery-guide-service-b":"1.0"}
+</code></pre>
+<h6><a id="_HeaderParameterCookiesa1_70"></a>② 当外部调用带有的Header/Parameter/Cookies中的值<code>a=1</code>，执行<code>蓝路由</code></h6>
+<p><code>&lt;condition&gt;</code>节点中 <code>header="#H['a'] == '1'"</code> 对应的 <code>version-id="blue-version-route"</code>，找到下面<code>&lt;route&gt;</code>节点中 <code>id="blue-version-route" type="version"</code> 的那项，那么路由即为</p>
+<pre><code>{"discovery-guide-service-a":"1.1", "discovery-guide-service-b":"1.1"}
+</code></pre>
+<h6><a id="_HeaderParameterCookies_78"></a>③ 当外部调用带有的Header/Parameter/Cookies中的值都<code>不命中</code>，或<code>未传值</code>，执行<code>兜底路由</code></h6>
+<ol>
+<li>执行<code>&lt;strategy&gt;</code>节点中的全局缺省路由，那么路由即为</li>
+</ol>
+<pre><code>{"discovery-guide-service-a":"1.0", "discovery-guide-service-b":"1.0"}
+</code></pre>
+<ol start="2">
+<li>如果全局缺省路由未配置，则执行Spring Cloud Ribbon轮询策略</li>
+</ol>
+<h6><a id="_HeaderParameterCookiesHeaderHeaderParameterCookies_88"></a>④ 假如不愿意从网关外部传入Header/Parameter/Cookies，那么支持策略下内置Header来决策蓝绿发布，可以代替外部传入Header/Parameter/Cookies，参考如下配置</h6>
+<pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>headers</span><span class="token punctuation">&gt;</span></span>
+   <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>header</span> <span class="token attr-name">key</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>a<span class="token punctuation">"</span></span> <span class="token attr-name">value</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>1<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>headers</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>内置Header一般使用场景为定时Job的服务定时去调用其它服务，希望实施蓝绿灰度发布。当服务侧配置了内置Header，而网关也传递给对应Header给该服务，通过开关来决定，网关传递的Header为优先还是服务侧内置的Header优先</p>
+<blockquote>
+<p><code>注：Spring Cloud Gateway在Finchley版不支持该方式!!!</code></p>
+</blockquote>
+<h6><a id="__101"></a>⑤ 路由类型支持如下</h6>
+<ol>
+<li><code>蓝</code> | <code>绿</code> | <code>兜底</code></li>
+<li><code>蓝 | 兜底</code>，即<code>绿路由缺省</code>，那么<code>兜底路由</code>则为<code>绿路由</code></li>
+<li>如果<code>蓝路由和路由都缺省</code>，那就只有<code>兜底路由</code>（全局缺省路由），即为<code>全链路版本匹配蓝绿发布</code>的路由场景</li>
+</ol>
+<h6><a id="_5_107"></a>⑥ 策略总共支持5种，可以单独一项使用，也可以多项叠加使用</h6>
+<ol>
+<li><code>version</code> 版本</li>
+<li><code>region</code> 区域</li>
+<li><code>address</code> IP地址和端口</li>
+<li><code>version-weight</code> 版本权重</li>
+<li><code>region-weight</code> 区域权重</li>
+</ol>
+<h6><a id="_Spring_Spel_115"></a>⑦ 策略支持Spring Spel的条件表达式方式</h6>
+<h6><a id="_Spring_Matcher_117"></a>⑧ 策略支持Spring Matcher的通配方式</h6>
+<h4><a id="2_119"></a>2、全链路<code>区域条件匹配</code>蓝绿发布</h4>
+<p>参考<code>全链路版本条件匹配蓝绿发布</code>，用法相似，只需要把规则策略中</p>
+<ol>
+<li>属性<code>version-id</code>替换成<code>region-id</code></li>
+<li>属性<code>type="version"</code>替换成<code>type="region"</code></li>
+<li>节点<code>route</code>对应的Json中版本替换成区域</li>
+</ol>
+<h4><a id="3IP_126"></a>3、全链路<code>IP地址和端口条件匹配</code>蓝绿发布</h4>
+<p>参考<code>全链路版本条件匹配蓝绿发布</code>，用法相似，只需要把规则策略中</p>
+<ol>
+<li>属性<code>version-id</code>替换成<code>address-id</code></li>
+<li>属性<code>type="version"</code>替换成<code>type="address"</code></li>
+<li>节点<code>route</code>对应的Json中版本替换成IP地址和端口</li>
+</ol>
+<h3><a id="demo_133"></a>三、本文案例demo</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+要取得成功，我们必须进行尝试。有时候，我们这样做会完全失败。最成功的人士都经历过失败。但是他们坚持了下来。他们中的大多数人都不会不顾后果地承担风险。实际上，他们总是竭尽所能地尽量减少他们前进道路上的风险。他们总是能从失败中汲取教训，这样做通常为他们以后的成功奠定了基础。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
