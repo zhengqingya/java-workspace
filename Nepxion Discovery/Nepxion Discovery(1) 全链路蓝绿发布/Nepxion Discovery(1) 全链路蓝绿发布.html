@@ -32,11 +32,15 @@
 <li>
 <p>代码导入idea中启动运行所需服务</p>
 <blockquote>
-<p><img src="https://img-blog.csdnimg.cn/2021012402221556.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p><img src="https://img-blog.csdnimg.cn/20210124144801423.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 </blockquote>
 </li>
+<li>
+<p>① 访问测试 <a href="http://127.0.0.1:5001/discovery-guide-service-a/invoke/gateway">http://127.0.0.1:5001/discovery-guide-service-a/invoke/gateway</a><br>
+② 访问测试 <a href="http://127.0.0.1:5002/discovery-guide-service-a/invoke/zuul">http://127.0.0.1:5002/discovery-guide-service-a/invoke/zuul</a></p>
+</li>
 </ol>
-<h3><a id="_18"></a>三、全链路蓝绿发布</h3>
+<h3><a id="_20"></a>三、全链路蓝绿发布</h3>
 <blockquote>
 <p><strong>经典场景</strong>：当调用请求从网关或者服务发起的时候，通过<code>Header</code> | <code>Parameter</code> | <code>Cookie</code>一种或者几种参数进行驱动，在路由过滤中，根据这些参数，选择在配置中心配置的<code>蓝路由</code> | <code>绿路由</code> | <code>兜底路由</code>的规则策略（Json格式），并把命中的规则策略转化为策略路由Header（n-d-开头），实现全链路传递。每个端到端服务接收到策略路由Header后，执行负载均衡时，该Header跟注册中心的对应元数据进行相关比较，不符合条件的实例进行过滤，从而实现全链路蓝绿发布</p>
 </blockquote>
@@ -44,7 +48,7 @@
 <p><strong>实施概要</strong>：只涉及当前正在发布的服务，例如，对于 <code>〔网关〕</code>-&gt;<code>〔A服务〕</code>-&gt;<code>〔B服务〕</code>-&gt;<code>〔C服务〕</code>-&gt;<code>〔D服务〕</code>调用链来说，如果当前只是B服务和C服务正在实施发布，那么，只需要把B服务和C服务配置到规则策略中，其它则不需要配置。发布结束后，即B服务和C服务的所有实例都完全一致，例如，版本号都只有唯一一个，那么清除掉在配置中心配置的规则策略即可，从而进行下一轮全链路蓝绿发布</p>
 </blockquote>
 <p><img src="https://img-blog.csdnimg.cn/20210124014500650.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h4><a id="1_27"></a>1、全链路<code>版本匹配</code>蓝绿发布</h4>
+<h4><a id="1_28"></a>1、全链路<code>版本匹配</code>蓝绿发布</h4>
 <p><img src="https://img-blog.csdnimg.cn/20210124024518359.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 <p>nacos中增加Spring Cloud Gateway的版本匹配蓝绿发布策略配置<br>
 <img src="https://img-blog.csdnimg.cn/20210124022650940.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
@@ -71,7 +75,7 @@
 </tr>
 </tbody>
 </table><p><img src="https://img-blog.csdnimg.cn/20210124023248924.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h6><a id="_Spring_Cloud_Gateway10_44"></a>策略①-<code>每个服务的版本统一指定</code>: 从Spring Cloud Gateway发起的<code>调用全链路</code>都走<code>1.0</code>版本服务，配置内容如下</h6>
+<h6><a id="_Spring_Cloud_Gateway10_45"></a>策略①-<code>每个服务的版本统一指定</code>: 从Spring Cloud Gateway发起的<code>调用全链路</code>都走<code>1.0</code>版本服务，配置内容如下</h6>
 <pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
@@ -79,8 +83,8 @@
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<p>访问测试 <a href="http://127.0.0.1:15001/discovery-guide-service-a/invoke/gateway">http://127.0.0.1:15001/discovery-guide-service-a/invoke/gateway</a><br>
-<img src="https://img-blog.csdnimg.cn/20210124030813166.png" alt="在这里插入图片描述"></p>
+<p>访问测试 <a href="http://127.0.0.1:5001/discovery-guide-service-a/invoke/gateway">http://127.0.0.1:5001/discovery-guide-service-a/invoke/gateway</a></p>
+<p><img src="https://img-blog.csdnimg.cn/20210124144952202.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 <h6><a id="_Spring_Cloud_Gateway10a__11b_60"></a>策略②-<code>每个服务的版本分别指定</code>: 从Spring Cloud Gateway发起的调用走<code>1.0版本的a服务</code> -&gt; <code>走1.1版本的b服务</code>，配置内容如下</h6>
 <pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
@@ -89,7 +93,7 @@
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<p><img src="https://img-blog.csdnimg.cn/20210124023958185.png" alt="在这里插入图片描述"></p>
+<p><img src="https://img-blog.csdnimg.cn/2021012414503989.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 <p>如果上述表达式还未满足需求，可以采用<code>通配表达式</code>方式</p>
 <pre><code>* - 表示调用范围为所有版本
 1.* - 表示调用范围为1开头的所有版本
@@ -102,7 +106,7 @@
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<h4><a id="2_91"></a>2、全链路<code>区域匹配</code>蓝绿发布</h4>
+<h4><a id="2_92"></a>2、全链路<code>区域匹配</code>蓝绿发布</h4>
 <p><img src="https://img-blog.csdnimg.cn/20210124025115793.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 <p>nacos中增加Zuul的区域匹配蓝绿发布策略配置</p>
 
@@ -128,7 +132,7 @@
 </tr>
 </tbody>
 </table><p><img src="https://img-blog.csdnimg.cn/20210124025035264.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h6><a id="_Zuuldev_106"></a>策略①-<code>每个服务的区域统一指定</code>: 从Zuul发起的<code>调用全链路</code>都走<code>dev区域</code>服务，配置内容如下</h6>
+<h6><a id="_Zuuldev_107"></a>策略①-<code>每个服务的区域统一指定</code>: 从Zuul发起的<code>调用全链路</code>都走<code>dev区域</code>服务，配置内容如下</h6>
 <pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
@@ -136,9 +140,9 @@
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<p>访问测试 <a href="http://127.0.0.1:15002/discovery-guide-service-a/invoke/gateway">http://127.0.0.1:15002/discovery-guide-service-a/invoke/gateway</a><br>
-<img src="https://img-blog.csdnimg.cn/20210124030612706.png" alt="在这里插入图片描述"></p>
-<h6><a id="_Zuuldeva__qab_121"></a>策略②-<code>每个服务的区域分别指定</code>: 从Zuul发起的调用走<code>dev区域的a服务</code> -&gt; <code>走qa区域的b服务</code>，配置内容如下</h6>
+<p>访问测试 <a href="http://127.0.0.1:5002/discovery-guide-service-a/invoke/zuul">http://127.0.0.1:5002/discovery-guide-service-a/invoke/zuul</a></p>
+<p><img src="https://img-blog.csdnimg.cn/20210124145217122.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="_Zuuldeva__qab_124"></a>策略②-<code>每个服务的区域分别指定</code>: 从Zuul发起的调用走<code>dev区域的a服务</code> -&gt; <code>走qa区域的b服务</code>，配置内容如下</h6>
 <pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
@@ -146,7 +150,7 @@
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<p><img src="https://img-blog.csdnimg.cn/20210124030531253.png" alt="在这里插入图片描述"></p>
+<p><img src="https://img-blog.csdnimg.cn/20210124145402699.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 <p>如果上述表达式还未满足需求，可以采用<code>通配表达式</code>方式</p>
 <pre><code>* - 表示调用范围为所有区域
 d* - 表示调用范围为d开头的所有区域
@@ -159,7 +163,7 @@ d* - 表示调用范围为d开头的所有区域
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<h4><a id="3IP_152"></a>3、全链路<code>IP地址和端口匹配</code>蓝绿发布</h4>
+<h4><a id="3IP_156"></a>3、全链路<code>IP地址和端口匹配</code>蓝绿发布</h4>
 <p><img src="https://img-blog.csdnimg.cn/20210124031319995.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 <p>nacos中增加Zuul的IP地址和端口匹配蓝绿发布策略配置</p>
 
@@ -184,7 +188,7 @@ d* - 表示调用范围为d开头的所有区域
 <td>XML</td>
 </tr>
 </tbody>
-</table><h6><a id="IP_ZuulIPIP_166"></a>策略①-<code>每个服务的IP地址或端口统一指定</code>: 从Zuul发起的调用走<code>指定IP地址和端口</code>/<code>IP地址</code>/<code>端口</code>，配置内容如下</h6>
+</table><h6><a id="IP_ZuulIPIP_170"></a>策略①-<code>每个服务的IP地址或端口统一指定</code>: 从Zuul发起的调用走<code>指定IP地址和端口</code>/<code>IP地址</code>/<code>端口</code>，配置内容如下</h6>
 <pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
@@ -195,9 +199,9 @@ d* - 表示调用范围为d开头的所有区域
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<p>访问测试 <a href="http://127.0.0.1:15002/discovery-guide-service-a/invoke/gateway">http://127.0.0.1:15002/discovery-guide-service-a/invoke/gateway</a><br>
-<img src="https://img-blog.csdnimg.cn/20210124032106651.png" alt="在这里插入图片描述"></p>
-<h6><a id="IP_Zuul3001a4001b_185"></a>策略②-<code>每个服务的IP地址或端口分别指定</code>: 从Zuul发起的调用走<code>3001端口的a服务</code>-&gt;<code>走4001端口的b服务</code>，配置内容如下</h6>
+<p>访问测试 <a href="http://127.0.0.1:5002/discovery-guide-service-a/invoke/zuul">http://127.0.0.1:5002/discovery-guide-service-a/invoke/zuul</a><br>
+<img src="https://img-blog.csdnimg.cn/20210124145519270.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h6><a id="IP_Zuul3001a4001b_187"></a>策略②-<code>每个服务的IP地址或端口分别指定</code>: 从Zuul发起的调用走<code>3001端口的a服务</code>-&gt;<code>走4001端口的b服务</code>，配置内容如下</h6>
 <pre><code class="prism language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>rule</span><span class="token punctuation">&gt;</span></span>
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>strategy</span><span class="token punctuation">&gt;</span></span>
@@ -205,7 +209,7 @@ d* - 表示调用范围为d开头的所有区域
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>strategy</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>rule</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<p><img src="https://img-blog.csdnimg.cn/20210124032321772.png" alt="在这里插入图片描述"></p>
+<p><img src="https://img-blog.csdnimg.cn/20210124145604134.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
 <p>如果上述表达式还未满足需求，可以采用<code>通配表达式</code>方式</p>
 <pre><code>* - 表示调用范围为所有端口
 3* - 表示调用范围为3开头的所有端口
