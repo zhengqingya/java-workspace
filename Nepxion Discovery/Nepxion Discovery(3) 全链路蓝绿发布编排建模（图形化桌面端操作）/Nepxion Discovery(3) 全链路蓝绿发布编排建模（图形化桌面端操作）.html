@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nepxion Discovery(3) 全链路蓝绿发布编排建模（图形化桌面端操作）</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/113065844">Nepxion Discovery(1) 全链路蓝绿发布</a></li>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/113091047">Nepxion Discovery(2) 全链路条件蓝绿发布</a></li>
+</ol>
+<p>本文将基于之前的环境来进行<code>全链路蓝绿发布编排建模</code></p>
+<h3><a id="_7"></a>二、环境准备</h3>
+<blockquote>
+<p>温馨小提示：下面所需环境一键下载地址： <a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+</blockquote>
+<h4><a id="1IDEA_httpsgithubcomNepxionDiscoveryPlatformhttpsgithubcomNepxionDiscoveryPlatform_11"></a>1、下载<code>控制台</code>并导入IDEA启动 <a href="https://github.com/Nepxion/DiscoveryPlatform">https://github.com/Nepxion/DiscoveryPlatform</a></h4>
+<blockquote>
+<p>温馨小提示：discovery<code>6.6.0</code>版本修改为<code>6.5.0</code>版本 -&gt; 解决相关依赖下载不了问题</p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/20210125093800782.png" alt="在这里插入图片描述"></p>
+<h4><a id="2_httpsgithubcomNepxionDiscoveryUIreleaseshttpsgithubcomNepxionDiscoveryUIreleases_18"></a>2、下载<code>图形化桌面端</code> <a href="https://github.com/Nepxion/DiscoveryUI/releases">https://github.com/Nepxion/DiscoveryUI/releases</a></h4>
+<p><img src="https://img-blog.csdnimg.cn/20210125093356801.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+启动<br>
+<img src="https://img-blog.csdnimg.cn/20210125094419807.png" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20210125094458963.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+目前所有环境都是默认配置，可直接登录<br>
+<img src="https://img-blog.csdnimg.cn/20210125094622252.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_27"></a>三、全链路蓝绿发布编排建模（图形化桌面端操作）</h3>
+<h4><a id="1_______29"></a>1、<code>全链路服务蓝绿发布</code> -&gt; <code>新建</code> -&gt; <code>新建配置</code> -&gt; <code>确定</code></h4>
+<p><img src="https://img-blog.csdnimg.cn/20210125095620607.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20210125095955886.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<blockquote>
+<p>下面操作示例 <code>全链路版本条件匹配蓝绿发布</code></p>
+</blockquote>
+<h4><a id="2_35"></a>2、<code>蓝绿条件</code>配置</h4>
+
+<table>
+<thead>
+<tr>
+<th>条件</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>蓝条件</td>
+<td>a==1</td>
+</tr>
+<tr>
+<td>绿条件</td>
+<td>a<mark>1&amp;&amp;b</mark>2</td>
+</tr>
+</tbody>
+</table><p><img src="https://img-blog.csdnimg.cn/20210125100221826.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/202101251003520.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="3_44"></a>3、条件校验</h4>
+<p>ex: 绿条件<br>
+<img src="https://img-blog.csdnimg.cn/20210125100713576.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="4_49"></a>4、蓝绿编排</h4>
+
+<table>
+<thead>
+<tr>
+<th>服务</th>
+<th>蓝版本</th>
+<th>绿版本</th>
+<th>兜底版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>discovery-guide-service-a</td>
+<td>1.1</td>
+<td>1.0</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>discovery-guide-service-b</td>
+<td>1.1</td>
+<td>1.0</td>
+<td>1.0</td>
+</tr>
+</tbody>
+</table><p><img src="https://img-blog.csdnimg.cn/20210125101340865.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20210125101433657.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h4><a id="5_59"></a>5、蓝绿参数</h4>
+<p>ex：内置Header参数</p>
+<p><img src="https://img-blog.csdnimg.cn/2021012510160864.png" alt="在这里插入图片描述"></p>
+<h4><a id="6_65"></a>6、保存策略配置</h4>
+<p><img src="https://img-blog.csdnimg.cn/20210125101914970.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20210125101933584.png" alt="在这里插入图片描述"><br>
+校验：访问Nacos界面查看相关规则策略是否存在 <a href="http://127.0.0.1:8848/nacos">http://127.0.0.1:8848/nacos</a><br>
+<img src="https://img-blog.csdnimg.cn/2021012510210251.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>访问 <a href="http://127.0.0.1:5001/discovery-guide-service-a/invoke/gateway">http://127.0.0.1:5001/discovery-guide-service-a/invoke/gateway</a> 查看配置效果<br>
+<img src="https://img-blog.csdnimg.cn/20210125102921590.png" alt="在这里插入图片描述"></p>
+<blockquote>
+<p>也可以通过 <code>预览</code> -&gt; <code>预览配置</code> -&gt; <code>保存配置</code><br>
+<img src="https://img-blog.csdnimg.cn/20210125102205675.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+</blockquote>
+<h4><a id="7_79"></a>7、其它</h4>
+<ol>
+<li>
+<p>对于已经存在的策略配置可通过 <code>打开</code> -&gt; <code>打开配置</code> -&gt; <code>打开远程配置</code> -&gt; <code>确认</code> 载入Nacos上对应的规则策略<br>
+<img src="https://img-blog.csdnimg.cn/20210125102650308.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+</li>
+<li>
+<p>对于已经存在的策略配置，如果想重置清除掉，点击<code>重置</code>即可<br>
+<img src="https://img-blog.csdnimg.cn/2021012510302615.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+</li>
+</ol>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+笨，是一种高级的情商。<br>
+笨一点，就是不懂的事不要瞎做，不明白的话不要乱说。<br>
+笨一点，不要追根究底。<br>
+笨一点，不要太快放弃。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
