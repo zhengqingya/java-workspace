@@ -1,0 +1,16 @@
+server:
+  port: 8081
+  servlet:
+    application-display-name: demo
+
+spring:
+  application:
+    name: demo
+  profiles:
+    active: dev
+
+# RocketMQ配置
+rocketmq:
+  name-server: 192.168.0.88:9876 # TODO 配置mq服务ip
+  producer:
+    group: rocketmq-producer-group

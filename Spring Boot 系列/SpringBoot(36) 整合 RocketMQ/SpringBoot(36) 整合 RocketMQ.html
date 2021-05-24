@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(36) 整合 RocketMQ</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p>本文基于<code>springboot 2.3.1.RELEASE</code>整合<code>RocketMQ</code>，实现简单的<code>发送消息</code>和<code>接收消息</code>。</p>
+<h3><a id="RocketMQ_4"></a>二、安装RocketMQ</h3>
+<pre><code class="prism language-shell"><span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+<span class="token function">cd</span> docker-compose/Liunx
+<span class="token comment"># 运行 【注：修改 xx/rocketmq/rocketmq_broker/conf/broker.conf中配置brokerIP1为宿主机IP】</span>
+docker-compose -f docker-compose-rocketmq.yml -p rocketmq up -d
+</code></pre>
+<p>RocketMQ控制台地址 <code>http://ip地址:9002</code><br>
+<img src="https://img-blog.csdnimg.cn/2021052417202957.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="SpringBootRocketMQ_16"></a>三、SpringBoot整合RocketMQ</h3>
+<h4><a id="1pomxmlRocketMQ_18"></a>1、<code>pom.xml</code>中引入RocketMQ依赖</h4>
+<pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.apache.rocketmq<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>rocketmq-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.0.3<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationymlRocketMQ_28"></a>2、<code>application.yml</code>中RocketMQ配置</h4>
+<pre><code class="prism language-yml"><span class="token comment"># RocketMQ配置</span>
+<span class="token key atrule">rocketmq</span><span class="token punctuation">:</span>
+  <span class="token key atrule">name-server</span><span class="token punctuation">:</span> 192.168.0.88<span class="token punctuation">:</span><span class="token number">9876 </span><span class="token comment"># TODO 配置mq服务ip</span>
+  <span class="token key atrule">producer</span><span class="token punctuation">:</span>
+    <span class="token key atrule">group</span><span class="token punctuation">:</span> rocketmq<span class="token punctuation">-</span>producer<span class="token punctuation">-</span>group
+</code></pre>
+<h4><a id="3_38"></a>3、定时小程序实现简单的发送消息和接收消息</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token annotation punctuation">@EnableScheduling</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AppScheduledJob</span> <span class="token punctuation">{</span>
+
+  <span class="token annotation punctuation">@Autowired</span>
+  <span class="token keyword">private</span> RocketMQTemplate rocketMQTemplate<span class="token punctuation">;</span>
+
+  <span class="token comment">/**
+   * 每3秒执行一次
+   *
+   * @return void
+   * @author zhengqingya
+   * @date 2021/5/24 14:21
+   */</span>
+  <span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>cron <span class="token operator">=</span> <span class="token string">"*/3 * * * * ?"</span><span class="token punctuation">)</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"&lt;&lt;&lt;&lt;&lt;&lt; test: 【{}】 &gt;&gt;&gt;&gt;&gt;&gt;"</span><span class="token punctuation">,</span> LocalDateTime<span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    String msgContent <span class="token operator">=</span> <span class="token string">"************************ Hello World ************************"</span><span class="token punctuation">;</span>
+    log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"生产者发送消息 : "</span> <span class="token operator">+</span> msgContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 生产者 - 发送消息</span>
+    <span class="token keyword">this</span><span class="token punctuation">.</span>rocketMQTemplate<span class="token punctuation">.</span><span class="token function">convertAndSend</span><span class="token punctuation">(</span><span class="token string">"ZQ_TOPIC:TAG1"</span><span class="token punctuation">,</span> msgContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+
+<span class="token comment">/**
+ * &lt;p&gt; 消费者 - 接收消息 &lt;/p&gt;
+ *
+ * @author zhengqingya
+ * @description
+ * @date 2021/5/24 14:19
+ */</span>
+<span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Service</span>
+<span class="token annotation punctuation">@RocketMQMessageListener</span><span class="token punctuation">(</span>
+    topic <span class="token operator">=</span> <span class="token string">"ZQ_TOPIC"</span><span class="token punctuation">,</span>
+    consumerGroup <span class="token operator">=</span> <span class="token string">"ZQ-CONSUMER-GROUP"</span><span class="token punctuation">,</span>
+    selectorExpression <span class="token operator">=</span> <span class="token string">"TAG1"</span><span class="token punctuation">,</span>
+    consumeMode <span class="token operator">=</span> ConsumeMode<span class="token punctuation">.</span>ORDERLY<span class="token punctuation">,</span>
+    messageModel <span class="token operator">=</span> MessageModel<span class="token punctuation">.</span>CLUSTERING<span class="token punctuation">,</span>
+    consumeThreadMax <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">)</span>
+<span class="token keyword">class</span> <span class="token class-name">MsgReceiver</span> <span class="token keyword">implements</span> <span class="token class-name">RocketMQListener</span><span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+  <span class="token annotation punctuation">@Override</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onMessage</span><span class="token punctuation">(</span>String msg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"消费者接收消息 : "</span> <span class="token operator">+</span> msg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>运行<br>
+<img src="https://img-blog.csdnimg.cn/2021052417281353.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="demo_97"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+这个世界上有很多事，都是当你开始认真对待以后，才会发现其中包含的乐趣，你要带着关爱而不是期待地投入生活，当你对待事物越认真，对待工作越投入，你会发现能力与乐趣接踵而来。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
