@@ -1,0 +1,364 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(37) 整合 XXL-JOB</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<p>本文基于<code>springboot 2.4.0</code>整合<code>XXL-JOB</code>，实现简单的<code>任务执行</code>。</p>
+<h3><a id="_4"></a>二、搭建任务调度中心</h3>
+<pre><code class="prism language-shell"><span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+<span class="token function">cd</span> docker-compose/Liunx
+<span class="token comment"># 运行</span>
+docker-compose -f docker-compose-xxl-job.yml -p xxl-job up -d
+</code></pre>
+<p>访问地址：<code>http://ip地址:9003</code><br>
+默认登录账号密码：<code>admin/123456</code></p>
+<p><img src="https://img-blog.csdnimg.cn/20210525161749718.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>注：此容器方式部署，需要将<code>执行器管理</code>中的<code>机器地址</code>修改为宿主机ip，不能使用<code>127.0.0.1</code><br>
+<img src="https://img-blog.csdnimg.cn/20210525162019390.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="SpringBootXXLJOB_22"></a>三、SpringBoot整合XXL-JOB</h3>
+<h4><a id="1pomxml_24"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!--https://mvnrepository.com/artifact/com.xuxueli/xxl-job-core --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.xuxueli<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>xxl-job-core<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.3.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_35"></a>2、<code>application.yml</code>中配置</h4>
+<pre><code class="prism language-yml"><span class="token comment"># XXL-JOB 配置</span>
+<span class="token key atrule">xxl</span><span class="token punctuation">:</span>
+  <span class="token key atrule">job</span><span class="token punctuation">:</span>
+    <span class="token key atrule">admin</span><span class="token punctuation">:</span>
+      <span class="token key atrule">addresses</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>9003/xxl<span class="token punctuation">-</span>job<span class="token punctuation">-</span>admin <span class="token comment"># 调度中心部署跟地址 [选填]：如调度中心集群部署存在多个地址则用逗号分隔。执行器将会使用该地址进行"执行器心跳注册"和"任务结果回调"；为空则关闭自动注册；</span>
+    <span class="token key atrule">accessToken</span><span class="token punctuation">:</span>  <span class="token comment"># 执行器通讯TOKEN [选填]：非空时启用；</span>
+    <span class="token key atrule">executor</span><span class="token punctuation">:</span>
+      <span class="token key atrule">appname</span><span class="token punctuation">:</span> xxl<span class="token punctuation">-</span>job<span class="token punctuation">-</span>executor<span class="token punctuation">-</span>sample <span class="token comment"># 执行器AppName [选填]：执行器心跳注册分组依据；为空则关闭自动注册</span>
+      <span class="token key atrule">address</span><span class="token punctuation">:</span> <span class="token comment"># 执行器注册 [选填]：优先使用该配置作为注册地址，为空时使用内嵌服务 ”IP:PORT“ 作为注册地址。从而更灵活的支持容器类型执行器动态IP和动态映射端口问题。</span>
+      <span class="token key atrule">ip</span><span class="token punctuation">:</span> <span class="token comment"># 执行器IP [选填]：默认为空表示自动获取IP，多网卡时可手动设置指定IP，该IP不会绑定Host仅作为通讯实用；地址信息用于 "执行器注册" 和 "调度中心请求并触发任务"；</span>
+      <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">9999 </span><span class="token comment"># 执行器端口号 [选填]：小于等于0则自动获取；默认端口为9999，单机部署多个执行器时，注意要配置不同执行器端口；</span>
+      <span class="token key atrule">logpath</span><span class="token punctuation">:</span> /applogs/xxl<span class="token punctuation">-</span>job/jobhandler <span class="token comment"># 执行器运行日志文件存储磁盘路径 [选填] ：需要对该路径拥有读写权限；为空则使用默认路径；</span>
+      <span class="token key atrule">logretentiondays</span><span class="token punctuation">:</span> <span class="token number">30 </span><span class="token comment"># 执行器日志文件保存天数 [选填] ： 过期日志自动清理, 限制值大于等于3时生效; 否则, 如-1, 关闭自动清理功能；</span>
+</code></pre>
+<h4><a id="3_53"></a>3、执行器组件配置</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">XxlJobConfig</span> <span class="token punctuation">{</span>
+
+  <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${xxl.job.admin.addresses}"</span><span class="token punctuation">)</span>
+  <span class="token keyword">private</span> String adminAddresses<span class="token punctuation">;</span>
+
+  <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${xxl.job.accessToken}"</span><span class="token punctuation">)</span>
+  <span class="token keyword">private</span> String accessToken<span class="token punctuation">;</span>
+
+  <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${xxl.job.executor.appname}"</span><span class="token punctuation">)</span>
+  <span class="token keyword">private</span> String appname<span class="token punctuation">;</span>
+
+  <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${xxl.job.executor.address}"</span><span class="token punctuation">)</span>
+  <span class="token keyword">private</span> String address<span class="token punctuation">;</span>
+
+  <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${xxl.job.executor.ip}"</span><span class="token punctuation">)</span>
+  <span class="token keyword">private</span> String ip<span class="token punctuation">;</span>
+
+  <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${xxl.job.executor.port}"</span><span class="token punctuation">)</span>
+  <span class="token keyword">private</span> <span class="token keyword">int</span> port<span class="token punctuation">;</span>
+
+  <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${xxl.job.executor.logpath}"</span><span class="token punctuation">)</span>
+  <span class="token keyword">private</span> String logPath<span class="token punctuation">;</span>
+
+  <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${xxl.job.executor.logretentiondays}"</span><span class="token punctuation">)</span>
+  <span class="token keyword">private</span> <span class="token keyword">int</span> logRetentionDays<span class="token punctuation">;</span>
+
+
+  <span class="token annotation punctuation">@Bean</span>
+  <span class="token keyword">public</span> XxlJobSpringExecutor <span class="token function">xxlJobExecutor</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; xxl-job config init."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// 创建 XxlJobSpringExecutor 执行器</span>
+    XxlJobSpringExecutor xxlJobSpringExecutor <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">XxlJobSpringExecutor</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    xxlJobSpringExecutor<span class="token punctuation">.</span><span class="token function">setAdminAddresses</span><span class="token punctuation">(</span>adminAddresses<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    xxlJobSpringExecutor<span class="token punctuation">.</span><span class="token function">setAppname</span><span class="token punctuation">(</span>appname<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    xxlJobSpringExecutor<span class="token punctuation">.</span><span class="token function">setAddress</span><span class="token punctuation">(</span>address<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    xxlJobSpringExecutor<span class="token punctuation">.</span><span class="token function">setIp</span><span class="token punctuation">(</span>ip<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    xxlJobSpringExecutor<span class="token punctuation">.</span><span class="token function">setPort</span><span class="token punctuation">(</span>port<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    xxlJobSpringExecutor<span class="token punctuation">.</span><span class="token function">setAccessToken</span><span class="token punctuation">(</span>accessToken<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    xxlJobSpringExecutor<span class="token punctuation">.</span><span class="token function">setLogPath</span><span class="token punctuation">(</span>logPath<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    xxlJobSpringExecutor<span class="token punctuation">.</span><span class="token function">setLogRetentionDays</span><span class="token punctuation">(</span>logRetentionDays<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> xxlJobSpringExecutor<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token comment">/**
+   * 针对多网卡、容器内部署等情况，可借助 "spring-cloud-commons" 提供的 "InetUtils" 组件灵活定制注册IP；
+   *
+   *      1、引入依赖：
+   *          &lt;dependency&gt;
+   *             &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+   *             &lt;artifactId&gt;spring-cloud-commons&lt;/artifactId&gt;
+   *             &lt;version&gt;${version}&lt;/version&gt;
+   *         &lt;/dependency&gt;
+   *
+   *      2、配置文件，或者容器启动变量
+   *          spring.cloud.inetutils.preferred-networks: 'xxx.xxx.xxx.'
+   *
+   *      3、获取IP
+   *          String ip_ = inetUtils.findFirstNonLoopbackHostInfo().getIpAddress();
+   */</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4Bean_121"></a>4、任务开发示例（Bean模式）</h4>
+<blockquote>
+<p>开发步骤：</p>
+<ol>
+<li>任务开发：在Spring Bean实例中，开发Job方法；</li>
+<li>注解配置：为Job方法添加注解 “@XxlJob(value=“自定义jobhandler名称”, init = “JobHandler初始化方法”, destroy = “JobHandler销毁方法”)”，注解value值对应的是调度中心新建任务的JobHandler属性的值。</li>
+<li>执行日志：需要通过"XxlJobHelper.log" 打印执行日志；</li>
+<li>任务结果：默认任务结果为 “成功” 状态，不需要主动设置；如有诉求，比如设置任务结果为失败，可以通过"XxlJobHelper.handleFail/handleSuccess" 自主设置任务结果；</li>
+</ol>
+</blockquote>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SampleXxlJob</span> <span class="token punctuation">{</span>
+
+  <span class="token comment">/**
+   * 1、简单任务示例（Bean模式）
+   */</span>
+  <span class="token annotation punctuation">@XxlJob</span><span class="token punctuation">(</span><span class="token string">"demoJobHandler"</span><span class="token punctuation">)</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">demoJobHandler</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+    XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"XXL-JOB, Hello World."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">5</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"beat at:"</span> <span class="token operator">+</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      TimeUnit<span class="token punctuation">.</span>SECONDS<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment">// default success</span>
+  <span class="token punctuation">}</span>
+
+
+  <span class="token comment">/**
+   * 2、分片广播任务
+   */</span>
+  <span class="token annotation punctuation">@XxlJob</span><span class="token punctuation">(</span><span class="token string">"shardingJobHandler"</span><span class="token punctuation">)</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">shardingJobHandler</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+
+    <span class="token comment">// 分片参数</span>
+    <span class="token keyword">int</span> shardIndex <span class="token operator">=</span> XxlJobHelper<span class="token punctuation">.</span><span class="token function">getShardIndex</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> shardTotal <span class="token operator">=</span> XxlJobHelper<span class="token punctuation">.</span><span class="token function">getShardTotal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"分片参数：当前分片序号 = {}, 总分片数 = {}"</span><span class="token punctuation">,</span> shardIndex<span class="token punctuation">,</span> shardTotal<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 业务逻辑</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> shardTotal<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">==</span> shardIndex<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"第 {} 片, 命中分片开始处理"</span><span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"第 {} 片, 忽略"</span><span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+  <span class="token punctuation">}</span>
+
+
+  <span class="token comment">/**
+   * 3、命令行任务
+   */</span>
+  <span class="token annotation punctuation">@XxlJob</span><span class="token punctuation">(</span><span class="token string">"commandJobHandler"</span><span class="token punctuation">)</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">commandJobHandler</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+    String command <span class="token operator">=</span> XxlJobHelper<span class="token punctuation">.</span><span class="token function">getJobParam</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> exitValue <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">;</span>
+
+    BufferedReader bufferedReader <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+      <span class="token comment">// command process</span>
+      ProcessBuilder processBuilder <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ProcessBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      processBuilder<span class="token punctuation">.</span><span class="token function">command</span><span class="token punctuation">(</span>command<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      processBuilder<span class="token punctuation">.</span><span class="token function">redirectErrorStream</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      Process process <span class="token operator">=</span> processBuilder<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment">//Process process = Runtime.getRuntime().exec(command);</span>
+
+      BufferedInputStream bufferedInputStream <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedInputStream</span><span class="token punctuation">(</span>process<span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      bufferedReader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedReader</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">InputStreamReader</span><span class="token punctuation">(</span>bufferedInputStream<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token comment">// command log</span>
+      String line<span class="token punctuation">;</span>
+      <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>line <span class="token operator">=</span> bufferedReader<span class="token punctuation">.</span><span class="token function">readLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>line<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token comment">// command exit</span>
+      process<span class="token punctuation">.</span><span class="token function">waitFor</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      exitValue <span class="token operator">=</span> process<span class="token punctuation">.</span><span class="token function">exitValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>bufferedReader <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        bufferedReader<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>exitValue <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token comment">// default success</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">handleFail</span><span class="token punctuation">(</span><span class="token string">"command exit value("</span> <span class="token operator">+</span> exitValue <span class="token operator">+</span> <span class="token string">") is failed"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+  <span class="token punctuation">}</span>
+
+
+  <span class="token comment">/**
+   * 4、跨平台Http任务 参数示例： "url: http://www.baidu.com\n" + "method: get\n" + "data: content\n";
+   */</span>
+  <span class="token annotation punctuation">@XxlJob</span><span class="token punctuation">(</span><span class="token string">"httpJobHandler"</span><span class="token punctuation">)</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">httpJobHandler</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+
+    <span class="token comment">// param parse</span>
+    String param <span class="token operator">=</span> XxlJobHelper<span class="token punctuation">.</span><span class="token function">getJobParam</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>param <span class="token operator">==</span> null <span class="token operator">||</span> param<span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"param["</span> <span class="token operator">+</span> param <span class="token operator">+</span> <span class="token string">"] invalid."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">handleFail</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    String<span class="token punctuation">[</span><span class="token punctuation">]</span> httpParams <span class="token operator">=</span> param<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span><span class="token string">"\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    String url <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    String method <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    String data <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>String httpParam <span class="token operator">:</span> httpParams<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>httpParam<span class="token punctuation">.</span><span class="token function">startsWith</span><span class="token punctuation">(</span><span class="token string">"url:"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        url <span class="token operator">=</span> httpParam<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>httpParam<span class="token punctuation">.</span><span class="token function">indexOf</span><span class="token punctuation">(</span><span class="token string">"url:"</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>httpParam<span class="token punctuation">.</span><span class="token function">startsWith</span><span class="token punctuation">(</span><span class="token string">"method:"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        method <span class="token operator">=</span> httpParam<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>httpParam<span class="token punctuation">.</span><span class="token function">indexOf</span><span class="token punctuation">(</span><span class="token string">"method:"</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">7</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toUpperCase</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>httpParam<span class="token punctuation">.</span><span class="token function">startsWith</span><span class="token punctuation">(</span><span class="token string">"data:"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        data <span class="token operator">=</span> httpParam<span class="token punctuation">.</span><span class="token function">substring</span><span class="token punctuation">(</span>httpParam<span class="token punctuation">.</span><span class="token function">indexOf</span><span class="token punctuation">(</span><span class="token string">"data:"</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// param valid</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>url <span class="token operator">==</span> null <span class="token operator">||</span> url<span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"url["</span> <span class="token operator">+</span> url <span class="token operator">+</span> <span class="token string">"] invalid."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">handleFail</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>method <span class="token operator">==</span> null <span class="token operator">||</span> <span class="token operator">!</span>Arrays<span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token string">"GET"</span><span class="token punctuation">,</span> <span class="token string">"POST"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">contains</span><span class="token punctuation">(</span>method<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"method["</span> <span class="token operator">+</span> method <span class="token operator">+</span> <span class="token string">"] invalid."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">handleFail</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">boolean</span> isPostMethod <span class="token operator">=</span> method<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span><span class="token string">"POST"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// request</span>
+    HttpURLConnection connection <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    BufferedReader bufferedReader <span class="token operator">=</span> null<span class="token punctuation">;</span>
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+      <span class="token comment">// connection</span>
+      URL realUrl <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">URL</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      connection <span class="token operator">=</span> <span class="token punctuation">(</span>HttpURLConnection<span class="token punctuation">)</span> realUrl<span class="token punctuation">.</span><span class="token function">openConnection</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token comment">// connection setting</span>
+      connection<span class="token punctuation">.</span><span class="token function">setRequestMethod</span><span class="token punctuation">(</span>method<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      connection<span class="token punctuation">.</span><span class="token function">setDoOutput</span><span class="token punctuation">(</span>isPostMethod<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      connection<span class="token punctuation">.</span><span class="token function">setDoInput</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      connection<span class="token punctuation">.</span><span class="token function">setUseCaches</span><span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      connection<span class="token punctuation">.</span><span class="token function">setReadTimeout</span><span class="token punctuation">(</span><span class="token number">5</span> <span class="token operator">*</span> <span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      connection<span class="token punctuation">.</span><span class="token function">setConnectTimeout</span><span class="token punctuation">(</span><span class="token number">3</span> <span class="token operator">*</span> <span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      connection<span class="token punctuation">.</span><span class="token function">setRequestProperty</span><span class="token punctuation">(</span><span class="token string">"connection"</span><span class="token punctuation">,</span> <span class="token string">"Keep-Alive"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      connection<span class="token punctuation">.</span><span class="token function">setRequestProperty</span><span class="token punctuation">(</span><span class="token string">"Content-Type"</span><span class="token punctuation">,</span> <span class="token string">"application/json;charset=UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      connection<span class="token punctuation">.</span><span class="token function">setRequestProperty</span><span class="token punctuation">(</span><span class="token string">"Accept-Charset"</span><span class="token punctuation">,</span> <span class="token string">"application/json;charset=UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token comment">// do connection</span>
+      connection<span class="token punctuation">.</span><span class="token function">connect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token comment">// data</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>isPostMethod <span class="token operator">&amp;&amp;</span> data <span class="token operator">!=</span> null <span class="token operator">&amp;&amp;</span> data<span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        DataOutputStream dataOutputStream <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">DataOutputStream</span><span class="token punctuation">(</span>connection<span class="token punctuation">.</span><span class="token function">getOutputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataOutputStream<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>data<span class="token punctuation">.</span><span class="token function">getBytes</span><span class="token punctuation">(</span><span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataOutputStream<span class="token punctuation">.</span><span class="token function">flush</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataOutputStream<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token comment">// valid StatusCode</span>
+      <span class="token keyword">int</span> statusCode <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">getResponseCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">if</span> <span class="token punctuation">(</span>statusCode <span class="token operator">!=</span> <span class="token number">200</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RuntimeException</span><span class="token punctuation">(</span><span class="token string">"Http Request StatusCode("</span> <span class="token operator">+</span> statusCode <span class="token operator">+</span> <span class="token string">") Invalid."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token comment">// result</span>
+      bufferedReader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedReader</span><span class="token punctuation">(</span>
+          <span class="token keyword">new</span> <span class="token class-name">InputStreamReader</span><span class="token punctuation">(</span>connection<span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      StringBuilder result <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      String line<span class="token punctuation">;</span>
+      <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>line <span class="token operator">=</span> bufferedReader<span class="token punctuation">.</span><span class="token function">readLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        result<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>line<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      String responseMsg <span class="token operator">=</span> result<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>responseMsg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+      XxlJobHelper<span class="token punctuation">.</span><span class="token function">handleFail</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+      <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>bufferedReader <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+          bufferedReader<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>connection <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+          connection<span class="token punctuation">.</span><span class="token function">disconnect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e2<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>e2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+  <span class="token punctuation">}</span>
+
+  <span class="token comment">/**
+   * 5、生命周期任务示例：任务初始化与销毁时，支持自定义相关逻辑；
+   */</span>
+  <span class="token annotation punctuation">@XxlJob</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"demoJobHandler2"</span><span class="token punctuation">,</span> init <span class="token operator">=</span> <span class="token string">"init"</span><span class="token punctuation">,</span> destroy <span class="token operator">=</span> <span class="token string">"destroy"</span><span class="token punctuation">)</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">demoJobHandler2</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception <span class="token punctuation">{</span>
+    XxlJobHelper<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"XXL-JOB, Hello World."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">init</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"init"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"destory"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>编写完成之后，运行项目</p>
+<h4><a id="5___355"></a>5、任务调度中心 - 任务执行</h4>
+<p>小编这里直接使用默认示例执行一次<br>
+<img src="https://img-blog.csdnimg.cn/2021052516211874.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+查看调度日志<br>
+<img src="https://img-blog.csdnimg.cn/20210525162445909.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<p>查看执行日志<br>
+<img src="https://img-blog.csdnimg.cn/20210525162419154.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="demo_365"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+注意你的思想，它会变成你的言语；注意你的言语，它会变成你的行动；注意你的行动，它会变成你的习惯；注意你的习惯，它会变成你的性格；注意你的性格，它会变成你的命运。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
