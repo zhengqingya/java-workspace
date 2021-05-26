@@ -1,0 +1,16 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+
+  # MongoDB 配置
+  data:
+    mongodb:
+      uri: mongodb://admin:123456@192.168.0.88:27017/test-db?authSource=admin # TODO 根据自己的配置修改
+#      host: 88.90.0.37
+#      port: 27017
+#      username: admin
+#      password: 123456
+#      database: test-db
