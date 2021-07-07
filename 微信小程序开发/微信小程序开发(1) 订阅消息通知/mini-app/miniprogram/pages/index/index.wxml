@@ -1,0 +1,6 @@
+<form class="form_item" bindsubmit='clickEvent' report-submit='true' data-type="1">
+ <button class="button" form-type='submit'>
+    click
+ </button>
+</form>
+<view>openid： {{openid}}</view>

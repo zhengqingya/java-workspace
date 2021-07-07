@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>微信小程序开发(1) 订阅消息通知</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h3><a id="_0"></a>一、前言</h3>
+<ol>
+<li>本文将基于springboot实现小程序 - 订阅消息通知</li>
+<li>可参考微信小程序订阅消息文档：<a href="https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/subscribe-message.html">https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/subscribe-message.html</a></li>
+</ol>
+<p><img src="https://img-blog.csdnimg.cn/20210707164328480.jpg?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_ID_7"></a>二、获取模板 ID</h3>
+<blockquote>
+<p><a href="https://mp.weixin.qq.com/wxamp/newtmpl/mytmpl?start=0&amp;limit=10&amp;token=721590608&amp;lang=zh_CN">https://mp.weixin.qq.com/wxamp/newtmpl/mytmpl?start=0&amp;limit=10&amp;token=721590608&amp;lang=zh_CN</a></p>
+</blockquote>
+<p>到<code>小程序-订阅消息-公共模板库</code>下选用模板<br>
+<img src="https://img-blog.csdnimg.cn/20210707161516402.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>
+注：<code>{{thing2.DATA}}</code>和<code>{{thing1.DATA}}</code>为模板动态值<br>
+<img src="https://img-blog.csdnimg.cn/2021070716442541.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3><a id="_17"></a>三、小程序端获取消息通知权限</h3>
+<blockquote>
+<p><a href="https://developers.weixin.qq.com/miniprogram/dev/api/open-api/subscribe-message/wx.requestSubscribeMessage.html">https://developers.weixin.qq.com/miniprogram/dev/api/open-api/subscribe-message/wx.requestSubscribeMessage.html</a></p>
+</blockquote>
+<pre><code class="prism language-javascript"><span class="token comment">// 小程序端示例代码</span>
+wx<span class="token punctuation">.</span><span class="token function">requestSubscribeMessage</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  tmplIds<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">''</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token function">success</span> <span class="token punctuation">(</span>res<span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+</code></pre>
+<h3><a id="_29"></a>四、服务端编写消息通知代码</h3>
+<blockquote>
+<p><a href="https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/subscribe-message/subscribeMessage.send.html">https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/subscribe-message/subscribeMessage.send.html</a></p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DemoTest</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Test</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">testPushWxMaMsg</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// TODO 1、填写自己的数据</span>
+        <span class="token keyword">final</span> String APPID <span class="token operator">=</span> <span class="token string">"xxx"</span><span class="token punctuation">;</span>
+        <span class="token keyword">final</span> String APPSECRET <span class="token operator">=</span> <span class="token string">"xxx"</span><span class="token punctuation">;</span>
+        <span class="token keyword">final</span> String touser <span class="token operator">=</span> <span class="token string">"xxx"</span><span class="token punctuation">;</span>
+        <span class="token keyword">final</span> String template_id <span class="token operator">=</span> <span class="token string">"xxx"</span><span class="token punctuation">;</span>
+        <span class="token keyword">final</span> String url <span class="token operator">=</span> <span class="token string">"pages/index/index"</span><span class="token punctuation">;</span>
+        <span class="token keyword">final</span> HashMap<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span> templateDataMap <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> Object<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token punctuation">{</span>
+                <span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"thing1"</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token punctuation">{</span>
+                    <span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"value"</span><span class="token punctuation">,</span> <span class="token string">"内容简述-test"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"thing2"</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token punctuation">{</span>
+                    <span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"value"</span><span class="token punctuation">,</span> <span class="token string">"学习内容-test"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 2、发送订阅消息</span>
+        Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span> resultMap <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">sendWxMaMsg</span><span class="token punctuation">(</span>WxMaTemplateMsgBO<span class="token punctuation">.</span><span class="token function">builder</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">access_token</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getAccessToken</span><span class="token punctuation">(</span>APPID<span class="token punctuation">,</span> APPSECRET<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">touser</span><span class="token punctuation">(</span>touser<span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">template_id</span><span class="token punctuation">(</span>template_id<span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">page</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">miniprogram_state</span><span class="token punctuation">(</span><span class="token string">"developer"</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">data</span><span class="token punctuation">(</span>templateDataMap<span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">lang</span><span class="token punctuation">(</span><span class="token string">"zh_CN"</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">build</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"小程序-发送订阅消息结果：{}"</span><span class="token punctuation">,</span> resultMap<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 小程序-发送订阅消息
+     *
+     * @param wxMaTemplateMsgBO: 请求参数
+     * @return 通知结果
+     * @author zhengqingya
+     * @date 2021/7/6 10:13
+     */</span>
+    <span class="token keyword">public</span> Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span> <span class="token function">sendWxMaMsg</span><span class="token punctuation">(</span>WxMaTemplateMsgBO wxMaTemplateMsgBO<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        String sendWxMaMsgRequestUrl <span class="token operator">=</span> String<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">"https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=%s"</span><span class="token punctuation">,</span> wxMaTemplateMsgBO<span class="token punctuation">.</span><span class="token function">getAccess_token</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">RestTemplate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">postForEntity</span><span class="token punctuation">(</span>sendWxMaMsgRequestUrl<span class="token punctuation">,</span> wxMaTemplateMsgBO<span class="token punctuation">,</span> Map<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getBody</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+
+    <span class="token comment">/**
+     * 获取小程序全局唯一后台接口调用凭据（access_token）
+     *
+     * @param appid:  小程序唯一凭证，即 AppID，可在「微信公众平台 - 设置 - 开发设置」页中获得。（需要已经成为开发者，且帐号没有异常状态）
+     * @param secret: 小程序唯一凭证密钥，即 AppSecret，获取方式同 appid
+     * @return 调用凭据
+     * @author zhengqingya
+     * @date 2021/7/6 10:04
+     */</span>
+    <span class="token keyword">private</span> String <span class="token function">getAccessToken</span><span class="token punctuation">(</span>String appid<span class="token punctuation">,</span> String secret<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        String accessTokenRequestUrl <span class="token operator">=</span> String<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&amp;appid=%s&amp;secret=%s"</span><span class="token punctuation">,</span> appid<span class="token punctuation">,</span> secret<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Map<span class="token generics function"><span class="token punctuation">&lt;</span>String<span class="token punctuation">,</span> String<span class="token punctuation">&gt;</span></span> tokenMap <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">RestTemplate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getForObject</span><span class="token punctuation">(</span>accessTokenRequestUrl<span class="token punctuation">,</span> Map<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> CollectionUtils<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span>tokenMap<span class="token punctuation">)</span> <span class="token operator">?</span> <span class="token string">""</span> <span class="token operator">:</span> tokenMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"access_token"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>运行之后，即可去微信上查看消息通知了 <code>^ _ ^</code></p>
+<h3><a id="demo_103"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：要么读书、要么旅行,灵魂和身体,必须有一个在路上。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
