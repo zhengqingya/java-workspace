@@ -1,0 +1,26 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: demo
+
+alipay:
+  # 应用ID,您的APPID，收款账号既是您的APPID对应支付宝账号
+  app_id: xxx
+  # 商户私钥，您的PKCS8格式RSA2私钥
+  merchant_private_key: xxx
+  # 支付宝公钥,查看地址：https://openhome.alipay.com/platform/keyManage.htm 对应APPID下的支付宝公钥。
+  alipay_public_key: xxx
+  # 服务器异步通知页面路径  需http://格式的完整路径，不能加?id=123这类自定义参数 [需外网能访问]
+  notify_url: http://tw6zc5.natappfree.cc/error.html
+  # 页面跳转同步通知页面路径 需http://格式的完整路径，不能加?id=123这类自定义参数 [需外网能访问]
+  return_url: http://tw6zc5.natappfree.cc/success
+  # 签名方式
+  sign_type: RSA2
+  # 字符编码格式
+  charset: utf-8
+  # 支付宝网关
+  gatewayUrl: https://openapi.alipaydev.com/gateway.do
+  # 日志路径
+  log_path: "log/"
