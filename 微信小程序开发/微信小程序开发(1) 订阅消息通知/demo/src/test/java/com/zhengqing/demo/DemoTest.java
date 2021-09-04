@@ -3,9 +3,11 @@ package com.zhengqing.demo;
 import com.zhengqing.demo.model.bo.WxMaTemplateMsgBO;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,9 +63,12 @@ public class DemoTest {
      */
     public Map<String, String> sendWxMaMsg(WxMaTemplateMsgBO wxMaTemplateMsgBO) {
         String sendWxMaMsgRequestUrl = String.format("https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=%s", wxMaTemplateMsgBO.getAccess_token());
+        RestTemplate restTemplate = new RestTemplate();
+        // 解决post请求中文乱码问题
+        restTemplate.getMessageConverters().set(1, new StringHttpMessageConverter(StandardCharsets.UTF_8));
         // 注：如果报`{"errcode":47001,"errmsg":"data format error rid: 61334bd2-26ac356f-0eb9e0f6"}`  使用：wxMaTemplateMsgBO => JSON.toJSONString(wxMaTemplateMsgBO)
-//        return new RestTemplate().postForEntity(sendWxMaMsgRequestUrl, JSON.toJSONString(wxMaTemplateMsgBO), Map.class).getBody();
-        return new RestTemplate().postForEntity(sendWxMaMsgRequestUrl, wxMaTemplateMsgBO, Map.class).getBody();
+//        return restTemplate.postForEntity(sendWxMaMsgRequestUrl, JSON.toJSONString(wxMaTemplateMsgBO), Map.class).getBody();
+        return restTemplate.postForEntity(sendWxMaMsgRequestUrl, wxMaTemplateMsgBO, Map.class).getBody();
     }
 
 
