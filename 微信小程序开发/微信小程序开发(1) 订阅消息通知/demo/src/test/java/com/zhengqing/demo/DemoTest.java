@@ -61,6 +61,8 @@ public class DemoTest {
      */
     public Map<String, String> sendWxMaMsg(WxMaTemplateMsgBO wxMaTemplateMsgBO) {
         String sendWxMaMsgRequestUrl = String.format("https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=%s", wxMaTemplateMsgBO.getAccess_token());
+        // 注：如果报`{"errcode":47001,"errmsg":"data format error rid: 61334bd2-26ac356f-0eb9e0f6"}`  使用：wxMaTemplateMsgBO => JSON.toJSONString(wxMaTemplateMsgBO)
+//        return new RestTemplate().postForEntity(sendWxMaMsgRequestUrl, JSON.toJSONString(wxMaTemplateMsgBO), Map.class).getBody();
         return new RestTemplate().postForEntity(sendWxMaMsgRequestUrl, wxMaTemplateMsgBO, Map.class).getBody();
     }
 
