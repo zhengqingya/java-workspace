@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(41) 整合Flyway实现数据库版本控制</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#SpringBootFlyway_14">二、SpringBoot整合Flyway</a></li><ul><li><a href="#1pomxml_16">1、`pom.xml`中引入相关依赖</a></li><li><a href="#2applicationyml_28">2、`application.yml`配置</a></li><li><a href="#3sql_60">3、创建sql脚本</a></li></ul><li><a href="#_87">三、测试</a></li><li><a href="#demo_115">四、本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>本文将基于<code>springboot2.4.0</code>整合<code>Flyway</code>实现mysql数据库版本控制</p>
+<p>官网：<a href="https://flywaydb.org">https://flywaydb.org</a></p>
+<p>功能简述：</p>
+<ol>
+<li>通过flyway在数据库中建立一张版本变更历史记录表；</li>
+<li>在项目的指定目录下编写sql脚本；</li>
+<li>每次项目启动的时候，会去将本地sql脚本生成一个checksum检验码与数据库中的版本记录表做对比，如果不存在则会执行sql脚本内容；</li>
+<li>ex: <code>开发环境</code> -&gt; <code>测试环境</code> -&gt; <code>生产环境</code> 可以通过维护sql脚本来进行数据库表结构和表数据的版本变更升级。</li>
+</ol>
+<h3><a id="SpringBootFlyway_14"></a>二、SpringBoot整合Flyway</h3>
+<h4><a id="1pomxml_16"></a>1、<code>pom.xml</code>中引入相关依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- flywaydb --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/org.flywaydb/flyway-core --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.flywaydb<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>flyway-core<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>7.15.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_28"></a>2、<code>application.yml</code>配置</h4>
+<pre><code class="prism language-yml"><span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token comment"># flyway配置 可参考：https://flywaydb.org/documentation/usage/commandline/migrate</span>
+  <span class="token key atrule">flyway</span><span class="token punctuation">:</span>
+    <span class="token comment"># 是否启用</span>
+    <span class="token key atrule">enabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+    <span class="token comment"># sql迁移 https://flywaydb.org/documentation/concepts/migrations.html#versioned-migrations</span>
+    <span class="token key atrule">locations</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> classpath<span class="token punctuation">:</span>db/zhengqingya <span class="token comment"># sql-based-migrations</span>
+      <span class="token comment">#      - classpath:com.zhengqing.demo.config.flyway.migration # java-based-migrations</span>
+    <span class="token comment"># 数据库信息</span>
+    <span class="token key atrule">url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3306/demo<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+    <span class="token key atrule">user</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+    <span class="token comment"># 版本更新历史记录表</span>
+    <span class="token key atrule">table</span><span class="token punctuation">:</span> t_db_version
+    <span class="token comment"># 到新的环境中，数据库中有数据，且没有t_db_version表时，是否执行迁移操作</span>
+    <span class="token comment"># false：在启动时会报错，并停止迁移;</span>
+    <span class="token comment"># true: 生成history表并完成所有迁移;</span>
+    <span class="token key atrule">baseline-on-migrate</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+    <span class="token comment"># 在迁移时，是否校验旧脚本有变更</span>
+    <span class="token key atrule">validate-on-migrate</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+    <span class="token comment"># 检测迁移脚本的路径是否存在，若不存在则抛出异常</span>
+    <span class="token key atrule">check-location</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+    <span class="token comment"># 禁用Flyway所有drop相关逻辑</span>
+    <span class="token key atrule">clean-disabled</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+    <span class="token comment"># 验证错误时是否自动清除数据库</span>
+    <span class="token key atrule">clean-on-validation-error</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+</code></pre>
+<h4><a id="3sql_60"></a>3、创建sql脚本</h4>
+<p>脚本目录：<code>resources/db/zhengqingya</code></p>
+<blockquote>
+<p>对应<code>application.yml</code>中<code>spring.flyway.locations</code>配置项</p>
+</blockquote>
+<p>sql脚本文件命名格式可参考：<a href="https://flywaydb.org/documentation/concepts/migrations.html#sql-based-migrations">https://flywaydb.org/documentation/concepts/migrations.html#sql-based-migrations</a><br>
+<img src="https://img-blog.csdnimg.cn/246db519743d41058c7d791b841b6350.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+示例：<code>V0.0.1__db.sql</code></p>
+<pre><code class="prism language-sql"><span class="token comment">-- 创建表t_user</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token punctuation">`</span>t_user<span class="token punctuation">`</span>
+<span class="token punctuation">(</span>
+    <span class="token punctuation">`</span>id<span class="token punctuation">`</span>       <span class="token keyword">int</span><span class="token punctuation">(</span><span class="token number">11</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token keyword">COMMENT</span> <span class="token string">'主键ID'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>username<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'用户名'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>nickname<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'昵称'</span><span class="token punctuation">,</span>
+    <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span><span class="token operator">=</span><span class="token keyword">InnoDB</span> <span class="token keyword">AUTO_INCREMENT</span><span class="token operator">=</span><span class="token number">9</span> <span class="token keyword">DEFAULT</span> <span class="token keyword">CHARSET</span><span class="token operator">=</span>utf8 <span class="token keyword">COMMENT</span><span class="token operator">=</span><span class="token string">'测试表'</span><span class="token punctuation">;</span>
+
+<span class="token comment">-- 插入数据</span>
+<span class="token keyword">insert</span> <span class="token keyword">into</span> t_user
+<span class="token keyword">values</span> <span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token string">'admin'</span><span class="token punctuation">,</span> <span class="token string">'管理员'</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+       <span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token string">'test'</span><span class="token punctuation">,</span> <span class="token string">'测试员'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+</code></pre>
+<h3><a id="_87"></a>三、测试</h3>
+<p>启动项目，会在数据库中自动创建表<code>t_db_version</code>，并执行<code>db.zhengqingya</code>下面的<code>V0.0.1__db.sql</code>脚本数据</p>
+<blockquote>
+<p>注：</p>
+<ol>
+<li>如果没有demo数据库，需要自己创建一下再启动项目</li>
+<li>如果当前连接数据库下存在其它数据表，会出现生成的记录如下，这时候需要删除该表中这一条初始数据，然后再重启项目才会正常执行<code>V0.0.1__db.sql</code>脚本；如果当前数据库是空的，则不会出现此问题<br>
+<img src="https://img-blog.csdnimg.cn/02cf9abb5e6647df9aa5f8008b22d74e.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></li>
+</ol>
+</blockquote>
+<p>idea控制台日志如下<br>
+<img src="https://img-blog.csdnimg.cn/49722cc790e64a478409b8036dc81304.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+数据库生成如下<br>
+<img src="https://img-blog.csdnimg.cn/4c93bb83a660476c8b86edad76b7570a.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<p>第二次版本升级脚本<code>V0.0.2__db.sql</code></p>
+<pre><code class="prism language-sql"><span class="token comment">-- 插入数据</span>
+<span class="token keyword">insert</span> <span class="token keyword">into</span> t_user
+<span class="token keyword">values</span> <span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token string">'03'</span><span class="token punctuation">,</span> <span class="token string">'3号人机'</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+       <span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token string">'04'</span><span class="token punctuation">,</span> <span class="token string">'4号人机'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>启动项目，数据库生成如下<br>
+<img src="https://img-blog.csdnimg.cn/97bfe19e83db45cabfd5aee710dd1f59.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<p>其它复杂操作请自行查看官网<code>^_^</code></p>
+<h3><a id="demo_115"></a>四、本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+只要不放下努力和追求,小草也有点缀春天的价值。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
