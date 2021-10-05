@@ -1,0 +1,181 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(43) 整合Zipkin实现分布式链路追踪</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#dockercomposeZipkin_13">二、docker-compose部署Zipkin</a></li><ul><li><a href="#dockercomposezipkinyml_27">docker-compose-zipkin.yml</a></li><li><a href="#zipkin_53">zipkin数据库&amp;表</a></li></ul><li><a href="#SpringBootZipkin_129">三、SpringBoot整合Zipkin</a></li><ul><li><a href="#1pomxml_131">1、pom.xml中引入依赖</a></li><li><a href="#2applicationyml_143">2、application.yml配置</a></li><li><a href="#3api_157">3、测试api</a></li></ul><li><a href="#demo_184">四、本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>本文将基于<code>springboot2.3.8.RELEASE</code>整合<code>Zipkin</code>实现分布式链路追踪</p>
+<p><a href="https://github.com/openzipkin/zipkin">https://github.com/openzipkin/zipkin</a></p>
+<ol>
+<li>zipkin:2</li>
+<li>docker-compose version 1.29.2, build 5becea4c</li>
+<li>springboot:2.3.8.RELEASE</li>
+<li>spring-cloud-starter-zipkin:2.2.8.RELEASE</li>
+</ol>
+<h3><a id="dockercomposeZipkin_13"></a>二、docker-compose部署Zipkin</h3>
+<pre><code class="prism language-shell"><span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+<span class="token builtin class-name">cd</span> docker-compose/Liunx
+<span class="token comment"># 运行 (注：记得创建相应zipkin库和表 &amp; 修改mysql连接配置信息，自行查看`docker-compose/Liunx/zipkin`路径下的说明)</span>
+docker-compose -f docker-compose-zipkin.yml -p zipkin up -d
+</code></pre>
+<p>启动成功如下<br>
+<img src="https://img-blog.csdnimg.cn/aa245415dee04647a80b6fd0ebac37d1.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+访问地址 <a href="http://127.0.0.1:9411/zipkin"><code>http://ip地址:9411/zipkin</code></a><br>
+<img src="https://img-blog.csdnimg.cn/41f440840bd64633a3920e33c5e461a8.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h4><a id="dockercomposezipkinyml_27"></a>docker-compose-zipkin.yml</h4>
+<pre><code class="prism language-yml"><span class="token comment"># 可参考： https://github.com/openzipkin/zipkin/blob/master/docker/examples/docker-compose-mysql.yml</span>
+<span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
+<span class="token key atrule">services</span><span class="token punctuation">:</span>
+  <span class="token key atrule">zipkin</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> registry.cn<span class="token punctuation">-</span>hangzhou.aliyuncs.com/zhengqing/zipkin<span class="token punctuation">:</span><span class="token number">2</span>  <span class="token comment"># 原镜像`openzipkin/zipkin:2`</span>
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> zipkin                                       <span class="token comment"># 容器名为'zipkin'</span>
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped                                      <span class="token comment"># 指定容器退出后的重启策略为始终重启，但是不考虑在Docker守护进程启动时就已经停止了的容器</span>
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>                        <span class="token comment"># 设置环境变量,相当于docker run命令中的-e</span>
+      <span class="token key atrule">TZ</span><span class="token punctuation">:</span> Asia/Shanghai
+      <span class="token key atrule">LANG</span><span class="token punctuation">:</span> en_US.UTF<span class="token punctuation">-</span><span class="token number">8</span>
+      <span class="token comment"># 基于mysql存储</span>
+      <span class="token key atrule">STORAGE_TYPE</span><span class="token punctuation">:</span> mysql
+      <span class="token comment"># Point the zipkin at the storage backend</span>
+      <span class="token comment"># TODO 修改数据库配置信息</span>
+      <span class="token key atrule">MYSQL_HOST</span><span class="token punctuation">:</span> www.zhengqingya.com
+      <span class="token key atrule">MYSQL_TCP_PORT</span><span class="token punctuation">:</span> <span class="token number">3306</span>
+      <span class="token key atrule">MYSQL_DB</span><span class="token punctuation">:</span> zipkin
+      <span class="token key atrule">MYSQL_USER</span><span class="token punctuation">:</span> root
+      <span class="token key atrule">MYSQL_PASS</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>                              <span class="token comment"># 映射端口</span>
+      <span class="token punctuation">-</span> <span class="token string">"9411:9411"</span>
+</code></pre>
+<h4><a id="zipkin_53"></a>zipkin数据库&amp;表</h4>
+<pre><code class="prism language-sql"><span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token operator">NOT</span> <span class="token keyword">EXISTS</span> zipkin_spans
+<span class="token punctuation">(</span>
+    <span class="token punctuation">`</span>trace_id_high<span class="token punctuation">`</span>       <span class="token keyword">BIGINT</span>       <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token number">0</span> <span class="token keyword">COMMENT</span> <span class="token string">'If non zero, this means the trace uses 128 bit traceIds instead of 64 bit'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>trace_id<span class="token punctuation">`</span>            <span class="token keyword">BIGINT</span>       <span class="token operator">NOT</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>id<span class="token punctuation">`</span>                  <span class="token keyword">BIGINT</span>       <span class="token operator">NOT</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>name<span class="token punctuation">`</span>                <span class="token keyword">VARCHAR</span><span class="token punctuation">(</span><span class="token number">255</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>remote_service_name<span class="token punctuation">`</span> <span class="token keyword">VARCHAR</span><span class="token punctuation">(</span><span class="token number">255</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>parent_id<span class="token punctuation">`</span>           <span class="token keyword">BIGINT</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>debug<span class="token punctuation">`</span>               <span class="token keyword">BIT</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>start_ts<span class="token punctuation">`</span>            <span class="token keyword">BIGINT</span> <span class="token keyword">COMMENT</span> <span class="token string">'Span.timestamp(): epoch micros used for endTs query and to implement TTL'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>duration<span class="token punctuation">`</span>            <span class="token keyword">BIGINT</span> <span class="token keyword">COMMENT</span> <span class="token string">'Span.duration(): micros used for minDuration and maxDuration query'</span><span class="token punctuation">,</span>
+    <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>trace_id_high<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>trace_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span> <span class="token operator">=</span> <span class="token keyword">InnoDB</span>
+  ROW_FORMAT <span class="token operator">=</span> COMPRESSED
+  <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> <span class="token operator">=</span> utf8
+  <span class="token keyword">COLLATE</span> utf8_general_ci<span class="token punctuation">;</span>
+
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_spans
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>trace_id_high<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>trace_id<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for getTracesByIds'</span><span class="token punctuation">;</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_spans
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for getTraces and getSpanNames'</span><span class="token punctuation">;</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_spans
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>remote_service_name<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for getTraces and getRemoteServiceNames'</span><span class="token punctuation">;</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_spans
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>start_ts<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for getTraces ordering and range'</span><span class="token punctuation">;</span>
+
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token operator">NOT</span> <span class="token keyword">EXISTS</span> zipkin_annotations
+<span class="token punctuation">(</span>
+    <span class="token punctuation">`</span>trace_id_high<span class="token punctuation">`</span>         <span class="token keyword">BIGINT</span>       <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token number">0</span> <span class="token keyword">COMMENT</span> <span class="token string">'If non zero, this means the trace uses 128 bit traceIds instead of 64 bit'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>trace_id<span class="token punctuation">`</span>              <span class="token keyword">BIGINT</span>       <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'coincides with zipkin_spans.trace_id'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>span_id<span class="token punctuation">`</span>               <span class="token keyword">BIGINT</span>       <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'coincides with zipkin_spans.id'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>a_key<span class="token punctuation">`</span>                 <span class="token keyword">VARCHAR</span><span class="token punctuation">(</span><span class="token number">255</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'BinaryAnnotation.key or Annotation.value if type == -1'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>a_value<span class="token punctuation">`</span>               <span class="token keyword">BLOB</span> <span class="token keyword">COMMENT</span> <span class="token string">'BinaryAnnotation.value(), which must be smaller than 64KB'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>a_type<span class="token punctuation">`</span>                <span class="token keyword">INT</span>          <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'BinaryAnnotation.type() or -1 if Annotation'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>a_timestamp<span class="token punctuation">`</span>           <span class="token keyword">BIGINT</span> <span class="token keyword">COMMENT</span> <span class="token string">'Used to implement TTL; Annotation.timestamp or zipkin_spans.timestamp'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>endpoint_ipv4<span class="token punctuation">`</span>         <span class="token keyword">INT</span> <span class="token keyword">COMMENT</span> <span class="token string">'Null when Binary/Annotation.endpoint is null'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>endpoint_ipv6<span class="token punctuation">`</span>         <span class="token keyword">BINARY</span><span class="token punctuation">(</span><span class="token number">16</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'Null when Binary/Annotation.endpoint is null, or no IPv6 address'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>endpoint_port<span class="token punctuation">`</span>         <span class="token keyword">SMALLINT</span> <span class="token keyword">COMMENT</span> <span class="token string">'Null when Binary/Annotation.endpoint is null'</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>endpoint_service_name<span class="token punctuation">`</span> <span class="token keyword">VARCHAR</span><span class="token punctuation">(</span><span class="token number">255</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'Null when Binary/Annotation.endpoint is null'</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span> <span class="token operator">=</span> <span class="token keyword">InnoDB</span>
+  ROW_FORMAT <span class="token operator">=</span> COMPRESSED
+  <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> <span class="token operator">=</span> utf8
+  <span class="token keyword">COLLATE</span> utf8_general_ci<span class="token punctuation">;</span>
+
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_annotations
+    <span class="token keyword">ADD</span> <span class="token keyword">UNIQUE</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>trace_id_high<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>trace_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>span_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>a_key<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>a_timestamp<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'Ignore insert on duplicate'</span><span class="token punctuation">;</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_annotations
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>trace_id_high<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>trace_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>span_id<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for joining with zipkin_spans'</span><span class="token punctuation">;</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_annotations
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>trace_id_high<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>trace_id<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for getTraces/ByIds'</span><span class="token punctuation">;</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_annotations
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>endpoint_service_name<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for getTraces and getServiceNames'</span><span class="token punctuation">;</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_annotations
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>a_type<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for getTraces and autocomplete values'</span><span class="token punctuation">;</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_annotations
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>a_key<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for getTraces and autocomplete values'</span><span class="token punctuation">;</span>
+<span class="token keyword">ALTER</span> <span class="token keyword">TABLE</span> zipkin_annotations
+    <span class="token keyword">ADD</span> <span class="token keyword">INDEX</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>trace_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>span_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>a_key<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">COMMENT</span> <span class="token string">'for dependencies job'</span><span class="token punctuation">;</span>
+
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token operator">NOT</span> <span class="token keyword">EXISTS</span> zipkin_dependencies
+<span class="token punctuation">(</span>
+    <span class="token punctuation">`</span><span class="token keyword">day</span><span class="token punctuation">`</span>         <span class="token keyword">DATE</span>         <span class="token operator">NOT</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>parent<span class="token punctuation">`</span>      <span class="token keyword">VARCHAR</span><span class="token punctuation">(</span><span class="token number">255</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>child<span class="token punctuation">`</span>       <span class="token keyword">VARCHAR</span><span class="token punctuation">(</span><span class="token number">255</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>call_count<span class="token punctuation">`</span>  <span class="token keyword">BIGINT</span><span class="token punctuation">,</span>
+    <span class="token punctuation">`</span>error_count<span class="token punctuation">`</span> <span class="token keyword">BIGINT</span><span class="token punctuation">,</span>
+    <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span><span class="token keyword">day</span><span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>parent<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>child<span class="token punctuation">`</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span> <span class="token operator">=</span> <span class="token keyword">InnoDB</span>
+  ROW_FORMAT <span class="token operator">=</span> COMPRESSED
+  <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> <span class="token operator">=</span> utf8
+  <span class="token keyword">COLLATE</span> utf8_general_ci<span class="token punctuation">;</span>
+</code></pre>
+<h3><a id="SpringBootZipkin_129"></a>三、SpringBoot整合Zipkin</h3>
+<h4><a id="1pomxml_131"></a>1、pom.xml中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- zipkin --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-zipkin --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.cloud<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-cloud-starter-zipkin<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.2.8.RELEASE<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_143"></a>2、application.yml配置</h4>
+<pre><code class="prism language-yml"><span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token comment"># zipkin配置</span>
+  <span class="token key atrule">zipkin</span><span class="token punctuation">:</span>
+    <span class="token key atrule">base-url</span><span class="token punctuation">:</span> http<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span><span class="token number">9411</span> <span class="token comment"># TODO 服务器地址</span>
+    <span class="token key atrule">discovery-client-enabled</span><span class="token punctuation">:</span> <span class="token boolean important">false</span> <span class="token comment"># 关闭服务发现，否则springCloud会把zipkin的url当作服务名称</span>
+    <span class="token key atrule">sender.type</span><span class="token punctuation">:</span> web                <span class="token comment"># 数据发送的方式：ACTIVEMQ RABBIT KAFKA WEB</span>
+  <span class="token key atrule">sleuth</span><span class="token punctuation">:</span>
+    <span class="token key atrule">sampler</span><span class="token punctuation">:</span>
+      <span class="token key atrule">probability</span><span class="token punctuation">:</span> <span class="token number">1.0</span> <span class="token comment"># 设置抽样采集率，默认0.1（即10%），这里设置为100%-表示全部采样</span>
+</code></pre>
+<h4><a id="3api_157"></a>3、测试api</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/test"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"测试api"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"query"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"查询数据"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">query</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"查询数据: {}"</span><span class="token punctuation">,</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>调用请求 <a href="http://127.0.0.1/test/query">http://127.0.0.1/test/query</a></p>
+<p>查看zipkin</p>
+<blockquote>
+<p>注：这里只是简单的一个测试api效果，可以集成到实际springcloud微服务项目中查看更多。</p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/ba7e9836acd04f419f19921398920b1f.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/0dfa458ffecf4e95ab64648f56b995ae.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="demo_184"></a>四、本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+生命对某些人来说是美丽的,这些人的一生都为某个目标而奋斗。</p>
+</blockquote>
+</div>
+</body>
+
+</html>

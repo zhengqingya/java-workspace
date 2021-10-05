@@ -1,0 +1,15 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+
+  # zipkin配置
+  zipkin:
+    base-url: http://127.0.0.1:9411 # TODO 服务器地址
+    discovery-client-enabled: false # 关闭服务发现，否则springCloud会把zipkin的url当作服务名称
+    sender.type: web                # 数据发送的方式：ACTIVEMQ RABBIT KAFKA WEB
+  sleuth:
+    sampler:
+      probability: 1.0 # 设置抽样采集率，默认0.1（即10%），这里设置为100%-表示全部采样
