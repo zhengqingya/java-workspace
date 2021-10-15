@@ -1,0 +1,302 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(44) RabbitMQ实现延时消费</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#RabbitMQ_10">二、RabbitMQ实现延时消费</a></li><ul><li><a href="#_21">区别</a></li><li><a href="#TTLDLX_58">法一：`TTL`+`DLX`</a></li><li><a href="#MQrabbitmqdelayedmessageexchange_193">法二：MQ插件`rabbitmq-delayed-message-exchange`</a></li><ul><ul><li><a href="#dockercomposerabbitmq_195">docker-compose部署rabbitmq并安装延时插件</a></li><li><a href="#_220">编写代码</a></li></ul></ul></ul><li><a href="#_306">三、测试</a></li><li><a href="#demo_315">本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>本文将基于springboot2.4.0+rabbitmq来简单实现延时消费</p>
+<p>场景举例：用户在商城购买商品提交订单支付的时候，假如有个30分钟内未支付订单则取消订单操作，这个时候我们就可以使用mq的延时消费来解决这一问题。</p>
+<blockquote>
+<p>温馨小提示：本文rabbitmq版本为3.9.1</p>
+</blockquote>
+<h3><a id="RabbitMQ_10"></a>二、RabbitMQ实现延时消费</h3>
+<ol>
+<li>TTL+DLX</li>
+<li>rabbitmq-delayed-message-exchange插件</li>
+</ol>
+<p>两种方式分别如下图</p>
+<blockquote>
+<p>可查看 <a href="https://www.processon.com/view/link/616970e01e085306d74115c2">https://www.processon.com/view/link/616970e01e085306d74115c2</a></p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/830a6c8e8eca4368a3dfba4770e49f7a.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h4><a id="_21"></a>区别</h4>
+<ol>
+<li>方式1： 对队列中的消息设置过期时间，如果先设置1条消息过期时间为30分钟，再设置1条消息过期时间为10分钟，此时需要前1条消息消费完之后，才会消费第2条消息，队列先进先出。</li>
+<li>方式2：不用考虑消息的先后，只要消费过期时间到了，就消费它。</li>
+</ol>
+<p>下面开始编写demo吧</p>
+<p>mq相关变量</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">MqConstant</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 死信队列
+     */</span>
+    <span class="token class-name">String</span> DLX_EXCHANGE <span class="token operator">=</span> <span class="token string">"dlx_exchange"</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> DLX_QUEUE <span class="token operator">=</span> <span class="token string">"dlx_queue"</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> DLX_ROUTING_KEY <span class="token operator">=</span> <span class="token string">"dlx_routing_key"</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 普通订单队列 - 过期时间-30分钟
+     */</span>
+    <span class="token class-name">String</span> ORDER_EXCHANGE <span class="token operator">=</span> <span class="token string">"order_exchange"</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> ORDER_QUEUE <span class="token operator">=</span> <span class="token string">"order_queue"</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> ORDER_ROUTING_KEY <span class="token operator">=</span> <span class="token string">"order_routing_key"</span><span class="token punctuation">;</span>
+    <span class="token keyword">int</span> ORDER_QUEUE_TTL_TIME <span class="token operator">=</span> <span class="token number">1000</span> <span class="token operator">*</span> <span class="token number">60</span> <span class="token operator">*</span> <span class="token number">30</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 延时队列 - mq插件方式'rabbitmq-delayed-message-exchange'
+     */</span>
+    <span class="token class-name">String</span> PLUGIN_DELAY_EXCHANGE <span class="token operator">=</span> <span class="token string">"plugin_delay_exchange"</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> PLUGIN_DELAY_ROUTING_KEY <span class="token operator">=</span> <span class="token string">"plugin_delay_routing_key"</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> PLUGIN_DELAY_QUEUE <span class="token operator">=</span> <span class="token string">"plugin_delay_queue"</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="TTLDLX_58"></a>法一：<code>TTL</code>+<code>DLX</code></h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DlxConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">// ======================== ↓↓↓↓↓↓ 死信队列 ↓↓↓↓↓↓ ========================</span>
+
+    <span class="token comment">/**
+     * 死信交换机
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">DirectExchange</span> <span class="token function">dlxExchange</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">DirectExchange</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>DLX_EXCHANGE<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 死信队列
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">Queue</span> <span class="token function">dlxQueue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Queue</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>DLX_QUEUE<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 绑定死信交换机和死信队列
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">Binding</span> <span class="token function">dlxBinding</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token class-name">BindingBuilder</span><span class="token punctuation">.</span><span class="token function">bind</span><span class="token punctuation">(</span><span class="token function">dlxQueue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token keyword">to</span><span class="token punctuation">(</span><span class="token function">dlxExchange</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token keyword">with</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>DLX_ROUTING_KEY<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// ======================== ↓↓↓↓↓↓ 普通消费队列 ↓↓↓↓↓↓ ========================</span>
+
+    <span class="token comment">/**
+     * 普通消费队列
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">Queue</span> <span class="token function">orderQueue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">Object</span><span class="token punctuation">&gt;</span></span> args <span class="token operator">=</span> <span class="token class-name">Maps</span><span class="token punctuation">.</span><span class="token function">newHashMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置消息过期时间</span>
+        args<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"x-message-ttl"</span><span class="token punctuation">,</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>ORDER_QUEUE_TTL_TIME<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置死信交换机</span>
+        args<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"x-dead-letter-exchange"</span><span class="token punctuation">,</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>DLX_EXCHANGE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置死信</span>
+        args<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"x-dead-letter-routing-key"</span><span class="token punctuation">,</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>DLX_ROUTING_KEY<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Queue</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>ORDER_QUEUE<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">DirectExchange</span> <span class="token function">orderExchange</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">DirectExchange</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>ORDER_EXCHANGE<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">Binding</span> <span class="token function">orderBinding</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token class-name">BindingBuilder</span><span class="token punctuation">.</span><span class="token function">bind</span><span class="token punctuation">(</span><span class="token function">orderQueue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token keyword">to</span><span class="token punctuation">(</span><span class="token function">orderExchange</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token keyword">with</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>ORDER_ROUTING_KEY<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DlxProducer</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> <span class="token class-name">AmqpTemplate</span> rabbitTemplate<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">send</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">String</span> msgContent <span class="token operator">=</span> <span class="token string">"Hello World "</span> <span class="token operator">+</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"{} [生产者] 发送消息: {}"</span><span class="token punctuation">,</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> msgContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>rabbitTemplate<span class="token punctuation">.</span><span class="token function">convertAndSend</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>ORDER_EXCHANGE<span class="token punctuation">,</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>ORDER_ROUTING_KEY<span class="token punctuation">,</span> msgContent<span class="token punctuation">,</span> message <span class="token operator">-&gt;</span> <span class="token punctuation">{</span>
+            message<span class="token punctuation">.</span><span class="token function">getMessageProperties</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setExpiration</span><span class="token punctuation">(</span><span class="token string">"3000"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> message<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DlxListener</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span><span class="token class-name">Exception</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@RabbitHandler</span>
+    <span class="token annotation punctuation">@RabbitListener</span><span class="token punctuation">(</span>queues <span class="token operator">=</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>ORDER_QUEUE<span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">orderMsg</span><span class="token punctuation">(</span><span class="token class-name">String</span> msg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"----------------------------------------------"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[消费者] 普通订单队列-接收消息: {}"</span><span class="token punctuation">,</span> msg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// TODO 逻辑实现...</span>
+        <span class="token class-name">ThreadUtil</span><span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token class-name">TimeUnit</span><span class="token punctuation">.</span>SECONDS<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span><span class="token string">"失败了..."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 队列延时消费
+     */</span>
+    <span class="token annotation punctuation">@RabbitHandler</span>
+    <span class="token annotation punctuation">@RabbitListener</span><span class="token punctuation">(</span>queues <span class="token operator">=</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>DLX_QUEUE<span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">dlxMsg</span><span class="token punctuation">(</span><span class="token class-name">String</span> msg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"----------------------------------------------"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"{} [消费者] 死信队列-接收消息: {}"</span><span class="token punctuation">,</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> msg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"测试mq-死信队列"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/mq"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DlxController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> <span class="token class-name">DlxProducer</span> dlxProducer<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"sendDlxMsg"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@PostMapping</span><span class="token punctuation">(</span><span class="token string">"sendDlxMsg"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">sendDlxMsg</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>dlxProducer<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"SUCCESS"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="MQrabbitmqdelayedmessageexchange_193"></a>法二：MQ插件<code>rabbitmq-delayed-message-exchange</code></h4>
+<h6><a id="dockercomposerabbitmq_195"></a>docker-compose部署rabbitmq并安装延时插件</h6>
+<blockquote>
+<p>插件下载地址：<a href="https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases">https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases</a></p>
+</blockquote>
+<pre><code class="prism language-shell"><span class="token comment"># 环境准备</span>
+<span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+<span class="token builtin class-name">cd</span> docker-compose/Liunx
+<span class="token comment"># 当前目录下所有文件赋予权限(读、写、执行)</span>
+<span class="token function">chmod</span> -R <span class="token number">777</span> ./rabbitmq
+<span class="token comment"># 运行 [ 注：如果之前有安装过，需要清除浏览器缓存和删除rabbitmq相关的存储数据(如:这里映射到宿主机的data数据目录)，再重装，否则会出现一定问题！ ]</span>
+docker-compose -f docker-compose-rabbitmq.yml -p rabbitmq up -d
+
+<span class="token comment"># 进入容器</span>
+docker <span class="token builtin class-name">exec</span> -it rabbitmq /bin/bash
+<span class="token comment"># 启用延时插件</span>
+rabbitmq-plugins <span class="token builtin class-name">enable</span> rabbitmq_delayed_message_exchange
+<span class="token comment"># 查看已安装插件</span>
+rabbitmq-plugins list
+</code></pre>
+<p>安装成功之后，交换机类型会多一个<code>x-delayed-message</code></p>
+<p><img src="https://img-blog.csdnimg.cn/d6744d45d1bf4dc999d076b336d733f1.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h6><a id="_220"></a>编写代码</h6>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DelayConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">CustomExchange</span> <span class="token function">orderDelayExchange</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">Object</span><span class="token punctuation">&gt;</span></span> args <span class="token operator">=</span> <span class="token class-name">Maps</span><span class="token punctuation">.</span><span class="token function">newHashMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        args<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"x-delayed-type"</span><span class="token punctuation">,</span> <span class="token string">"direct"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">CustomExchange</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>PLUGIN_DELAY_EXCHANGE<span class="token punctuation">,</span> <span class="token string">"x-delayed-message"</span><span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">Queue</span> <span class="token function">orderDelayQueue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Queue</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>PLUGIN_DELAY_QUEUE<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">Binding</span> <span class="token function">orderDelayBinding</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token class-name">BindingBuilder</span><span class="token punctuation">.</span><span class="token function">bind</span><span class="token punctuation">(</span><span class="token function">orderDelayQueue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token keyword">to</span><span class="token punctuation">(</span><span class="token function">orderDelayExchange</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token keyword">with</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>PLUGIN_DELAY_ROUTING_KEY<span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">noargs</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DelayProducer</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> <span class="token class-name">AmqpTemplate</span> rabbitTemplate<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">send</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">String</span> msgContent <span class="token operator">=</span> <span class="token string">"Hello World "</span> <span class="token operator">+</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"{} [生产者] 发送消息: {}"</span><span class="token punctuation">,</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> msgContent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>rabbitTemplate<span class="token punctuation">.</span><span class="token function">convertAndSend</span><span class="token punctuation">(</span><span class="token class-name">MqConstant</span><span class="token punctuation">.</span>PLUGIN_DELAY_EXCHANGE<span class="token punctuation">,</span>
+                <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>PLUGIN_DELAY_ROUTING_KEY<span class="token punctuation">,</span>
+                msgContent<span class="token punctuation">,</span> message <span class="token operator">-&gt;</span> <span class="token punctuation">{</span>
+                    <span class="token comment">// 配置消息延时时间-3秒</span>
+                    message<span class="token punctuation">.</span><span class="token function">getMessageProperties</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setHeader</span><span class="token punctuation">(</span><span class="token string">"x-delay"</span><span class="token punctuation">,</span> <span class="token number">1000</span> <span class="token operator">*</span> <span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">return</span> message<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DelayListener</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@RabbitHandler</span>
+    <span class="token annotation punctuation">@RabbitListener</span><span class="token punctuation">(</span>queues <span class="token operator">=</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>PLUGIN_DELAY_QUEUE<span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">delayMsg</span><span class="token punctuation">(</span><span class="token class-name">String</span> msg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"----------------------------------------------"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"{} [消费者] 接收消息: {}"</span><span class="token punctuation">,</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> msg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"测试mq-延时队列"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/mq"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DelayController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> <span class="token class-name">DelayProducer</span> delayProducer<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"sendDelayMsg"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@PostMapping</span><span class="token punctuation">(</span><span class="token string">"sendDelayMsg"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">sendDelayMsg</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>delayProducer<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"SUCCESS"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_306"></a>三、测试</h3>
+<p>启动项目，调用api进行测试即可 <code>^_^</code></p>
+<p><a href="http://127.0.0.1/doc.html#/home">http://127.0.0.1/doc.html#/home</a><br>
+<img src="https://img-blog.csdnimg.cn/a24667be68a04850a7425ed6b2423e05.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/cbe5577ea5e743d79ce463b830cf0012.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/3471f0404dc74cefa290996a5a0c663e.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="demo_315"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+人，最好的心态是平静；最好的状态是简单；最好的感觉是自由；最好的心情是童心。<code>^_^</code></p>
+</blockquote>
+</div>
+</body>
+
+</html>
