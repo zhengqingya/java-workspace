@@ -1,0 +1,190 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(45) 实现快递物流查询(阿里云)</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#_11">二、快递物流查询</a></li><li><a href="#api_161">三、测试api</a></li><li><a href="#demo_182">本文demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>本文将基于springboot2.4.0实现快递物流查询，物流信息的获取通过阿里云第三方实现</p>
+<blockquote>
+<p>可参考: <a href="https://market.aliyun.com/products/57124001/cmapi022273.html?spm=5176.730005.productlist.d_cmapi022273.e8357d36FVX3Eu&amp;innerSource=search#sku=yuncode1627300000">https://market.aliyun.com/products/57124001/cmapi022273.html?spm=5176.730005.productlist.d_cmapi022273.e8357d36FVX3Eu&amp;innerSource=search#sku=yuncode1627300000</a><br>
+<img src="https://img-blog.csdnimg.cn/0e5b938b237c478dbdb54d2c1bbb22e4.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+</blockquote>
+<p>快递查询API，快递识别单号，快递接口可查询上百家快递公司及物流快递信息包括：顺丰、申通、圆通、韵达、中通、汇通、EMS、天天、国通、德邦、宅急送等几百家快递物流公司单号查询接口。与官网实时同步更新，包含快递送达时间。</p>
+<h3><a id="_11"></a>二、快递物流查询</h3>
+<blockquote>
+<p>注：需要购买快递物流查询接口服务获取<code>AppCode</code><br>
+<img src="https://img-blog.csdnimg.cn/726cac88299d41a6bebfd8ad40ed9958.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+</blockquote>
+<p>工具类</p>
+<blockquote>
+<p>其中http请求工具类自行查看demo源码</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">LogisticUtil</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 查询物流信息
+     *
+     * @param params 提交参数
+     * @return 物流信息
+     * @author zhengqingya
+     * @date 2021/10/23 10:48 下午
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">LogisticVO</span> <span class="token function">getLogisticInfo</span><span class="token punctuation">(</span><span class="token class-name">LogisticDTO</span> params<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">String</span> no <span class="token operator">=</span> params<span class="token punctuation">.</span><span class="token function">getNo</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> type <span class="token operator">=</span> params<span class="token punctuation">.</span><span class="token function">getType</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> appCode <span class="token operator">=</span> params<span class="token punctuation">.</span><span class="token function">getAppCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 请求地址</span>
+        <span class="token class-name">String</span> requestUrl <span class="token operator">=</span> <span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">"https://kdwlcxf.market.alicloudapi.com/kdwlcx?no=%s&amp;type=%s"</span><span class="token punctuation">,</span>
+                no<span class="token punctuation">,</span> <span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">isBlank</span><span class="token punctuation">(</span>type<span class="token punctuation">)</span> <span class="token operator">?</span> <span class="token string">""</span> <span class="token operator">:</span> type<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 发起请求</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> headerMap <span class="token operator">=</span> <span class="token class-name">Maps</span><span class="token punctuation">.</span><span class="token function">newHashMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        headerMap<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"Authorization"</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">"APPCODE %s"</span><span class="token punctuation">,</span> appCode<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> resultJson <span class="token operator">=</span> <span class="token class-name">HttpUtil</span><span class="token punctuation">.</span><span class="token function">getUrl</span><span class="token punctuation">(</span>requestUrl<span class="token punctuation">,</span> headerMap<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">LogisticApiResult</span> logisticApiResult <span class="token operator">=</span> JSON<span class="token punctuation">.</span><span class="token function">parseObject</span><span class="token punctuation">(</span>resultJson<span class="token punctuation">,</span> <span class="token class-name">LogisticApiResult</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Assert</span><span class="token punctuation">.</span><span class="token function">notNull</span><span class="token punctuation">(</span>logisticApiResult<span class="token punctuation">,</span> <span class="token string">"参数异常"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Assert</span><span class="token punctuation">.</span><span class="token function">isTrue</span><span class="token punctuation">(</span>logisticApiResult<span class="token punctuation">.</span><span class="token function">getStatus</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">,</span> logisticApiResult<span class="token punctuation">.</span><span class="token function">getMsg</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> logisticApiResult<span class="token punctuation">.</span><span class="token function">getResult</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>请求实体类</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@SuperBuilder</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span><span class="token string">"物流-查询参数"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">LogisticDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"快递单号 【顺丰请输入运单号 : 收件人或寄件人手机号后四位。例如：123456789:1234】"</span><span class="token punctuation">,</span> required <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">,</span> example <span class="token operator">=</span> <span class="token string">"780098068058"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> no<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"快递公司代码: 可不填自动识别，填了查询更快【代码见附表】"</span><span class="token punctuation">,</span> required <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">,</span> example <span class="token operator">=</span> <span class="token string">"zto"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> type<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"appCode"</span><span class="token punctuation">,</span> required <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">,</span> example <span class="token operator">=</span> <span class="token string">"xxx"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> appCode<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>响应实体类</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@Builder</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span><span class="token string">"物流-api响应结果"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">LogisticApiResult</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"状态码"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">Integer</span> status<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"提示信息"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> msg<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"结果集"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">LogisticVO</span> result<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@Builder</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span><span class="token string">"物流-响应参数"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">LogisticVO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"运单编号"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> number<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"快递公司编码[见附表]"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> type<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"投递状态 0快递收件(揽件)1在途中 2正在派件 3已签收 4派送失败 5.疑难件 6.退件签收"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> deliverystatus<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"是否本人签收"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> issign<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"快递公司名字"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> expName<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"快递公司官网"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> expSite<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"快递公司电话"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> expPhone<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"快递员"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> courier<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"快递员电话"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> courierPhone<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"最新轨迹的时间"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> updateTime<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"发货到收货耗时(截止最新轨迹)"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> takeTime<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"快递公司logo"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> logo<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"事件轨迹集"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">LogisticItem</span><span class="token punctuation">&gt;</span></span> list<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Data</span>
+    <span class="token annotation punctuation">@Builder</span>
+    <span class="token annotation punctuation">@NoArgsConstructor</span>
+    <span class="token annotation punctuation">@AllArgsConstructor</span>
+    <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span><span class="token string">"物流详情"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">LogisticItem</span> <span class="token punctuation">{</span>
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"时间点"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> <span class="token class-name">String</span> time<span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"事件详情"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> <span class="token class-name">String</span> status<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="api_161"></a>三、测试api</h3>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/test"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"测试api"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"查询物流信息"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"getLogistic"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">LogisticVO</span> <span class="token function">getLogistic</span><span class="token punctuation">(</span><span class="token annotation punctuation">@ModelAttribute</span> <span class="token class-name">LogisticDTO</span> params<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token class-name">LogisticUtil</span><span class="token punctuation">.</span><span class="token function">getLogisticInfo</span><span class="token punctuation">(</span>params<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>接口文档 <a href="http://127.0.0.1/doc.html">http://127.0.0.1/doc.html</a><br>
+<img src="https://img-blog.csdnimg.cn/65b0902c0f3d408d98fe4e1e3f0430b1.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="demo_182"></a>本文demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+相信梦想是价值的源泉，<br>
+相信眼光决定未来的一切，<br>
+相信成功的信念比成功本身更重要，<br>
+相信人生有挫折没有失败，<br>
+相信生命的质量来自决不妥协的信念。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
