@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(46) 整合ShedLock实现分布式定时任务(redis版)</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#SpringBootShedLock_8">二、SpringBoot整合ShedLock</a></li><ul><li><a href="#1pomxml_12">1、`pom.xml`中引入依赖</a></li><li><a href="#2Shedlock_31">2、Shedlock配置类</a></li><li><a href="#3_57">3、测试数据定时任务</a></li></ul><li><a href="#demo_89">三、本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>本文将基于springboot2.4.0整合ShedLock实现分布式定时任务(redis版)</p>
+<p><a href="https://github.com/lukas-krecan/shedlock">https://github.com/lukas-krecan/shedlock</a></p>
+<h3><a id="SpringBootShedLock_8"></a>二、SpringBoot整合ShedLock</h3>
+<blockquote>
+<p>温馨小提示：redis相关配置省略，若有需要参考demo源码即可。</p>
+</blockquote>
+<h4><a id="1pomxml_12"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- shedlock: 分布式定时任务锁 --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/net.javacrumbs.shedlock/shedlock-spring --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>net.javacrumbs.shedlock<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>shedlock-spring<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>4.29.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- 使用redis做分布式任务 --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/net.javacrumbs.shedlock/shedlock-provider-redis-spring --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>net.javacrumbs.shedlock<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>shedlock-provider-redis-spring<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>4.29.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2Shedlock_31"></a>2、Shedlock配置类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token comment">// 开启定时器</span>
+<span class="token annotation punctuation">@EnableScheduling</span>
+<span class="token comment">// 开启定时任务锁，并设置默认锁最大时间为30分钟(PT为固定格式，M为时间单位-分钟)</span>
+<span class="token annotation punctuation">@EnableSchedulerLock</span><span class="token punctuation">(</span>defaultLockAtMostFor <span class="token operator">=</span> <span class="token string">"PT30M"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ShedlockConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${spring.profiles.active}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> env<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 使用redis存储
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">LockProvider</span> <span class="token function">lockProvider</span><span class="token punctuation">(</span><span class="token class-name">RedisTemplate</span> redisTemplate<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// keyPrefix: redis key的前缀</span>
+        <span class="token comment">// env和keyPrefix 主要用于区分数据来源，保证最终redis-key在使用时不串用即可  ex=&gt; keyPrefix:dev:scheduledTaskName</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">RedisLockProvider</span><span class="token punctuation">(</span>redisTemplate<span class="token punctuation">.</span><span class="token function">getConnectionFactory</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> env<span class="token punctuation">,</span> <span class="token string">"keyPrefix"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_57"></a>3、测试数据定时任务</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Timer</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 每5秒执行一次
+     *
+     * @SchedulerLock 注解参数
+     * name：锁的名称，同一时间只能执行一个同名的任务
+     * lockAtMostFor：该属性指定在执行节点死亡的情况下应保持锁定多长时间。这只是一个回退，在正常情况下，一旦任务完成就会释放锁。 您必须设置lockAtMostFor一个比正常执行时间长得多的值。如果任务花费的时间超过 lockAtMostFor所产生的行为可能是不可预测的（多个进程将有效地持有锁）
+     * lockAtLeastFor：该属性指定应保留锁的最短时间。它的主要目的是在节点之间的任务和时钟差异非常短的情况下防止从多个节点执行。
+     * &lt;p&gt;
+     * 通过设置lockAtMostFor我们确保即使节点死亡也会释放锁，通过设置lockAtLeastFor 我们确保它在十五分钟内不会执行超过一次。请注意，这lockAtMostFor只是一个安全网，以防执行任务的节点死亡，因此将其设置为明显大于最大估计执行时间的时间。 如果任务花费的时间超过lockAtMostFor，它可能会再次执行并且结果将是不可预测的（更多的进程将持有锁）。
+     */</span>
+    <span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>cron <span class="token operator">=</span> <span class="token string">"*/5 * * * * ?"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@SchedulerLock</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">"scheduledTaskName"</span><span class="token punctuation">,</span> lockAtMostFor <span class="token operator">=</span> <span class="token string">"4s"</span><span class="token punctuation">,</span> lockAtLeastFor <span class="token operator">=</span> <span class="token string">"4s"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">printCurrentTime</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"现在时间：【{}】"</span><span class="token punctuation">,</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>自己启动项目运行测试即可…</p>
+<p><img src="https://img-blog.csdnimg.cn/c4b461508285488d9b37d1b565c4effe.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+redis-key<br>
+<img src="https://img-blog.csdnimg.cn/8ed7caadb66a431b8b99f3c5a36bc597.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="demo_89"></a>三、本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+至于未来会怎样,要走下去才知道,反正路还很长,天总会亮。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
