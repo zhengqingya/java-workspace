@@ -1,0 +1,541 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(47) 实现快递物流查询(快递鸟)</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#_10">二、快递物流查询</a></li><ul><li><a href="#1_12">1、快递鸟工具类</a></li><li><a href="#2_199">2、请求类</a></li><li><a href="#3_239">3、响应结果类</a></li><li><a href="#4_341">4、物流编码、状态枚举类</a></li><li><a href="#5api_523">5、测试api</a></li></ul><li><a href="#demo_544">三、本文demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>本文将基于springboot2.4.0实现快递物流查询，物流信息的获取通过快递鸟第三方实现</p>
+<p><a href="http://www.kdniao.com">http://www.kdniao.com</a></p>
+<p><img src="https://img-blog.csdnimg.cn/24bf9d6db33a4f8ba6bdfae4a04e1736.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="_10"></a>二、快递物流查询</h3>
+<h4><a id="1_12"></a>1、快递鸟工具类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">KdniaoUtil</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 快递查询接口
+     *
+     * @param queryDTO 请求参数
+     * @return 物流信息
+     * @author zhengqingya
+     * @date 2021/10/25 17:39
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">KdniaoApiVO</span> <span class="token function">getLogisticInfo</span><span class="token punctuation">(</span><span class="token class-name">KdniaoApiDTO</span> queryDTO<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">KdniaoApiVO</span> kdniaoApiVO <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">KdniaoUtil</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getLogisticBase</span><span class="token punctuation">(</span>queryDTO<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Assert</span><span class="token punctuation">.</span><span class="token function">isTrue</span><span class="token punctuation">(</span><span class="token string">"true"</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>kdniaoApiVO<span class="token punctuation">.</span><span class="token function">getSuccess</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> kdniaoApiVO<span class="token punctuation">.</span><span class="token function">getReason</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        kdniaoApiVO<span class="token punctuation">.</span><span class="token function">handleData</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> kdniaoApiVO<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 快递查询接口
+     *
+     * @param queryDTO 请求参数
+     * @return 物流信息
+     * @author zhengqingya
+     * @date 2021/10/25 17:39
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span><span class="token class-name">Exception</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">KdniaoApiVO</span> <span class="token function">getLogisticBase</span><span class="token punctuation">(</span><span class="token class-name">KdniaoApiDTO</span> queryDTO<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">String</span> <span class="token class-name">EBusinessID</span> <span class="token operator">=</span> queryDTO<span class="token punctuation">.</span><span class="token function">getEBusinessID</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> <span class="token class-name">ApiKey</span> <span class="token operator">=</span> queryDTO<span class="token punctuation">.</span><span class="token function">getApiKey</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> <span class="token class-name">ReqURL</span> <span class="token operator">=</span> queryDTO<span class="token punctuation">.</span><span class="token function">getReqURL</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> shipperCode <span class="token operator">=</span> queryDTO<span class="token punctuation">.</span><span class="token function">getShipperCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> logisticCode <span class="token operator">=</span> queryDTO<span class="token punctuation">.</span><span class="token function">getLogisticCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 组装应用级参数</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> requestParamMap <span class="token operator">=</span> <span class="token class-name">Maps</span><span class="token punctuation">.</span><span class="token function">newHashMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        requestParamMap<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"shipperCode"</span><span class="token punctuation">,</span> shipperCode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        requestParamMap<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"LogisticCode"</span><span class="token punctuation">,</span> logisticCode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> <span class="token class-name">RequestData</span> <span class="token operator">=</span> JSON<span class="token punctuation">.</span><span class="token function">toJSONString</span><span class="token punctuation">(</span>requestParamMap<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 组装系统级参数</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> params <span class="token operator">=</span> <span class="token class-name">Maps</span><span class="token punctuation">.</span><span class="token function">newHashMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        params<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"RequestData"</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">urlEncoder</span><span class="token punctuation">(</span><span class="token class-name">RequestData</span><span class="token punctuation">,</span> <span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        params<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"EBusinessID"</span><span class="token punctuation">,</span> <span class="token class-name">EBusinessID</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        params<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"RequestType"</span><span class="token punctuation">,</span> <span class="token string">"8001"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">String</span> dataSign <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">encrypt</span><span class="token punctuation">(</span><span class="token class-name">RequestData</span><span class="token punctuation">,</span> <span class="token class-name">ApiKey</span><span class="token punctuation">,</span> <span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        params<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"DataSign"</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">urlEncoder</span><span class="token punctuation">(</span>dataSign<span class="token punctuation">,</span> <span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        params<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"DataType"</span><span class="token punctuation">,</span> <span class="token string">"2"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 以form表单形式提交post请求，post请求体中包含了应用级参数和系统级参数</span>
+        <span class="token class-name">String</span> resultJson <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">sendPost</span><span class="token punctuation">(</span><span class="token class-name">ReqURL</span><span class="token punctuation">,</span> params<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> JSON<span class="token punctuation">.</span><span class="token function">parseObject</span><span class="token punctuation">(</span>resultJson<span class="token punctuation">,</span> <span class="token class-name">KdniaoApiVO</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * MD5加密
+     * str 内容
+     * charset 编码方式
+     *
+     * @throws Exception
+     */</span>
+    <span class="token annotation punctuation">@SuppressWarnings</span><span class="token punctuation">(</span><span class="token string">"unused"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">MD5</span><span class="token punctuation">(</span><span class="token class-name">String</span> str<span class="token punctuation">,</span> <span class="token class-name">String</span> charset<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        <span class="token class-name">MessageDigest</span> md <span class="token operator">=</span> <span class="token class-name">MessageDigest</span><span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token string">"MD5"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        md<span class="token punctuation">.</span><span class="token function">update</span><span class="token punctuation">(</span>str<span class="token punctuation">.</span><span class="token function">getBytes</span><span class="token punctuation">(</span>charset<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">byte</span><span class="token punctuation">[</span><span class="token punctuation">]</span> result <span class="token operator">=</span> md<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">StringBuffer</span> sb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringBuffer</span><span class="token punctuation">(</span><span class="token number">32</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> result<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">int</span> val <span class="token operator">=</span> result<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">&amp;</span> <span class="token number">0xff</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>val <span class="token operator">&lt;=</span> <span class="token number">0xf</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                sb<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"0"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            sb<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token class-name">Integer</span><span class="token punctuation">.</span><span class="token function">toHexString</span><span class="token punctuation">(</span>val<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> sb<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toLowerCase</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * base64编码
+     * str 内容
+     * charset 编码方式
+     *
+     * @throws UnsupportedEncodingException
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">base64</span><span class="token punctuation">(</span><span class="token class-name">String</span> str<span class="token punctuation">,</span> <span class="token class-name">String</span> charset<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">UnsupportedEncodingException</span> <span class="token punctuation">{</span>
+        <span class="token class-name">String</span> encoded <span class="token operator">=</span> <span class="token class-name">Base64</span><span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span>str<span class="token punctuation">.</span><span class="token function">getBytes</span><span class="token punctuation">(</span>charset<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> encoded<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@SuppressWarnings</span><span class="token punctuation">(</span><span class="token string">"unused"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">urlEncoder</span><span class="token punctuation">(</span><span class="token class-name">String</span> str<span class="token punctuation">,</span> <span class="token class-name">String</span> charset<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">UnsupportedEncodingException</span> <span class="token punctuation">{</span>
+        <span class="token class-name">String</span> result <span class="token operator">=</span> <span class="token class-name">URLEncoder</span><span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span>str<span class="token punctuation">,</span> charset<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 电商Sign签名生成
+     * content 内容
+     * keyValue ApiKey
+     * charset 编码方式
+     *
+     * @return DataSign签名
+     * @throws UnsupportedEncodingException ,Exception
+     */</span>
+    <span class="token annotation punctuation">@SuppressWarnings</span><span class="token punctuation">(</span><span class="token string">"unused"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">encrypt</span><span class="token punctuation">(</span><span class="token class-name">String</span> content<span class="token punctuation">,</span> <span class="token class-name">String</span> keyValue<span class="token punctuation">,</span> <span class="token class-name">String</span> charset<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">UnsupportedEncodingException</span><span class="token punctuation">,</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>keyValue <span class="token operator">!=</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token function">base64</span><span class="token punctuation">(</span><span class="token function">MD5</span><span class="token punctuation">(</span>content <span class="token operator">+</span> keyValue<span class="token punctuation">,</span> charset<span class="token punctuation">)</span><span class="token punctuation">,</span> charset<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token function">base64</span><span class="token punctuation">(</span><span class="token function">MD5</span><span class="token punctuation">(</span>content<span class="token punctuation">,</span> charset<span class="token punctuation">)</span><span class="token punctuation">,</span> charset<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 向指定 URL 发送POST方法的请求
+     * url 发送请求的 URL
+     * params 请求的参数集合
+     *
+     * @return 远程资源的响应结果
+     */</span>
+    <span class="token annotation punctuation">@SuppressWarnings</span><span class="token punctuation">(</span><span class="token string">"unused"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">sendPost</span><span class="token punctuation">(</span><span class="token class-name">String</span> url<span class="token punctuation">,</span> <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> params<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">OutputStreamWriter</span> out <span class="token operator">=</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token class-name">BufferedReader</span> in <span class="token operator">=</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+        <span class="token class-name">StringBuilder</span> result <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            <span class="token class-name">URL</span> realUrl <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token function">URL</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">HttpURLConnection</span> conn <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token class-name">HttpURLConnection</span><span class="token punctuation">)</span> realUrl<span class="token punctuation">.</span><span class="token function">openConnection</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 发送POST请求必须设置如下两行</span>
+            conn<span class="token punctuation">.</span><span class="token function">setDoOutput</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            conn<span class="token punctuation">.</span><span class="token function">setDoInput</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// POST方法</span>
+            conn<span class="token punctuation">.</span><span class="token function">setRequestMethod</span><span class="token punctuation">(</span><span class="token string">"POST"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 设置通用的请求属性</span>
+            conn<span class="token punctuation">.</span><span class="token function">setRequestProperty</span><span class="token punctuation">(</span><span class="token string">"accept"</span><span class="token punctuation">,</span> <span class="token string">"*/*"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            conn<span class="token punctuation">.</span><span class="token function">setRequestProperty</span><span class="token punctuation">(</span><span class="token string">"connection"</span><span class="token punctuation">,</span> <span class="token string">"Keep-Alive"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            conn<span class="token punctuation">.</span><span class="token function">setRequestProperty</span><span class="token punctuation">(</span><span class="token string">"user-agent"</span><span class="token punctuation">,</span>
+                    <span class="token string">"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            conn<span class="token punctuation">.</span><span class="token function">setRequestProperty</span><span class="token punctuation">(</span><span class="token string">"Content-Type"</span><span class="token punctuation">,</span> <span class="token string">"application/x-www-form-urlencoded"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            conn<span class="token punctuation">.</span><span class="token function">connect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 获取URLConnection对象对应的输出流</span>
+            out <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">OutputStreamWriter</span><span class="token punctuation">(</span>conn<span class="token punctuation">.</span><span class="token function">getOutputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 发送请求参数</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>params <span class="token operator">!=</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token class-name">StringBuilder</span> param <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Map<span class="token punctuation">.</span>Entry</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> entry <span class="token operator">:</span> params<span class="token punctuation">.</span><span class="token function">entrySet</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>param<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        param<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"&amp;"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    param<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>entry<span class="token punctuation">.</span><span class="token function">getKey</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    param<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"="</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    param<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>entry<span class="token punctuation">.</span><span class="token function">getValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[快递鸟] 请求参数: [{}]"</span><span class="token punctuation">,</span> param<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                out<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>param<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment">// flush输出流的缓冲</span>
+            out<span class="token punctuation">.</span><span class="token function">flush</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 定义BufferedReader输入流来读取URL的响应</span>
+            in <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedReader</span><span class="token punctuation">(</span>
+                    <span class="token keyword">new</span> <span class="token class-name">InputStreamReader</span><span class="token punctuation">(</span>conn<span class="token punctuation">.</span><span class="token function">getInputStream</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">"UTF-8"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">String</span> line<span class="token punctuation">;</span>
+            <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>line <span class="token operator">=</span> in<span class="token punctuation">.</span><span class="token function">readLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                result<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>line<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">//使用finally块来关闭输出流、输入流</span>
+        <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+            <span class="token keyword">try</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>out <span class="token operator">!=</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    out<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>in <span class="token operator">!=</span> <span class="token keyword">null</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    in<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> ex<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                ex<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="2_199"></a>2、请求类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@SuperBuilder</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span><span class="token string">"快递鸟-物流-查询base参数"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">KdniaoApiBaseDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"用户ID"</span><span class="token punctuation">,</span> required <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">,</span> example <span class="token operator">=</span> <span class="token string">"xx"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> eBusinessID<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"API key"</span><span class="token punctuation">,</span> required <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">,</span> example <span class="token operator">=</span> <span class="token string">"xx"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> apiKey<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"请求url"</span><span class="token punctuation">,</span> required <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">,</span> example <span class="token operator">=</span> <span class="token string">"https://api.kdniao.com/Ebusiness/EbusinessOrderHandle.aspx"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> reqURL<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@SuperBuilder</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@EqualsAndHashCode</span><span class="token punctuation">(</span>callSuper <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span><span class="token string">"快递鸟-物流-查询参数"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">KdniaoApiDTO</span> <span class="token keyword">extends</span> <span class="token class-name">KdniaoApiBaseDTO</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"快递公司编码"</span><span class="token punctuation">,</span> required <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">,</span> example <span class="token operator">=</span> <span class="token string">"ZTO"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> shipperCode<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"快递单号"</span><span class="token punctuation">,</span> required <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">,</span> example <span class="token operator">=</span> <span class="token string">"xxx"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> logisticCode<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_239"></a>3、响应结果类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@SuperBuilder</span>
+<span class="token annotation punctuation">@NoArgsConstructor</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span><span class="token string">"快递鸟-物流-响应参数"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">KdniaoApiVO</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * {@link KdniaoLogisticsStatusEnum }
+     * 增值物流状态：
+     * 0-暂无轨迹信息
+     * 1-已揽收
+     * 2-在途中
+     * 201-到达派件城市, 202-派件中, 211-已放入快递柜或驿站,
+     * 3-已签收
+     * 301-正常签收, 302-派件异常后最终签收, 304-代收签收, 311-快递柜或驿站签收,
+     * 4-问题件
+     * 401-发货无信息, 402-超时未签收, 403-超时未更新, 404-拒收(退件), 405-派件异常, 406-退货签收, 407-退货未签收, 412-快递柜或驿站超时未取
+     */</span>
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"增值物流状态"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">Integer</span> <span class="token class-name">StateEx</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"增值物流状态名称"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> statusExName<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"快递单号"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">LogisticCode</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"快递公司编码"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">ShipperCode</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"失败原因"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">Reason</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"事件轨迹集"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">TraceItem</span><span class="token punctuation">&gt;</span></span> <span class="token class-name">Traces</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * {@link KdniaoLogisticsStatusEnum }
+     */</span>
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"物流状态：0-暂无轨迹信息,1-已揽收,2-在途中,3-签收,4-问题件"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">Integer</span> <span class="token class-name">State</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"状态名称"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> statusName<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"用户ID"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">EBusinessID</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"送货人"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">DeliveryMan</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"送货人电话号码"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">DeliveryManTel</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"成功与否 true/false"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">Success</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"所在城市"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">Location</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Data</span>
+    <span class="token annotation punctuation">@Builder</span>
+    <span class="token annotation punctuation">@NoArgsConstructor</span>
+    <span class="token annotation punctuation">@AllArgsConstructor</span>
+    <span class="token annotation punctuation">@ApiModel</span><span class="token punctuation">(</span><span class="token string">"事件轨迹集"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">TraceItem</span> <span class="token punctuation">{</span>
+        <span class="token comment">/**
+         * {@link KdniaoLogisticsStatusEnum }
+         */</span>
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"当前状态(同StateEx)"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> <span class="token class-name">Integer</span> <span class="token class-name">Action</span><span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"状态名称"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> <span class="token class-name">String</span> actionName<span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"描述"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">AcceptStation</span><span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"时间"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">AcceptTime</span><span class="token punctuation">;</span>
+
+        <span class="token annotation punctuation">@ApiModelProperty</span><span class="token punctuation">(</span><span class="token string">"所在城市"</span><span class="token punctuation">)</span>
+        <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token class-name">Location</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">handleData</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>statusName <span class="token operator">=</span> <span class="token class-name">KdniaoLogisticsStatusEnum</span><span class="token punctuation">.</span><span class="token function">getEnum</span><span class="token punctuation">(</span><span class="token class-name"><span class="token namespace">this<span class="token punctuation">.</span></span>State</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getDesc</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>statusExName <span class="token operator">=</span> <span class="token class-name">KdniaoLogisticsStatusEnum</span><span class="token punctuation">.</span><span class="token function">getEnum</span><span class="token punctuation">(</span><span class="token class-name"><span class="token namespace">this<span class="token punctuation">.</span></span>StateEx</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getDesc</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">CollectionUtils</span><span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token class-name"><span class="token namespace">this<span class="token punctuation">.</span></span>Traces</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token class-name"><span class="token namespace">this<span class="token punctuation">.</span></span>Traces</span> <span class="token operator">=</span> <span class="token class-name">Lists</span><span class="token punctuation">.</span><span class="token function">newArrayList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token class-name"><span class="token namespace">this<span class="token punctuation">.</span></span>Traces</span><span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span>item <span class="token operator">-&gt;</span> item<span class="token punctuation">.</span>actionName <span class="token operator">=</span> <span class="token class-name">KdniaoLogisticsStatusEnum</span><span class="token punctuation">.</span><span class="token function">getEnum</span><span class="token punctuation">(</span><span class="token class-name"><span class="token namespace">item<span class="token punctuation">.</span></span>Action</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getDesc</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4_341"></a>4、物流编码、状态枚举类</h4>
+<blockquote>
+<p>温馨小提示：更多物流编码值可参考官网快递鸟接口支持的快递公司编码。</p>
+</blockquote>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Getter</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token keyword">public</span> <span class="token keyword">enum</span> <span class="token class-name">KdniaoLogisticsCodeEnum</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 申通
+     */</span>
+    <span class="token function">STO</span><span class="token punctuation">(</span><span class="token string">"STO"</span><span class="token punctuation">,</span> <span class="token string">"申通"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 中通
+     */</span>
+    <span class="token function">ZTO</span><span class="token punctuation">(</span><span class="token string">"ZTO"</span><span class="token punctuation">,</span> <span class="token string">"中通"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 圆通
+     */</span>
+    <span class="token function">YTO</span><span class="token punctuation">(</span><span class="token string">"YTO"</span><span class="token punctuation">,</span> <span class="token string">"圆通"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 韵达
+     */</span>
+    <span class="token function">YD</span><span class="token punctuation">(</span><span class="token string">"YD"</span><span class="token punctuation">,</span> <span class="token string">"韵达"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 顺丰
+     */</span>
+    <span class="token function">SF</span><span class="token punctuation">(</span><span class="token string">"SF"</span><span class="token punctuation">,</span> <span class="token string">"顺丰"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 物流编码
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">String</span> code<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 物流名
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">String</span> name<span class="token punctuation">;</span>
+
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">KdniaoLogisticsCodeEnum</span><span class="token punctuation">&gt;</span></span> LIST <span class="token operator">=</span> <span class="token class-name">Lists</span><span class="token punctuation">.</span><span class="token function">newArrayList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">static</span> <span class="token punctuation">{</span>
+        LIST<span class="token punctuation">.</span><span class="token function">addAll</span><span class="token punctuation">(</span><span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token class-name">KdniaoLogisticsCodeEnum</span><span class="token punctuation">.</span><span class="token function">values</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 根据值查找相应枚举
+     */</span>
+    <span class="token annotation punctuation">@SneakyThrows</span><span class="token punctuation">(</span><span class="token class-name">Exception</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">KdniaoLogisticsCodeEnum</span> <span class="token function">getEnumByName</span><span class="token punctuation">(</span><span class="token class-name">String</span> name<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">KdniaoLogisticsCodeEnum</span> itemEnum <span class="token operator">:</span> LIST<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>itemEnum<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> itemEnum<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Exception</span><span class="token punctuation">(</span><span class="token string">"暂无此物流编码信息，请联系系统管理员！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Getter</span>
+<span class="token annotation punctuation">@AllArgsConstructor</span>
+<span class="token keyword">public</span> <span class="token keyword">enum</span> <span class="token class-name">KdniaoLogisticsStatusEnum</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 暂无轨迹信息
+     */</span>
+    <span class="token function">NO_TRACE</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token string">"暂无轨迹信息"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 已揽收
+     */</span>
+    <span class="token function">HAVE_PAID</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token string">"已揽收"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 已揽收 -----------------------------------------------------------------------------
+     */</span>
+    <span class="token function">ON_THE_WAY</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token string">"在途中"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 到达派件城市
+     */</span>
+    <span class="token function">ARRIVE_AT_THE_DISPATCH_CITY</span><span class="token punctuation">(</span><span class="token number">201</span><span class="token punctuation">,</span> <span class="token string">"到达派件城市"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 派件中
+     */</span>
+    <span class="token function">IN_THE_DELIVERY</span><span class="token punctuation">(</span><span class="token number">202</span><span class="token punctuation">,</span> <span class="token string">"派件中"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 已放入快递柜或驿站
+     */</span>
+    <span class="token function">HAS_STORED</span><span class="token punctuation">(</span><span class="token number">211</span><span class="token punctuation">,</span> <span class="token string">"已放入快递柜或驿站"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 签收 -----------------------------------------------------------------------------
+     */</span>
+    <span class="token function">SIGN</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token string">"签收"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 正常签收
+     */</span>
+    <span class="token function">SIGN_NORMAL</span><span class="token punctuation">(</span><span class="token number">301</span><span class="token punctuation">,</span> <span class="token string">"正常签收"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 派件异常后最终签收
+     */</span>
+    <span class="token function">SIGN_ABNORMAL</span><span class="token punctuation">(</span><span class="token number">302</span><span class="token punctuation">,</span> <span class="token string">"派件异常后最终签收"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 代收签收
+     */</span>
+    <span class="token function">SIGN_COLLECTION</span><span class="token punctuation">(</span><span class="token number">304</span><span class="token punctuation">,</span> <span class="token string">"代收签收"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 快递柜或驿站签收
+     */</span>
+    <span class="token function">SIGN_STORED</span><span class="token punctuation">(</span><span class="token number">311</span><span class="token punctuation">,</span> <span class="token string">"快递柜或驿站签收"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 问题件 -----------------------------------------------------------------------------
+     */</span>
+    <span class="token function">PROBLEM_SHIPMENT</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token string">"问题件"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 发货无信息
+     */</span>
+    <span class="token function">DELIVERY_NO_INFO</span><span class="token punctuation">(</span><span class="token number">401</span><span class="token punctuation">,</span> <span class="token string">"发货无信息"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 超时未签收
+     */</span>
+    <span class="token function">NO_SIGN_OVER_TIME</span><span class="token punctuation">(</span><span class="token number">402</span><span class="token punctuation">,</span> <span class="token string">"超时未签收"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 超时未更新
+     */</span>
+    <span class="token function">NOT_UPDATED_DUE_TO_TIMEOUT</span><span class="token punctuation">(</span><span class="token number">403</span><span class="token punctuation">,</span> <span class="token string">"超时未更新"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 拒收(退件)
+     */</span>
+    <span class="token function">REJECTION</span><span class="token punctuation">(</span><span class="token number">404</span><span class="token punctuation">,</span> <span class="token string">"拒收(退件)"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 派件异常
+     */</span>
+    <span class="token function">SEND_A_ABNORMAL</span><span class="token punctuation">(</span><span class="token number">405</span><span class="token punctuation">,</span> <span class="token string">"派件异常"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 退货签收
+     */</span>
+    <span class="token function">RETURN_TO_SIGN_FOR</span><span class="token punctuation">(</span><span class="token number">406</span><span class="token punctuation">,</span> <span class="token string">"退货签收"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 退货未签收
+     */</span>
+    <span class="token function">RETURN_NOT_SIGNED_FOR</span><span class="token punctuation">(</span><span class="token number">407</span><span class="token punctuation">,</span> <span class="token string">"退货未签收"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * 快递柜或驿站超时未取
+     */</span>
+    <span class="token function">STORED_OVER_TIME</span><span class="token punctuation">(</span><span class="token number">412</span><span class="token punctuation">,</span> <span class="token string">"快递柜或驿站超时未取"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token comment">/**
+     * -
+     */</span>
+    <span class="token function">DEFAULT</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token string">"-"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 状态
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">Integer</span> status<span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 描述
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">String</span> desc<span class="token punctuation">;</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">KdniaoLogisticsStatusEnum</span><span class="token punctuation">&gt;</span></span> LIST <span class="token operator">=</span> <span class="token class-name">Lists</span><span class="token punctuation">.</span><span class="token function">newArrayList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">static</span> <span class="token punctuation">{</span>
+        LIST<span class="token punctuation">.</span><span class="token function">addAll</span><span class="token punctuation">(</span><span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token class-name">KdniaoLogisticsStatusEnum</span><span class="token punctuation">.</span><span class="token function">values</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 根据物流状态查找相应枚举
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token class-name">KdniaoLogisticsStatusEnum</span> <span class="token function">getEnum</span><span class="token punctuation">(</span><span class="token class-name">Integer</span> status<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">KdniaoLogisticsStatusEnum</span> itemEnum <span class="token operator">:</span> LIST<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>itemEnum<span class="token punctuation">.</span><span class="token function">getStatus</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>status<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> itemEnum<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token class-name">KdniaoLogisticsStatusEnum</span><span class="token punctuation">.</span>DEFAULT<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="5api_523"></a>5、测试api</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/test"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"测试api"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"查询物流信息-快递鸟"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"getLogisticByKdniao"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">KdniaoApiVO</span> <span class="token function">getLogisticByKdniao</span><span class="token punctuation">(</span><span class="token annotation punctuation">@ModelAttribute</span> <span class="token class-name">KdniaoApiDTO</span> params<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token class-name">KdniaoUtil</span><span class="token punctuation">.</span><span class="token function">getLogisticInfo</span><span class="token punctuation">(</span>params<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>接口文档 <a href="http://127.0.0.1/doc.html">http://127.0.0.1/doc.html</a><br>
+<img src="https://img-blog.csdnimg.cn/63646c6b4e5f42a8a75c26bba29b85fc.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="demo_544"></a>三、本文demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+没有不会做的事,只有不想做的事。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
