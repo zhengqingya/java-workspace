@@ -1,0 +1,300 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(48) 整合sharding-jdbc实现分库分表与读写分离</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#_12">二、数据库表准备</a></li><li><a href="#_94">三、整合</a></li><ul><li><a href="#1pom_96">1、`pom`中引入依赖</a></li><li><a href="#2applicationyml_108">2、`application.yml`配置</a></li><li><a href="#3shardingjdbc_209">3、引入sharding-jdbc后数据源健康配置</a></li></ul><li><a href="#dockercomposemysql_239">四、docker-compose部署mysql主从</a></li><li><a href="#demo_301">五、本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>本文将基于以下环境整合<code>sharding-jdbc</code>实现<code>分库分表</code>与<code>读写分离</code></p>
+<ol>
+<li>springboot2.4.0</li>
+<li>mybatis-plus3.4.3.1</li>
+<li>mysql5.7主从</li>
+</ol>
+<p><a href="https://github.com/apache/shardingsphere">https://github.com/apache/shardingsphere</a></p>
+<h3><a id="_12"></a>二、数据库表准备</h3>
+<blockquote>
+<p>温馨小提示：此sql执行时，如果之前有存在相应库和表会进行自动删除后再创建！</p>
+</blockquote>
+<pre><code class="prism language-sql"><span class="token keyword">DROP</span> <span class="token keyword">DATABASE</span> <span class="token keyword">IF</span> <span class="token keyword">EXISTS</span> ds0<span class="token punctuation">;</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">DATABASE</span> ds0<span class="token punctuation">;</span>
+<span class="token keyword">USE</span> ds0<span class="token punctuation">;</span>
+
+<span class="token keyword">SET</span> NAMES utf8mb4<span class="token punctuation">;</span>
+<span class="token keyword">SET</span> FOREIGN_KEY_CHECKS <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+<span class="token comment">-- ----------------------------</span>
+<span class="token comment">-- Table structure for t_user0</span>
+<span class="token comment">-- ----------------------------</span>
+<span class="token keyword">DROP</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token keyword">EXISTS</span> <span class="token punctuation">`</span>t_user0<span class="token punctuation">`</span><span class="token punctuation">;</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token punctuation">`</span>t_user0<span class="token punctuation">`</span>  <span class="token punctuation">(</span>
+                            <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">UNSIGNED</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token keyword">COMMENT</span> <span class="token string">'主键ID'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>username<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'用户名'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>password<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">50</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'密码'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>sex<span class="token punctuation">`</span> <span class="token keyword">tinyint</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">)</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'性别'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>remark<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'备注'</span><span class="token punctuation">,</span>
+                            <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">USING</span> <span class="token keyword">BTREE</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span> <span class="token operator">=</span> <span class="token keyword">InnoDB</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token operator">=</span> <span class="token number">1</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> <span class="token operator">=</span> utf8mb4 <span class="token keyword">COLLATE</span> <span class="token operator">=</span> utf8mb4_general_ci <span class="token keyword">COMMENT</span> <span class="token operator">=</span> <span class="token string">'用户'</span> ROW_FORMAT <span class="token operator">=</span> Dynamic<span class="token punctuation">;</span>
+
+<span class="token comment">-- ----------------------------</span>
+<span class="token comment">-- Table structure for t_user1</span>
+<span class="token comment">-- ----------------------------</span>
+<span class="token keyword">DROP</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token keyword">EXISTS</span> <span class="token punctuation">`</span>t_user1<span class="token punctuation">`</span><span class="token punctuation">;</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token punctuation">`</span>t_user1<span class="token punctuation">`</span>  <span class="token punctuation">(</span>
+                            <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">UNSIGNED</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token keyword">COMMENT</span> <span class="token string">'主键ID'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>username<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'用户名'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>password<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">50</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'密码'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>sex<span class="token punctuation">`</span> <span class="token keyword">tinyint</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">)</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'性别'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>remark<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'备注'</span><span class="token punctuation">,</span>
+                            <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">USING</span> <span class="token keyword">BTREE</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span> <span class="token operator">=</span> <span class="token keyword">InnoDB</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token operator">=</span> <span class="token number">1</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> <span class="token operator">=</span> utf8mb4 <span class="token keyword">COLLATE</span> <span class="token operator">=</span> utf8mb4_general_ci <span class="token keyword">COMMENT</span> <span class="token operator">=</span> <span class="token string">'用户'</span> ROW_FORMAT <span class="token operator">=</span> Dynamic<span class="token punctuation">;</span>
+
+<span class="token keyword">SET</span> FOREIGN_KEY_CHECKS <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+
+
+<span class="token comment">-- ===============================================================================================</span>
+
+
+<span class="token keyword">DROP</span> <span class="token keyword">DATABASE</span> <span class="token keyword">IF</span> <span class="token keyword">EXISTS</span> ds1<span class="token punctuation">;</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">DATABASE</span> ds1<span class="token punctuation">;</span>
+<span class="token keyword">USE</span> ds1<span class="token punctuation">;</span>
+
+<span class="token keyword">SET</span> NAMES utf8mb4<span class="token punctuation">;</span>
+<span class="token keyword">SET</span> FOREIGN_KEY_CHECKS <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+<span class="token comment">-- ----------------------------</span>
+<span class="token comment">-- Table structure for t_user0</span>
+<span class="token comment">-- ----------------------------</span>
+<span class="token keyword">DROP</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token keyword">EXISTS</span> <span class="token punctuation">`</span>t_user0<span class="token punctuation">`</span><span class="token punctuation">;</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token punctuation">`</span>t_user0<span class="token punctuation">`</span>  <span class="token punctuation">(</span>
+                            <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">UNSIGNED</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token keyword">COMMENT</span> <span class="token string">'主键ID'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>username<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'用户名'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>password<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">50</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'密码'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>sex<span class="token punctuation">`</span> <span class="token keyword">tinyint</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">)</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'性别'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>remark<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'备注'</span><span class="token punctuation">,</span>
+                            <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">USING</span> <span class="token keyword">BTREE</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span> <span class="token operator">=</span> <span class="token keyword">InnoDB</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token operator">=</span> <span class="token number">1</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> <span class="token operator">=</span> utf8mb4 <span class="token keyword">COLLATE</span> <span class="token operator">=</span> utf8mb4_general_ci <span class="token keyword">COMMENT</span> <span class="token operator">=</span> <span class="token string">'用户'</span> ROW_FORMAT <span class="token operator">=</span> Dynamic<span class="token punctuation">;</span>
+
+<span class="token comment">-- ----------------------------</span>
+<span class="token comment">-- Table structure for t_user1</span>
+<span class="token comment">-- ----------------------------</span>
+<span class="token keyword">DROP</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token keyword">EXISTS</span> <span class="token punctuation">`</span>t_user1<span class="token punctuation">`</span><span class="token punctuation">;</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token punctuation">`</span>t_user1<span class="token punctuation">`</span>  <span class="token punctuation">(</span>
+                            <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">UNSIGNED</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token keyword">COMMENT</span> <span class="token string">'主键ID'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>username<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'用户名'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>password<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">50</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'密码'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>sex<span class="token punctuation">`</span> <span class="token keyword">tinyint</span><span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">)</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'性别'</span><span class="token punctuation">,</span>
+                            <span class="token punctuation">`</span>remark<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8mb4 <span class="token keyword">COLLATE</span> utf8mb4_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'备注'</span><span class="token punctuation">,</span>
+                            <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">USING</span> <span class="token keyword">BTREE</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span> <span class="token operator">=</span> <span class="token keyword">InnoDB</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token operator">=</span> <span class="token number">1</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> <span class="token operator">=</span> utf8mb4 <span class="token keyword">COLLATE</span> <span class="token operator">=</span> utf8mb4_general_ci <span class="token keyword">COMMENT</span> <span class="token operator">=</span> <span class="token string">'用户'</span> ROW_FORMAT <span class="token operator">=</span> Dynamic<span class="token punctuation">;</span>
+
+<span class="token keyword">SET</span> FOREIGN_KEY_CHECKS <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/01e2f64b421244cd81fdef9e5fade2d9.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="_94"></a>三、整合</h3>
+<h4><a id="1pom_96"></a>1、<code>pom</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- sharding-jdbc --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/org.apache.shardingsphere/sharding-jdbc-spring-boot-starter --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.apache.shardingsphere<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>sharding-jdbc-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>4.1.1<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_108"></a>2、<code>application.yml</code>配置</h4>
+<pre><code class="prism language-yml"><span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token comment"># sharding-jdbc配置</span>
+  <span class="token key atrule">shardingsphere</span><span class="token punctuation">:</span>
+    <span class="token comment"># 是否开启SQL显示</span>
+    <span class="token key atrule">props</span><span class="token punctuation">:</span>
+      <span class="token key atrule">sql</span><span class="token punctuation">:</span>
+        <span class="token key atrule">show</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+    <span class="token comment"># ====================== ↓↓↓↓↓↓ 数据源配置 ↓↓↓↓↓↓ ======================</span>
+    <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+      <span class="token key atrule">names</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span><span class="token number">0</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>0<span class="token punctuation">-</span><span class="token number">1</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>0<span class="token punctuation">-</span><span class="token number">2</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span><span class="token number">1</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>1<span class="token punctuation">-</span><span class="token number">1</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>1<span class="token punctuation">-</span><span class="token number">2</span>
+      <span class="token comment"># ====================== ↓↓↓↓↓↓ 配置第1个主从库 ↓↓↓↓↓↓ ======================</span>
+      <span class="token comment"># 主库1</span>
+      <span class="token key atrule">ds-master-0</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3306/ds0<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># 主库1-从库1</span>
+      <span class="token key atrule">ds-slave-0-1</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3307/ds0<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># 主库1-从库2</span>
+      <span class="token key atrule">ds-slave-0-2</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3307/ds0<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># ====================== ↓↓↓↓↓↓ 配置第2个主从库 ↓↓↓↓↓↓ ======================</span>
+      <span class="token comment"># 主库2</span>
+      <span class="token key atrule">ds-master-1</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3306/ds1<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># 主库2-从库1</span>
+      <span class="token key atrule">ds-slave-1-1</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3307/ds1<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># 主库2-从库2</span>
+      <span class="token key atrule">ds-slave-1-2</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3307/ds1<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+
+    <span class="token key atrule">sharding</span><span class="token punctuation">:</span>
+      <span class="token comment"># ====================== ↓↓↓↓↓↓ 分库分表配置 ↓↓↓↓↓↓ ======================</span>
+      <span class="token comment"># 分库策略 =&gt; 根据user_id取模拆分到不同的库中</span>
+      <span class="token key atrule">default-database-strategy</span><span class="token punctuation">:</span>
+        <span class="token key atrule">inline</span><span class="token punctuation">:</span>
+          <span class="token key atrule">sharding-column</span><span class="token punctuation">:</span> user_id
+          <span class="token key atrule">algorithm-expression</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span>$<span class="token punctuation">-</span><span class="token punctuation">&gt;</span><span class="token punctuation">{</span>user_id % 2<span class="token punctuation">}</span>
+      <span class="token comment"># 分表策略</span>
+      <span class="token key atrule">tables</span><span class="token punctuation">:</span>
+        <span class="token key atrule">t_user</span><span class="token punctuation">:</span>
+          <span class="token key atrule">actual-data-nodes</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span>$<span class="token punctuation">-</span><span class="token punctuation">&gt;</span><span class="token punctuation">{</span>0..1<span class="token punctuation">}</span>.t_user$<span class="token punctuation">-</span><span class="token punctuation">&gt;</span><span class="token punctuation">{</span>0..1<span class="token punctuation">}</span>
+          <span class="token key atrule">key-generator</span><span class="token punctuation">:</span>
+            <span class="token key atrule">column</span><span class="token punctuation">:</span> user_id  <span class="token comment"># 主键ID</span>
+            <span class="token key atrule">type</span><span class="token punctuation">:</span> SNOWFLAKE  <span class="token comment"># 生成策略</span>
+          <span class="token comment"># 添加数据分表策略</span>
+          <span class="token key atrule">table-strategy</span><span class="token punctuation">:</span>
+            <span class="token key atrule">inline</span><span class="token punctuation">:</span>
+              <span class="token comment"># 添加数据分表字段(根据字段插入数据到那个表 ex：sex)</span>
+              <span class="token key atrule">sharding-column</span><span class="token punctuation">:</span> sex
+              <span class="token comment"># 分片算法表达式 =&gt; 根据用户性别取模拆分到不同的表中</span>
+              <span class="token key atrule">algorithm-expression</span><span class="token punctuation">:</span> t_user$<span class="token punctuation">-</span><span class="token punctuation">&gt;</span><span class="token punctuation">{</span>sex % 2<span class="token punctuation">}</span>
+
+      <span class="token comment"># ====================== ↓↓↓↓↓↓ 读写分离配置 ↓↓↓↓↓↓ ======================</span>
+      <span class="token key atrule">master-slave-rules</span><span class="token punctuation">:</span>
+        <span class="token key atrule">ds-master-0</span><span class="token punctuation">:</span>
+          <span class="token comment"># 主库</span>
+          <span class="token key atrule">masterDataSourceName</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span><span class="token number">0</span>
+          <span class="token comment"># 从库</span>
+          <span class="token key atrule">slaveDataSourceNames</span><span class="token punctuation">:</span>
+            <span class="token punctuation">-</span> ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>0<span class="token punctuation">-</span><span class="token number">1</span>
+            <span class="token punctuation">-</span> ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>0<span class="token punctuation">-</span><span class="token number">2</span>
+          <span class="token comment"># 从库查询数据的负载均衡算法 目前有2种算法 round_robin（轮询）和 random（随机）</span>
+          <span class="token comment"># 算法接口 org.apache.shardingsphere.spi.masterslave.MasterSlaveLoadBalanceAlgorithm</span>
+          <span class="token comment"># 实现类 RandomMasterSlaveLoadBalanceAlgorithm 和 RoundRobinMasterSlaveLoadBalanceAlgorithm</span>
+          <span class="token key atrule">loadBalanceAlgorithmType</span><span class="token punctuation">:</span> ROUND_ROBIN
+        <span class="token key atrule">ds-master-1</span><span class="token punctuation">:</span>
+          <span class="token key atrule">masterDataSourceName</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span><span class="token number">1</span>
+          <span class="token key atrule">slaveDataSourceNames</span><span class="token punctuation">:</span>
+            <span class="token punctuation">-</span> ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>1<span class="token punctuation">-</span><span class="token number">1</span>
+            <span class="token punctuation">-</span> ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>1<span class="token punctuation">-</span><span class="token number">2</span>
+          <span class="token key atrule">loadBalanceAlgorithmType</span><span class="token punctuation">:</span> ROUND_ROBIN
+</code></pre>
+<h4><a id="3shardingjdbc_209"></a>3、引入sharding-jdbc后数据源健康配置</h4>
+<p>解决启动报错问题: <code>ConnectionCallback; isValid; nested exception is java.sql.SQLFeatureNotSupportedException: isValid</code><br>
+原因: springboot2.4数据源健康检查</p>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DataSourceHealthConfig</span> <span class="token keyword">extends</span> <span class="token class-name">DataSourceHealthContributorAutoConfiguration</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${spring.datasource.dbcp2.validation-query:select 1}"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> defaultQuery<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">DataSourceHealthConfig</span><span class="token punctuation">(</span><span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">DataSource</span><span class="token punctuation">&gt;</span></span> dataSources<span class="token punctuation">,</span> <span class="token class-name">ObjectProvider</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">DataSourcePoolMetadataProvider</span><span class="token punctuation">&gt;</span></span> metadataProviders<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">super</span><span class="token punctuation">(</span>dataSources<span class="token punctuation">,</span> metadataProviders<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">protected</span> <span class="token class-name">AbstractHealthIndicator</span> <span class="token function">createIndicator</span><span class="token punctuation">(</span><span class="token class-name">DataSource</span> source<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">DataSourceHealthIndicator</span> indicator <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token class-name">DataSourceHealthIndicator</span><span class="token punctuation">)</span> <span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">createIndicator</span><span class="token punctuation">(</span>source<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">hasText</span><span class="token punctuation">(</span>indicator<span class="token punctuation">.</span><span class="token function">getQuery</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            indicator<span class="token punctuation">.</span><span class="token function">setQuery</span><span class="token punctuation">(</span>defaultQuery<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> indicator<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>到此配置完成，然后就可以自己编写CRUD进行测试了，配置比较简单，属于入门篇</p>
+<h3><a id="dockercomposemysql_239"></a>四、docker-compose部署mysql主从</h3>
+<pre><code class="prism language-shell"><span class="token comment"># 环境准备</span>
+<span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+<span class="token builtin class-name">cd</span> docker-compose/Liunx
+<span class="token comment"># 运行</span>
+docker-compose -f docker-compose-mysql-master-slave.yml -p mysql-master-slave up -d
+</code></pre>
+<pre><code class="prism language-shell"><span class="token comment"># ================== ↓↓↓↓↓↓ 配置主库 ↓↓↓↓↓↓ ==================</span>
+<span class="token comment"># 进入主库</span>
+docker <span class="token builtin class-name">exec</span> -it mysql_master /bin/bash
+<span class="token comment"># 登录mysql</span>
+mysql -uroot -proot
+<span class="token comment">#  创建用户slave，密码123456</span>
+CREATE <span class="token environment constant">USER</span> <span class="token string">'slave'</span>@<span class="token string">'%'</span> IDENTIFIED BY <span class="token string">'123456'</span><span class="token punctuation">;</span>
+<span class="token comment"># 授予slave用户 `REPLICATION SLAVE`权限和`REPLICATION CLIENT`权限，用于在`主` `从` 数据库之间同步数据</span>
+GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO <span class="token string">'slave'</span>@<span class="token string">'%'</span><span class="token punctuation">;</span>
+<span class="token comment"># 授予所有权限则执行命令: GRANT ALL PRIVILEGES ON *.* TO 'slave'@'%';</span>
+<span class="token comment"># 使操作生效</span>
+FLUSH PRIVILEGES<span class="token punctuation">;</span>
+<span class="token comment"># 查看状态</span>
+show master status<span class="token punctuation">;</span>
+<span class="token comment"># 注：File和Position字段的值slave中将会用到，在slave操作完成之前不要操作master，否则将会引起状态变化，即File和Position字段的值变化 !!!</span>
+<span class="token comment"># +------------------+----------+--------------+------------------+-------------------+</span>
+<span class="token comment"># | File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |</span>
+<span class="token comment"># +------------------+----------+--------------+------------------+-------------------+</span>
+<span class="token comment"># | mysql-bin.000003 |      769 |              |                  |                   |</span>
+<span class="token comment"># +------------------+----------+--------------+------------------+-------------------+</span>
+<span class="token comment"># 1 row in set (0.00 sec)</span>
+
+
+<span class="token comment"># ================== ↓↓↓↓↓↓ 配置从库 ↓↓↓↓↓↓ ==================</span>
+<span class="token comment"># 进入从库</span>
+docker <span class="token builtin class-name">exec</span> -it mysql_slave /bin/bash
+<span class="token comment"># 登录mysql</span>
+mysql -uroot -proot
+change master to <span class="token assign-left variable">master_host</span><span class="token operator">=</span><span class="token string">'www.zhengqingya.com'</span>,master_port<span class="token operator">=</span><span class="token number">3306</span>, <span class="token assign-left variable">master_user</span><span class="token operator">=</span><span class="token string">'slave'</span>, <span class="token assign-left variable">master_password</span><span class="token operator">=</span><span class="token string">'123456'</span>, <span class="token assign-left variable">master_log_file</span><span class="token operator">=</span><span class="token string">'mysql-bin.000003'</span>, <span class="token assign-left variable">master_log_pos</span><span class="token operator">=</span> <span class="token number">769</span>, <span class="token assign-left variable">master_connect_retry</span><span class="token operator">=</span><span class="token number">30</span><span class="token punctuation">;</span>
+<span class="token comment"># 开启主从同步过程  【停止命令：stop slave;】</span>
+start slave<span class="token punctuation">;</span>
+<span class="token comment"># 查看主从同步状态</span>
+show slave status <span class="token punctuation">\</span>G
+<span class="token comment"># Slave_IO_Running 和 Slave_SQL_Running 都是Yes的话，就说明主从同步已经配置好了！</span>
+<span class="token comment"># 如果Slave_IO_Running为Connecting，SlaveSQLRunning为Yes，则说明配置有问题，这时候就要检查配置中哪一步出现问题了哦，可根据Last_IO_Error字段信息排错或谷歌…</span>
+<span class="token comment"># *************************** 1. row ***************************</span>
+<span class="token comment">#                Slave_IO_State: Waiting for master to send event</span>
+<span class="token comment">#                   Master_Host: www.zhengqingya.com</span>
+<span class="token comment">#                   Master_User: slave</span>
+<span class="token comment">#                   Master_Port: 3306</span>
+<span class="token comment">#                 Connect_Retry: 30</span>
+<span class="token comment">#               Master_Log_File: mysql-bin.000003</span>
+<span class="token comment">#           Read_Master_Log_Pos: 769</span>
+<span class="token comment">#                Relay_Log_File: c598d8402b43-relay-bin.000002</span>
+<span class="token comment">#                 Relay_Log_Pos: 320</span>
+<span class="token comment">#         Relay_Master_Log_File: mysql-bin.000003</span>
+<span class="token comment">#              Slave_IO_Running: Yes</span>
+<span class="token comment">#             Slave_SQL_Running: Yes</span>
+<span class="token comment">#               Replicate_Do_DB:</span>
+</code></pre>
+<h3><a id="demo_301"></a>五、本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+一点一点去靠近梦想，不抱侥幸的奢望，用踏实浇灌，用努力证明，你可以！</p>
+</blockquote>
+</div>
+</body>
+
+</html>
