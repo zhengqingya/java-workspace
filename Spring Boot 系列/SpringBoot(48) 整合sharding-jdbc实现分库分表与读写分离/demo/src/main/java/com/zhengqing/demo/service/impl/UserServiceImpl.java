@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.collect.Lists;
+import com.zhengqing.demo.config.SnowflakeConfig;
 import com.zhengqing.demo.entity.User;
 import com.zhengqing.demo.mapper.UserMapper;
 import com.zhengqing.demo.service.IUserService;
@@ -31,6 +32,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    SnowflakeConfig snowflakeConfig;
 
     @Override
     public IPage<User> listPage(User params) {
@@ -66,9 +70,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             if (total > addSum) {
                 int finalNum = addSum - ((page - 1) * pageSize);
                 log.info("最后一页新增数：[{}]", finalNum);
-                this.insertData0(finalNum);
+                this.insertData(finalNum);
             } else {
-                this.insertData0(pageSize);
+                this.insertData(pageSize);
             }
             page += 1;
             index = total + 1;
@@ -82,10 +86,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return msg;
     }
 
-    private void insertData0(int addSum) {
+    private void insertData(int addSum) {
         List<User> demoList = Lists.newLinkedList();
         for (int i = 1; i <= addSum; i++) {
             User item = new User();
+            item.setUserId(snowflakeConfig.snowflakeId());
             item.setUsername("username - " + i);
             item.setPassword("123456");
             item.setSex((byte)(i % 2));

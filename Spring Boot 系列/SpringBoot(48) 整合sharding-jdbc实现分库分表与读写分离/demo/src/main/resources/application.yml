@@ -79,9 +79,10 @@ spring:
       tables:
         t_user:
           actual-data-nodes: ds-master-$->{0..1}.t_user$->{0..1}
-          key-generator:
-            column: user_id  # 主键ID
-            type: SNOWFLAKE  # 生成策略
+          # 注： 默认生成的主键ID不支持mybatis批量插入
+          #          key-generator:
+          #            column: user_id  # 主键ID
+          #            type: SNOWFLAKE  # 生成策略
           # 添加数据分表策略
           table-strategy:
             inline:
