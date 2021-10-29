@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.collect.Lists;
-import com.zhengqing.demo.config.SnowflakeConfig;
 import com.zhengqing.demo.entity.User;
 import com.zhengqing.demo.mapper.UserMapper;
 import com.zhengqing.demo.service.IUserService;
+import com.zhengqing.demo.util.IdGeneratorUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     private UserMapper userMapper;
 
     @Autowired
-    SnowflakeConfig snowflakeConfig;
+    IdGeneratorUtil idGeneratorUtil;
 
     @Override
     public IPage<User> listPage(User params) {
@@ -90,7 +90,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         List<User> demoList = Lists.newLinkedList();
         for (int i = 1; i <= addSum; i++) {
             User item = new User();
-            item.setUserId(snowflakeConfig.snowflakeId());
+            item.setUserId(idGeneratorUtil.snowflakeId());
             item.setUsername("username - " + i);
             item.setPassword("123456");
             item.setSex((byte)(i % 2));
