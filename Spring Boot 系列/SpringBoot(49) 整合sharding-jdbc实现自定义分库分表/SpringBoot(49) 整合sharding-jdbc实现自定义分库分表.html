@@ -1,0 +1,559 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(49) 整合sharding-jdbc实现自定义分库分表</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#_8">二、简介</a></li><ul><li><a href="#1_10">1、分片键</a></li><li><a href="#2_16">2、分片算法</a></li><li><a href="#3_25">3、分片策略（分片键+分片算法）</a></li></ul><li><a href="#_36">三、程序实现</a></li><ul><li><a href="#1_190">1、行表达式分片策略</a></li><li><a href="#2_208">2、标准分片策略</a></li><ul><li><a href="#A__210">A: 精确分片算法</a></li><li><a href="#B__279">B: 范围分片算法</a></li></ul><li><a href="#3_407">3、复合分片策略</a></li><li><a href="#4Hint_493">4、Hint分片策略</a></li></ul><li><a href="#demo_595">本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p><a href="https://zhengqing.blog.csdn.net//article/details/121024815">SpringBoot(48) 整合sharding-jdbc实现分库分表与读写分离</a></p>
+<p>本文将通过自定义算法来实现定制化的分库分表来扩展相应业务</p>
+<h3><a id="_8"></a>二、简介</h3>
+<h4><a id="1_10"></a>1、分片键</h4>
+<p>用于数据库/表拆分的关键字段</p>
+<p>ex: 用户表根据user_id取模拆分到不同的数据库中</p>
+<h4><a id="2_16"></a>2、分片算法</h4>
+<p>可参考：<a href="https://shardingsphere.apache.org/document/current/cn/user-manual/shardingsphere-jdbc/configuration/built-in-algorithm/sharding">https://shardingsphere.apache.org/document/current/cn/user-manual/shardingsphere-jdbc/configuration/built-in-algorithm/sharding</a></p>
+<ol>
+<li>精确分片算法</li>
+<li>范围分片算法</li>
+<li>复合分片算法</li>
+<li>Hint分片算法</li>
+</ol>
+<h4><a id="3_25"></a>3、分片策略（分片键+分片算法）</h4>
+<ol>
+<li>行表达式分片策略</li>
+<li>标准分片策略</li>
+<li>复合分片策略</li>
+<li>Hint分片策略</li>
+<li>不分片策略</li>
+</ol>
+<p>可查看源码 <code>org.apache.shardingsphere.core.yaml.config.sharding.YamlShardingStrategyConfiguration</code><br>
+<img src="https://img-blog.csdnimg.cn/004203fb595e40c1a4a3f517fb73d803.png" alt="在这里插入图片描述"></p>
+<h3><a id="_36"></a>三、程序实现</h3>
+<blockquote>
+<p>温馨小提示：详情可查看案例demo源码</p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/a1186c29b20e4453827b806fda732fa5.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<p>这里先贴出完整的<code>application.yml</code>配置，后面实现每一种分片策略时，放开其相应配置即可~</p>
+<pre><code class="prism language-yml"><span class="token comment"># sharding-jdbc配置</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">shardingsphere</span><span class="token punctuation">:</span>
+    <span class="token comment"># 是否开启SQL显示</span>
+    <span class="token key atrule">props</span><span class="token punctuation">:</span>
+      <span class="token key atrule">sql</span><span class="token punctuation">:</span>
+        <span class="token key atrule">show</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+    <span class="token comment"># ====================== ↓↓↓↓↓↓ 数据源配置 ↓↓↓↓↓↓ ======================</span>
+    <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+      <span class="token key atrule">names</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span><span class="token number">0</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>0<span class="token punctuation">-</span><span class="token number">1</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>0<span class="token punctuation">-</span><span class="token number">2</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span><span class="token number">1</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>1<span class="token punctuation">-</span><span class="token number">1</span><span class="token punctuation">,</span>ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>1<span class="token punctuation">-</span><span class="token number">2</span>
+      <span class="token comment"># ====================== ↓↓↓↓↓↓ 配置第1个主从库 ↓↓↓↓↓↓ ======================</span>
+      <span class="token comment"># 主库1</span>
+      <span class="token key atrule">ds-master-0</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3306/ds0<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># 主库1-从库1</span>
+      <span class="token key atrule">ds-slave-0-1</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3307/ds0<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># 主库1-从库2</span>
+      <span class="token key atrule">ds-slave-0-2</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3307/ds0<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># ====================== ↓↓↓↓↓↓ 配置第2个主从库 ↓↓↓↓↓↓ ======================</span>
+      <span class="token comment"># 主库2</span>
+      <span class="token key atrule">ds-master-1</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3306/ds1<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># 主库2-从库1</span>
+      <span class="token key atrule">ds-slave-1-1</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3307/ds1<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+      <span class="token comment"># 主库2-从库2</span>
+      <span class="token key atrule">ds-slave-1-2</span><span class="token punctuation">:</span>
+        <span class="token key atrule">type</span><span class="token punctuation">:</span> com.zaxxer.hikari.HikariDataSource
+        <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+        <span class="token key atrule">jdbc-url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3307/ds1<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+        <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+        <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+
+    <span class="token key atrule">sharding</span><span class="token punctuation">:</span>
+      <span class="token comment"># ====================== ↓↓↓↓↓↓ 读写分离配置 ↓↓↓↓↓↓ ======================</span>
+      <span class="token key atrule">master-slave-rules</span><span class="token punctuation">:</span>
+        <span class="token key atrule">ds-master-0</span><span class="token punctuation">:</span>
+          <span class="token comment"># 主库</span>
+          <span class="token key atrule">masterDataSourceName</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span><span class="token number">0</span>
+          <span class="token comment"># 从库</span>
+          <span class="token key atrule">slaveDataSourceNames</span><span class="token punctuation">:</span>
+            <span class="token punctuation">-</span> ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>0<span class="token punctuation">-</span><span class="token number">1</span>
+            <span class="token punctuation">-</span> ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>0<span class="token punctuation">-</span><span class="token number">2</span>
+          <span class="token comment"># 从库查询数据的负载均衡算法 目前有2种算法 round_robin（轮询）和 random（随机）</span>
+          <span class="token comment"># 算法接口 org.apache.shardingsphere.spi.masterslave.MasterSlaveLoadBalanceAlgorithm</span>
+          <span class="token comment"># 实现类 RandomMasterSlaveLoadBalanceAlgorithm 和 RoundRobinMasterSlaveLoadBalanceAlgorithm</span>
+          <span class="token key atrule">loadBalanceAlgorithmType</span><span class="token punctuation">:</span> ROUND_ROBIN
+        <span class="token key atrule">ds-master-1</span><span class="token punctuation">:</span>
+          <span class="token key atrule">masterDataSourceName</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span><span class="token number">1</span>
+          <span class="token key atrule">slaveDataSourceNames</span><span class="token punctuation">:</span>
+            <span class="token punctuation">-</span> ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>1<span class="token punctuation">-</span><span class="token number">1</span>
+            <span class="token punctuation">-</span> ds<span class="token punctuation">-</span>slave<span class="token punctuation">-</span>1<span class="token punctuation">-</span><span class="token number">2</span>
+          <span class="token key atrule">loadBalanceAlgorithmType</span><span class="token punctuation">:</span> ROUND_ROBIN
+
+      <span class="token comment"># ====================== ↓↓↓↓↓↓ 分库分表配置 ↓↓↓↓↓↓ ======================</span>
+      <span class="token key atrule">tables</span><span class="token punctuation">:</span>
+        <span class="token key atrule">t_user</span><span class="token punctuation">:</span>
+          <span class="token key atrule">actual-data-nodes</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span>$<span class="token punctuation">-</span><span class="token punctuation">&gt;</span><span class="token punctuation">{</span>0..1<span class="token punctuation">}</span>.t_user$<span class="token punctuation">-</span><span class="token punctuation">&gt;</span><span class="token punctuation">{</span>0..1<span class="token punctuation">}</span>
+
+          <span class="token comment"># 配置属性可参考 org.apache.shardingsphere.core.yaml.config.sharding.YamlShardingStrategyConfiguration</span>
+
+          <span class="token comment"># =========== ↓↓↓↓↓↓ 行表达式分片策略 ↓↓↓↓↓↓ ===========</span>
+          <span class="token comment"># 在配置中使用 Groovy 表达式，提供对 SQL语句中的 = 和 IN 的分片操作支持，只支持单分片健。</span>
+
+<span class="token comment">#           # ====== ↓↓↓↓↓↓ 分库 ↓↓↓↓↓↓ ======</span>
+<span class="token comment">#          database-strategy:</span>
+<span class="token comment">#            inline:</span>
+<span class="token comment">#              sharding-column: user_id # 添加数据分库字段(根据字段插入数据到哪个库 ex：user_id)</span>
+<span class="token comment">#              algorithm-expression: ds-master-$-&gt;{user_id % 2} # 根据user_id取模拆分到不同的库中</span>
+<span class="token comment">#           # ====== ↓↓↓↓↓↓ 分表 ↓↓↓↓↓↓ ======</span>
+<span class="token comment">#          table-strategy:</span>
+<span class="token comment">#            inline:</span>
+<span class="token comment">#              sharding-column: sex   # 添加数据分表字段(根据字段插入数据到哪个表 ex：sex)</span>
+<span class="token comment">#              algorithm-expression: t_user$-&gt;{sex % 2} # 分片算法表达式 =&gt; 根据用户性别取模拆分到不同的表中</span>
+
+          <span class="token comment"># =========== ↓↓↓↓↓↓ 标准分片策略 ↓↓↓↓↓↓ ===========</span>
+
+          <span class="token comment"># 精确分片算法 =&gt; sql在分库/分表键上执行 = 与 IN 时触发计算逻辑，否则不走分库/分表，全库/全表执行。</span>
+<span class="token comment">#          database-strategy:</span>
+<span class="token comment">#            standard:</span>
+<span class="token comment">#              sharding-column: user_id # 分库用到的键</span>
+<span class="token comment">#              precise-algorithm-class-name: com.zhengqing.demo.config.sharding.precise.MyDbPreciseShardingAlgorithm # 自定义分库算法实现类</span>
+<span class="token comment">#          table-strategy:</span>
+<span class="token comment">#            standard:</span>
+<span class="token comment">#              sharding-column: sex # 添加数据分表字段(根据字段插入数据到那个表 ex：sex)</span>
+<span class="token comment">#              precise-algorithm-class-name: com.zhengqing.demo.config.sharding.precise.MyTablePreciseShardingAlgorithm # 自定义分表算法实现类</span>
+
+          <span class="token comment"># 范围分片算法 =&gt; sql在分库/分表键上执行 BETWEEN AND、&gt;、&lt;、&gt;=、&lt;= 时触发计算逻辑，否则不走分库/分表，全库/全表执行。</span>
+<span class="token comment">#          database-strategy:</span>
+<span class="token comment">#            standard:</span>
+<span class="token comment">#              sharding-column: user_id</span>
+<span class="token comment">#              precise-algorithm-class-name: com.zhengqing.demo.config.sharding.range.MyDbPreciseShardingAlgorithm</span>
+<span class="token comment">#              range-algorithm-class-name: com.zhengqing.demo.config.sharding.range.MyDbRangeShardingAlgorithm</span>
+<span class="token comment">#          table-strategy:</span>
+<span class="token comment">#            standard:</span>
+<span class="token comment">#              sharding-column: sex</span>
+<span class="token comment">#              precise-algorithm-class-name: com.zhengqing.demo.config.sharding.range.MyTablePreciseShardingAlgorithm</span>
+<span class="token comment">#              range-algorithm-class-name: com.zhengqing.demo.config.sharding.range.MyTableRangeShardingAlgorithm</span>
+
+          <span class="token comment"># =========== ↓↓↓↓↓↓ 复合分片策略 ↓↓↓↓↓↓ ===========</span>
+          <span class="token comment"># SQL 语句中有&gt;，&gt;=, &lt;=，&lt;，=，IN 和 BETWEEN AND 等操作符，不同的是复合分片策略支持对多个分片健操作。</span>
+
+<span class="token comment">#          database-strategy:</span>
+<span class="token comment">#            complex:</span>
+<span class="token comment">#              sharding-columns: user_id,sex</span>
+<span class="token comment">#              algorithm-class-name: com.zhengqing.demo.config.sharding.complex.MyDbComplexKeysShardingAlgorithm</span>
+<span class="token comment">#          table-strategy:</span>
+<span class="token comment">#            complex:</span>
+<span class="token comment">#              sharding-columns: user_id,sex</span>
+<span class="token comment">#              algorithm-class-name: com.zhengqing.demo.config.sharding.complex.MyTableComplexKeysShardingAlgorithm</span>
+
+          <span class="token comment"># =========== ↓↓↓↓↓↓ hint分片策略 ↓↓↓↓↓↓ ===========</span>
+          <span class="token comment"># 通过 Hint API实现个性化配置 =&gt; 可查看 com.zhengqing.demo.service.impl.UserServiceImpl.listPageForHint</span>
+
+          <span class="token key atrule">database-strategy</span><span class="token punctuation">:</span>
+            <span class="token key atrule">hint</span><span class="token punctuation">:</span>
+              <span class="token key atrule">algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.hint.MyDbHintShardingAlgorithm
+          <span class="token key atrule">table-strategy</span><span class="token punctuation">:</span>
+            <span class="token key atrule">hint</span><span class="token punctuation">:</span>
+              <span class="token key atrule">algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.hint.MyTableHintShardingAlgorithm
+</code></pre>
+<h4><a id="1_190"></a>1、行表达式分片策略</h4>
+<pre><code class="prism language-yml"><span class="token comment"># =========== ↓↓↓↓↓↓ 行表达式分片策略 ↓↓↓↓↓↓ ===========</span>
+<span class="token comment"># 在配置中使用 Groovy 表达式，提供对 SQL语句中的 = 和 IN 的分片操作支持，只支持单分片健。</span>
+
+<span class="token comment"># ====== ↓↓↓↓↓↓ 分库 ↓↓↓↓↓↓ ======</span>
+<span class="token key atrule">database-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">inline</span><span class="token punctuation">:</span>
+    <span class="token key atrule">sharding-column</span><span class="token punctuation">:</span> user_id <span class="token comment"># 添加数据分库字段(根据字段插入数据到哪个库 ex：user_id)</span>
+    <span class="token key atrule">algorithm-expression</span><span class="token punctuation">:</span> ds<span class="token punctuation">-</span>master<span class="token punctuation">-</span>$<span class="token punctuation">-</span><span class="token punctuation">&gt;</span><span class="token punctuation">{</span>user_id % 2<span class="token punctuation">}</span> <span class="token comment"># 根据user_id取模拆分到不同的库中</span>
+<span class="token comment"># ====== ↓↓↓↓↓↓ 分表 ↓↓↓↓↓↓ ======</span>
+<span class="token key atrule">table-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">inline</span><span class="token punctuation">:</span>
+    <span class="token key atrule">sharding-column</span><span class="token punctuation">:</span> sex   <span class="token comment"># 添加数据分表字段(根据字段插入数据到哪个表 ex：sex)</span>
+    <span class="token key atrule">algorithm-expression</span><span class="token punctuation">:</span> t_user$<span class="token punctuation">-</span><span class="token punctuation">&gt;</span><span class="token punctuation">{</span>sex % 2<span class="token punctuation">}</span> <span class="token comment"># 分片算法表达式 =&gt; 根据用户性别取模拆分到不同的表中</span>
+</code></pre>
+<h4><a id="2_208"></a>2、标准分片策略</h4>
+<h5><a id="A__210"></a>A: 精确分片算法</h5>
+<pre><code class="prism language-yml"><span class="token comment"># 精确分片算法 =&gt; sql在分库/分表键上执行 = 与 IN 时触发计算逻辑，否则不走分库/分表，全库/全表执行。</span>
+<span class="token key atrule">database-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">standard</span><span class="token punctuation">:</span>
+    <span class="token key atrule">sharding-column</span><span class="token punctuation">:</span> user_id <span class="token comment"># 分库用到的键</span>
+    <span class="token key atrule">precise-algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.precise.MyDbPreciseShardingAlgorithm <span class="token comment"># 自定义分库算法实现类</span>
+<span class="token key atrule">table-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">standard</span><span class="token punctuation">:</span>
+    <span class="token key atrule">sharding-column</span><span class="token punctuation">:</span> sex <span class="token comment"># 添加数据分表字段(根据字段插入数据到那个表 ex：sex)</span>
+    <span class="token key atrule">precise-algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.precise.MyTablePreciseShardingAlgorithm <span class="token comment"># 自定义分表算法实现类</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyDbPreciseShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">PreciseShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 分片策略
+     *
+     * @param dbNameList    所有数据源
+     * @param shardingValue SQL执行时传入的分片值
+     * @return 数据源名称
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> dbNameList<span class="token punctuation">,</span> <span class="token class-name">PreciseShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> shardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyDbPreciseShardingAlgorithm] SQL执行时传入的分片值: [{}]"</span><span class="token punctuation">,</span> shardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 根据user_id取模拆分到不同的库中</span>
+        <span class="token class-name">Long</span> userId <span class="token operator">=</span> shardingValue<span class="token punctuation">.</span><span class="token function">getValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> dbNameItem <span class="token operator">:</span> dbNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>dbNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>userId <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> dbNameItem<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyTablePreciseShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">PreciseShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Byte</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 分片策略
+     *
+     * @param tableNameList 所有表名
+     * @param shardingValue SQL执行时传入的分片值
+     * @return 表名
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> tableNameList<span class="token punctuation">,</span> <span class="token class-name">PreciseShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Byte</span><span class="token punctuation">&gt;</span></span> shardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyTablePreciseShardingAlgorithm] SQL执行时传入的分片值: [{}]"</span><span class="token punctuation">,</span> shardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 根据用户性别取模拆分到不同的表中</span>
+        <span class="token class-name">Byte</span> sex <span class="token operator">=</span> shardingValue<span class="token punctuation">.</span><span class="token function">getValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> tableNameItem <span class="token operator">:</span> tableNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>tableNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>sex <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> tableNameItem<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a id="B__279"></a>B: 范围分片算法</h5>
+<pre><code class="prism language-yml"><span class="token comment"># 范围分片算法 =&gt; sql在分库/分表键上执行 BETWEEN AND、&gt;、&lt;、&gt;=、&lt;= 时触发计算逻辑，否则不走分库/分表，全库/全表执行。</span>
+<span class="token key atrule">database-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">standard</span><span class="token punctuation">:</span>
+    <span class="token key atrule">sharding-column</span><span class="token punctuation">:</span> user_id
+    <span class="token key atrule">precise-algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.range.MyDbPreciseShardingAlgorithm
+    <span class="token key atrule">range-algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.range.MyDbRangeShardingAlgorithm
+<span class="token key atrule">table-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">standard</span><span class="token punctuation">:</span>
+    <span class="token key atrule">sharding-column</span><span class="token punctuation">:</span> sex
+    <span class="token key atrule">precise-algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.range.MyTablePreciseShardingAlgorithm
+    <span class="token key atrule">range-algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.range.MyTableRangeShardingAlgorithm
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyDbPreciseShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">PreciseShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 分片策略
+     *
+     * @param dbNameList    所有数据源
+     * @param shardingValue SQL执行时传入的分片值
+     * @return 数据源名称
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> dbNameList<span class="token punctuation">,</span> <span class="token class-name">PreciseShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> shardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyDbPreciseShardingAlgorithm] SQL执行时传入的分片值: [{}]"</span><span class="token punctuation">,</span> shardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 根据user_id取模拆分到不同的库中</span>
+        <span class="token class-name">Long</span> userId <span class="token operator">=</span> shardingValue<span class="token punctuation">.</span><span class="token function">getValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> dbNameItem <span class="token operator">:</span> dbNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>dbNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>userId <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> dbNameItem<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyDbRangeShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">RangeShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> dbNameList<span class="token punctuation">,</span> <span class="token class-name">RangeShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> shardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyDbRangeShardingAlgorithm] shardingValue: [{}]"</span><span class="token punctuation">,</span> shardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">=</span> <span class="token class-name">Lists</span><span class="token punctuation">.</span><span class="token function">newLinkedList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> dbSize <span class="token operator">=</span> dbNameList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 从sql 中获取 Between 1 and 1000 的值</span>
+        <span class="token comment">// lower：1</span>
+        <span class="token comment">// upper：1000</span>
+        <span class="token class-name">Range</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> rangeValue <span class="token operator">=</span> shardingValue<span class="token punctuation">.</span><span class="token function">getValueRange</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Long</span> lower <span class="token operator">=</span> rangeValue<span class="token punctuation">.</span><span class="token function">lowerEndpoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Long</span> upper <span class="token operator">=</span> rangeValue<span class="token punctuation">.</span><span class="token function">upperEndpoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 根据范围值取偶选择库</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Long</span> i <span class="token operator">=</span> lower<span class="token punctuation">;</span> i <span class="token operator">&lt;=</span> upper<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> dbNameItem <span class="token operator">:</span> dbNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>dbNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>i <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    result<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>dbNameItem<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>result<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;=</span> dbSize<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyTablePreciseShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">PreciseShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Byte</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 分片策略
+     *
+     * @param tableNameList 所有表名
+     * @param shardingValue SQL执行时传入的分片值
+     * @return 表名
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> tableNameList<span class="token punctuation">,</span> <span class="token class-name">PreciseShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Byte</span><span class="token punctuation">&gt;</span></span> shardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyTablePreciseShardingAlgorithm] SQL执行时传入的分片值: [{}]"</span><span class="token punctuation">,</span> shardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 根据用户性别取模拆分到不同的表中</span>
+        <span class="token class-name">Byte</span> sex <span class="token operator">=</span> shardingValue<span class="token punctuation">.</span><span class="token function">getValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> tableNameItem <span class="token operator">:</span> tableNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>tableNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>sex <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> tableNameItem<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token keyword">null</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyTableRangeShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">RangeShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Byte</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> tableNameList<span class="token punctuation">,</span> <span class="token class-name">RangeShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Byte</span><span class="token punctuation">&gt;</span></span> shardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyTableRangeShardingAlgorithm] shardingValue: [{}]"</span><span class="token punctuation">,</span> shardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Set</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> tableNameResultList <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">LinkedHashSet</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Range</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Byte</span><span class="token punctuation">&gt;</span></span> rangeValue <span class="token operator">=</span> shardingValue<span class="token punctuation">.</span><span class="token function">getValueRange</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Byte</span> lower <span class="token operator">=</span> rangeValue<span class="token punctuation">.</span><span class="token function">lowerEndpoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Byte</span> upper <span class="token operator">=</span> rangeValue<span class="token punctuation">.</span><span class="token function">upperEndpoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// between 0 and 1</span>
+        <span class="token comment">// 根据性别值选择表</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> tableNameItem <span class="token operator">:</span> tableNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>tableNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>lower<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                    <span class="token operator">||</span> tableNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>upper<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                tableNameResultList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>tableNameItem<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> tableNameResultList<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_407"></a>3、复合分片策略</h4>
+<pre><code class="prism language-yml"><span class="token comment"># =========== ↓↓↓↓↓↓ 复合分片策略 ↓↓↓↓↓↓ ===========</span>
+<span class="token comment"># SQL 语句中有&gt;，&gt;=, &lt;=，&lt;，=，IN 和 BETWEEN AND 等操作符，不同的是复合分片策略支持对多个分片健操作。</span>
+
+<span class="token key atrule">database-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">complex</span><span class="token punctuation">:</span>
+    <span class="token key atrule">sharding-columns</span><span class="token punctuation">:</span> user_id<span class="token punctuation">,</span>sex
+    <span class="token key atrule">algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.complex.MyDbComplexKeysShardingAlgorithm
+<span class="token key atrule">table-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">complex</span><span class="token punctuation">:</span>
+    <span class="token key atrule">sharding-columns</span><span class="token punctuation">:</span> user_id<span class="token punctuation">,</span>sex
+    <span class="token key atrule">algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.complex.MyTableComplexKeysShardingAlgorithm
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyDbComplexKeysShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">ComplexKeysShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> dbNameList<span class="token punctuation">,</span> <span class="token class-name">ComplexKeysShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> complexKeysShardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyDbComplexKeysShardingAlgorithm] complexKeysShardingValue: [{}]"</span><span class="token punctuation">,</span> complexKeysShardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> dbResultList <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> dbSize <span class="token operator">=</span> dbNameList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 得到每个分片健对应的值</span>
+        <span class="token comment">// 用户id 范围查询</span>
+        <span class="token class-name">Range</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> rangeUserId <span class="token operator">=</span> complexKeysShardingValue<span class="token punctuation">.</span><span class="token function">getColumnNameAndRangeValuesMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"user_id"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 性别</span>
+        <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> sexValueList <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">getShardingValue</span><span class="token punctuation">(</span>complexKeysShardingValue<span class="token punctuation">,</span> <span class="token string">"sex"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 对两个分片健进行逻辑操作，选择最终数据进哪一库？ TODO</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> sex <span class="token operator">:</span> sexValueList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token class-name">String</span> suffix <span class="token operator">=</span> <span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span><span class="token class-name">Long</span><span class="token punctuation">.</span><span class="token function">parseLong</span><span class="token punctuation">(</span>sex<span class="token punctuation">)</span> <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> dbNameItem <span class="token operator">:</span> dbNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>dbNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span>suffix<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    dbResultList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>dbNameItem<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>dbResultList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;=</span> dbSize<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">return</span> dbResultList<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> dbResultList<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> <span class="token function">getShardingValue</span><span class="token punctuation">(</span><span class="token class-name">ComplexKeysShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> shardingValues<span class="token punctuation">,</span> <span class="token keyword">final</span> <span class="token class-name">String</span> key<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> valueList <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">Collection</span><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span><span class="token punctuation">&gt;</span></span> columnNameAndShardingValuesMap <span class="token operator">=</span> shardingValues<span class="token punctuation">.</span><span class="token function">getColumnNameAndShardingValuesMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>columnNameAndShardingValuesMap<span class="token punctuation">.</span><span class="token function">containsKey</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            valueList<span class="token punctuation">.</span><span class="token function">addAll</span><span class="token punctuation">(</span>columnNameAndShardingValuesMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> valueList<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyTableComplexKeysShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">ComplexKeysShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> tableNameList<span class="token punctuation">,</span> <span class="token class-name">ComplexKeysShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> complexKeysShardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyTableComplexKeysShardingAlgorithm] complexKeysShardingValue: [{}]"</span><span class="token punctuation">,</span> complexKeysShardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Set</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> tableNameResultList <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">LinkedHashSet</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> tableSize <span class="token operator">=</span> tableNameList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 用户id 范围查询</span>
+        <span class="token class-name">Range</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Long</span><span class="token punctuation">&gt;</span></span> rangeUserId <span class="token operator">=</span> complexKeysShardingValue<span class="token punctuation">.</span><span class="token function">getColumnNameAndRangeValuesMap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"user_id"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Long</span> lower <span class="token operator">=</span> rangeUserId<span class="token punctuation">.</span><span class="token function">lowerEndpoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Long</span> upper <span class="token operator">=</span> rangeUserId<span class="token punctuation">.</span><span class="token function">upperEndpoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 根据user_id选择表 TODO ...</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> tableNameItem <span class="token operator">:</span> tableNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>tableNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>lower <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                    <span class="token operator">||</span> tableNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>upper <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                tableNameResultList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>tableNameItem<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>tableNameResultList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;=</span> tableSize<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> tableNameResultList<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> tableNameResultList<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4Hint_493"></a>4、Hint分片策略</h4>
+<pre><code class="prism language-yml"><span class="token comment">#=========== ↓↓↓↓↓↓ hint分片策略 ↓↓↓↓↓↓ ===========</span>
+<span class="token comment"># 通过 Hint API实现个性化配置 =&gt; 可查看 com.zhengqing.demo.service.impl.UserServiceImpl.listPageForHint</span>
+
+<span class="token key atrule">database-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">hint</span><span class="token punctuation">:</span>
+    <span class="token key atrule">algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.hint.MyDbHintShardingAlgorithm
+<span class="token key atrule">table-strategy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">hint</span><span class="token punctuation">:</span>
+    <span class="token key atrule">algorithm-class-name</span><span class="token punctuation">:</span> com.zhengqing.demo.config.sharding.hint.MyTableHintShardingAlgorithm
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyDbHintShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">HintShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> dbNameList<span class="token punctuation">,</span> <span class="token class-name">HintShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> hintShardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyDbHintShardingAlgorithm] hintShardingValue: [{}]"</span><span class="token punctuation">,</span> hintShardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> dbResultList <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> dbSize <span class="token operator">=</span> dbNameList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> dbNameItem <span class="token operator">:</span> dbNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Integer</span> shardingValue <span class="token operator">:</span> hintShardingValue<span class="token punctuation">.</span><span class="token function">getValues</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>dbNameItem<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>shardingValue <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    dbResultList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>dbNameItem<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>dbResultList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;=</span> dbSize<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">return</span> dbResultList<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> dbResultList<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyTableHintShardingAlgorithm</span> <span class="token keyword">implements</span> <span class="token class-name">HintShardingAlgorithm</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> <span class="token function">doSharding</span><span class="token punctuation">(</span><span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> tableNameList<span class="token punctuation">,</span> <span class="token class-name">HintShardingValue</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> hintShardingValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[MyTableHintShardingAlgorithm] hintShardingValue: [{}]"</span><span class="token punctuation">,</span> hintShardingValue<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> tableResultList <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> tableSize <span class="token operator">=</span> tableNameList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Collection</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Integer</span><span class="token punctuation">&gt;</span></span> hintShardingValueValueList <span class="token operator">=</span> hintShardingValue<span class="token punctuation">.</span><span class="token function">getValues</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">String</span> tableName <span class="token operator">:</span> tableNameList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token class-name">Integer</span> shardingValue <span class="token operator">:</span> hintShardingValueValueList<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>tableName<span class="token punctuation">.</span><span class="token function">endsWith</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>shardingValue <span class="token operator">%</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    tableResultList<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>tableName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>tableResultList<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;=</span> tableSize<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">return</span> tableResultList<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> tableResultList<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>使用时动态触发如下：</p>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token class-name">IPage</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">User</span><span class="token punctuation">&gt;</span></span> <span class="token function">listPageForHint</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+   <span class="token comment">// 清除掉上一次的规则，否则会报错</span>
+    <span class="token class-name">HintManager</span><span class="token punctuation">.</span><span class="token function">clear</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// HintManager API 工具类实例</span>
+    <span class="token class-name">HintManager</span> hintManager <span class="token operator">=</span> <span class="token class-name">HintManager</span><span class="token punctuation">.</span><span class="token function">getInstance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 库 =&gt; 主要是将value值传送到 MyDbHintShardingAlgorithm 中做逻辑分库处理</span>
+    hintManager<span class="token punctuation">.</span><span class="token function">addDatabaseShardingValue</span><span class="token punctuation">(</span><span class="token string">"t_user"</span><span class="token punctuation">,</span> <span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    hintManager<span class="token punctuation">.</span><span class="token function">addDatabaseShardingValue</span><span class="token punctuation">(</span><span class="token string">"t_user"</span><span class="token punctuation">,</span> <span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 指定表的分片健 =&gt; 指定查t_user0</span>
+    hintManager<span class="token punctuation">.</span><span class="token function">addTableShardingValue</span><span class="token punctuation">(</span><span class="token string">"t_user"</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">//        hintManager.addTableShardingValue("t_user", 1);</span>
+
+    <span class="token comment">// 读写分离强制读主库，避免造成主从复制导致的延迟</span>
+    hintManager<span class="token punctuation">.</span><span class="token function">setMasterRouteOnly</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 查询数据</span>
+    <span class="token class-name">Page</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">User</span><span class="token punctuation">&gt;</span></span> result <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span>userMapper<span class="token punctuation">.</span><span class="token function">selectPage</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Page</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            <span class="token keyword">new</span> <span class="token class-name">LambdaQueryWrapper</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">User</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">.</span><span class="token function">eq</span><span class="token punctuation">(</span><span class="token class-name">User</span><span class="token operator">::</span><span class="token function">getSex</span><span class="token punctuation">,</span> <span class="token string">"0"</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">.</span><span class="token function">between</span><span class="token punctuation">(</span><span class="token class-name">User</span><span class="token operator">::</span><span class="token function">getUserId</span><span class="token punctuation">,</span> <span class="token number">1L</span><span class="token punctuation">,</span> <span class="token number">1000L</span><span class="token punctuation">)</span>
+    <span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 清除规则</span>
+    hintManager<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> result<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr>
+<p>运行项目，接口文档：<a href="http://127.0.0.1/doc.html">http://127.0.0.1/doc.html</a>  提供了几个测试api如下<br>
+<img src="https://img-blog.csdnimg.cn/20263114c29d4972ba9c157e149594e6.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_14,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="demo_595"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+在最美的年龄为最纯真的梦做最大的努力。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
