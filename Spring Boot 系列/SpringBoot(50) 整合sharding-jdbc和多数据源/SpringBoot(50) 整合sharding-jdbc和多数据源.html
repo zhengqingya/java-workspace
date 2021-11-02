@@ -1,0 +1,149 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(50) 整合sharding-jdbc和多数据源</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#shardingjdbc_9">二、整合sharding-jdbc和多数据源</a></li><ul><li><a href="#1pomxml_13">1、`pom.xml`中引入依赖</a></li><li><a href="#2applicationyml_25">2、`application.yml`中新增多数据源配置</a></li><li><a href="#3shardingjdbc_49">3、sharding-jdbc集成动态数据源配置类</a></li><li><a href="#4DS_120">4、使用`@DS`切换数据源</a></li></ul><li><a href="#demo_133">三、本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<ol>
+<li><a href="https://zhengqing.blog.csdn.net//article/details/121024815">SpringBoot(48) 整合sharding-jdbc实现分库分表与读写分离</a></li>
+<li><a href="https://zhengqing.blog.csdn.net//article/details/121087197">SpringBoot(49) 整合sharding-jdbc实现自定义分库分表</a></li>
+</ol>
+<p>本文将整合sharding-jdbc和多数据源(dynamic-datasource-spring-boot-starter)</p>
+<h3><a id="shardingjdbc_9"></a>二、整合sharding-jdbc和多数据源</h3>
+<p>springboot整合sharding-jdbc可参看之前的案例，小编这里将基于之前的配置加入多数据源配置</p>
+<h4><a id="1pomxml_13"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- 动态数据源 --&gt;</span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/com.baomidou/dynamic-datasource-spring-boot-starter --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.baomidou<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>dynamic-datasource-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>3.3.2<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_25"></a>2、<code>application.yml</code>中新增多数据源配置</h4>
+<pre><code class="prism language-yml"><span class="token comment"># 多数据源配置 可参考 https://gitee.com/baomidou/dynamic-datasource-spring-boot-starter</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">dynamic</span><span class="token punctuation">:</span>
+      <span class="token key atrule">primary</span><span class="token punctuation">:</span> master <span class="token comment"># 设置默认的数据源或者数据源组,默认值即为master</span>
+      <span class="token key atrule">strict</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>   <span class="token comment"># 严格匹配数据源,默认false. true未匹配到指定数据源时抛异常,false使用默认数据源</span>
+      <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+        <span class="token key atrule">master</span><span class="token punctuation">:</span>
+          <span class="token key atrule">url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3306/demo<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+          <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+          <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+          <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+<span class="token comment">#        db-test:</span>
+<span class="token comment">#          url: jdbc:mysql://127.0.0.1:3306/demo?allowMultiQueries=true&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+<span class="token comment">#          username: root</span>
+<span class="token comment">#          password: root</span>
+<span class="token comment">#          driver-class-name: com.mysql.jdbc.Driver</span>
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/bb54a1109780446d8f9353760cc88ee3.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h4><a id="3shardingjdbc_49"></a>3、sharding-jdbc集成动态数据源配置类</h4>
+<pre><code class="prism language-java"><span class="token comment">/**
+ * &lt;p&gt; sharding-jdbc集成动态数据源配置 &lt;/p&gt;
+ *
+ * @author zhengqingya
+ * @description 使用 {@link com.baomidou.dynamic.datasource.annotation.DS} 注解，切换数据源
+ * ex: 切换为sharding-jdbc数据源 =&gt; @DS(DataSourceConfig.SHARDING_DATA_SOURCE_NAME)
+ * @date 2021/11/2 10:13
+ */</span>
+<span class="token annotation punctuation">@Configuration</span>
+<span class="token annotation punctuation">@AutoConfigureBefore</span><span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token class-name">DynamicDataSourceAutoConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span> <span class="token class-name">SpringBootConfiguration</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DataSourceConfig</span> <span class="token punctuation">{</span>
+    <span class="token comment">/**
+     * 分表数据源名称
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token class-name">String</span> SHARDING_DATA_SOURCE_NAME <span class="token operator">=</span> <span class="token string">"sharding-data-source"</span><span class="token punctuation">;</span>
+    <span class="token comment">/**
+     * 动态数据源配置项
+     */</span>
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> <span class="token class-name">DynamicDataSourceProperties</span> properties<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * sharding-jdbc有四种数据源，需要根据业务注入不同的数据源
+     * &lt;p&gt;
+     * 1.未使用分片, 脱敏的名称(默认): shardingDataSource;
+     * 2.主从数据源: masterSlaveDataSource;
+     * 3.脱敏数据源：encryptDataSource;
+     * 4.影子数据源：shadowDataSource
+     */</span>
+    <span class="token annotation punctuation">@Lazy</span>
+    <span class="token annotation punctuation">@Resource</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">"shardingDataSource"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">AbstractDataSourceAdapter</span> shardingDataSource<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">DynamicDataSourceProvider</span> <span class="token function">dynamicDataSourceProvider</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">DataSourceProperty</span><span class="token punctuation">&gt;</span></span> datasourceMap <span class="token operator">=</span> properties<span class="token punctuation">.</span><span class="token function">getDatasource</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">AbstractDataSourceProvider</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token annotation punctuation">@Override</span>
+            <span class="token keyword">public</span> <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">DataSource</span><span class="token punctuation">&gt;</span></span> <span class="token function">loadDataSources</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">DataSource</span><span class="token punctuation">&gt;</span></span> dataSourceMap <span class="token operator">=</span> <span class="token function">createDataSourceMap</span><span class="token punctuation">(</span>datasourceMap<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token comment">// 将 shardingjdbc 管理的数据源也交给动态数据源管理</span>
+                dataSourceMap<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>SHARDING_DATA_SOURCE_NAME<span class="token punctuation">,</span> shardingDataSource<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">return</span> dataSourceMap<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 将动态数据源设置为首选的
+     * 当spring存在多个数据源时, 自动注入的是首选的对象
+     * 设置为主要的数据源之后，就可以支持sharding-jdbc原生的配置方式了
+     */</span>
+    <span class="token annotation punctuation">@Primary</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token keyword">public</span> <span class="token class-name">DataSource</span> <span class="token function">dataSource</span><span class="token punctuation">(</span><span class="token class-name">DynamicDataSourceProvider</span> dynamicDataSourceProvider<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">DynamicRoutingDataSource</span> dataSource <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">DynamicRoutingDataSource</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataSource<span class="token punctuation">.</span><span class="token function">setPrimary</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getPrimary</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataSource<span class="token punctuation">.</span><span class="token function">setStrict</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getStrict</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataSource<span class="token punctuation">.</span><span class="token function">setStrategy</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getStrategy</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataSource<span class="token punctuation">.</span><span class="token function">setProvider</span><span class="token punctuation">(</span>dynamicDataSourceProvider<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataSource<span class="token punctuation">.</span><span class="token function">setP6spy</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getP6spy</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataSource<span class="token punctuation">.</span><span class="token function">setSeata</span><span class="token punctuation">(</span>properties<span class="token punctuation">.</span><span class="token function">getSeata</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> dataSource<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4DS_120"></a>4、使用<code>@DS</code>切换数据源</h4>
+<p>@DS 可以注解在<code>方法</code>/<code>类</code>上，同时存在就近原则 方法上注解 优先于 类上注解。</p>
+
+<table>
+<thead>
+<tr>
+<th>注解</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>没有@DS</td>
+<td>默认数据源</td>
+</tr>
+<tr>
+<td>@DS(“dsName”)</td>
+<td>dsName可以为组名也可以为具体某个库的名称</td>
+</tr>
+</tbody>
+</table><p><img src="https://img-blog.csdnimg.cn/dbd12ea4b00e4f9c96cfe5e54a72b15e.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="demo_133"></a>三、本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+能力不在脸上，本事不在嘴上！要脚踏实地做实事，生活不会因为某个节点的疏忽就永远灰暗，未来的幸运都是过往努力的积攒！</p>
+</blockquote>
+</div>
+</body>
+
+</html>

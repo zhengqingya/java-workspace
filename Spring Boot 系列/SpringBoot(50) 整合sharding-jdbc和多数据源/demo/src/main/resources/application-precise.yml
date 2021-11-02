@@ -1,0 +1,160 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+
+  # 配置数据源
+  #  datasource:
+  #    url: jdbc:mysql://127.0.0.1:3306/demo?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+  #    name: demo
+  #    username: root
+  #    password: root
+  #    platform: mysql
+  #    driver-class-name: com.mysql.jdbc.Driver
+
+  # sharding-jdbc配置
+  shardingsphere:
+    # 是否开启SQL显示
+    props:
+      sql:
+        show: true
+    # ====================== ↓↓↓↓↓↓ 数据源配置 ↓↓↓↓↓↓ ======================
+    datasource:
+      names: ds-master-0,ds-slave-0-1,ds-slave-0-2,ds-master-1,ds-slave-1-1,ds-slave-1-2
+      # ====================== ↓↓↓↓↓↓ 配置第1个主从库 ↓↓↓↓↓↓ ======================
+      # 主库1
+      ds-master-0:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/ds0?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+        username: root
+        password: root
+      # 主库1-从库1
+      ds-slave-0-1:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3307/ds0?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+        username: root
+        password: root
+      # 主库1-从库2
+      ds-slave-0-2:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3307/ds0?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+        username: root
+        password: root
+      # ====================== ↓↓↓↓↓↓ 配置第2个主从库 ↓↓↓↓↓↓ ======================
+      # 主库2
+      ds-master-1:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/ds1?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+        username: root
+        password: root
+      # 主库2-从库1
+      ds-slave-1-1:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3307/ds1?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+        username: root
+        password: root
+      # 主库2-从库2
+      ds-slave-1-2:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3307/ds1?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+        username: root
+        password: root
+
+    sharding:
+      # ====================== ↓↓↓↓↓↓ 读写分离配置 ↓↓↓↓↓↓ ======================
+      master-slave-rules:
+        ds-master-0:
+          # 主库
+          masterDataSourceName: ds-master-0
+          # 从库
+          slaveDataSourceNames:
+            - ds-slave-0-1
+            - ds-slave-0-2
+          # 从库查询数据的负载均衡算法 目前有2种算法 round_robin（轮询）和 random（随机）
+          # 算法接口 org.apache.shardingsphere.spi.masterslave.MasterSlaveLoadBalanceAlgorithm
+          # 实现类 RandomMasterSlaveLoadBalanceAlgorithm 和 RoundRobinMasterSlaveLoadBalanceAlgorithm
+          loadBalanceAlgorithmType: ROUND_ROBIN
+        ds-master-1:
+          masterDataSourceName: ds-master-1
+          slaveDataSourceNames:
+            - ds-slave-1-1
+            - ds-slave-1-2
+          loadBalanceAlgorithmType: ROUND_ROBIN
+
+      # ====================== ↓↓↓↓↓↓ 分库分表配置 ↓↓↓↓↓↓ ======================
+      tables:
+        t_user:
+          actual-data-nodes: ds-master-$->{0..1}.t_user$->{0..1}
+
+          # =========== ↓↓↓↓↓↓ 行表达式分片策略 ↓↓↓↓↓↓ ===========
+          # 在配置中使用 Groovy 表达式，提供对 SQL语句中的 = 和 IN 的分片操作支持，只支持单分片健。
+
+#           # ====== ↓↓↓↓↓↓ 分库 ↓↓↓↓↓↓ ======
+#          database-strategy:
+#            inline:
+#              sharding-column: user_id # 添加数据分库字段(根据字段插入数据到哪个库 ex：user_id)
+#              algorithm-expression: ds-master-$->{user_id % 2} # 根据user_id取模拆分到不同的库中
+#           # ====== ↓↓↓↓↓↓ 分表 ↓↓↓↓↓↓ ======
+#          table-strategy:
+#            inline:
+#              sharding-column: sex   # 添加数据分表字段(根据字段插入数据到哪个表 ex：sex)
+#              algorithm-expression: t_user$->{sex % 2} # 分片算法表达式 => 根据用户性别取模拆分到不同的表中
+
+          # =========== ↓↓↓↓↓↓ 标准分片策略 ↓↓↓↓↓↓ ===========
+
+          # 精确分片算法 => sql在分库/分表键上执行 = 与 IN 时触发计算逻辑，否则不走分库/分表，全库/全表执行。
+          database-strategy:
+            standard:
+              sharding-column: user_id # 分库用到的键
+              precise-algorithm-class-name: com.zhengqing.demo.config.sharding.precise.MyDbPreciseShardingAlgorithm # 自定义分库算法实现类
+          table-strategy:
+            standard:
+              sharding-column: sex # 添加数据分表字段(根据字段插入数据到那个表 ex：sex)
+              precise-algorithm-class-name: com.zhengqing.demo.config.sharding.precise.MyTablePreciseShardingAlgorithm # 自定义分表算法实现类
+
+
+
+
+
+# mybatis-plus相关配置
+mybatis-plus:
+  # xml扫描，多个目录用逗号或者分号分隔（告诉 Mapper 所对应的 XML 文件位置）
+  mapper-locations: classpath:**/*Mapper.xml
+  # 实体扫描，多个package用逗号或者分号分隔
+  typeAliasesPackage: com.zhengqing.*.entity
+  # typeEnumsPackage: com.zhengqing.*.**.enumeration
+  # 以下配置均有默认值,可以不设置
+  global-config:
+    # 关闭MP3.0+自带的banner
+    banner: false
+    db-config:
+      # 主键类型  0:"数据库ID自增", 1:"不操作", 2:"用户输入ID",3:"数字型snowflake", 4:"全局唯一ID UUID", 5:"字符串型snowflake";
+      id-type: auto
+      # 字段策略
+      insert-strategy: not_null
+      update-strategy: not_null
+      select-strategy: not_null
+      # 驼峰下划线转换
+      table-underline: true
+      # 逻辑删除配置
+      logic-delete-field: isDeleted    # 全局逻辑删除的实体字段名
+      logic-delete-value: 1          # 逻辑删除全局值（1表示已删除，默认为 1）
+      logic-not-delete-value: 0      # 逻辑未删除全局值（0表示未删除，默认为 0）
+  configuration:
+    # 是否开启自动驼峰命名规则映射:从数据库列名到Java属性驼峰命名的类似映射
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    # 如果查询结果中包含空值的列，则 MyBatis 在映射的时候，不会映射这个字段
+    call-setters-on-nulls: true
+    # 这个配置会将执行的sql打印出来，在开发或测试的时候可以用
+    #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 解决oracle更新数据为null时无法转换报错，mysql不会出现此情况
+    jdbc-type-for-null: 'null'

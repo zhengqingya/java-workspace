@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhengqing.demo.mapper.UserMapper">
+
+    <select id="selectDataList" resultType="com.zhengqing.demo.entity.User">
+        SELECT
+        user_id,
+        username,
+        password,
+        sex,
+        remark
+        FROM t_user
+        <where>
+            <if test="filter.userId!=null">
+                AND user_id = #{filter.userId}
+            </if>
+            <if test="filter.username!=null and filter.username!=''">
+                AND username LIKE CONCAT( '%', #{filter.username} , '%' )
+            </if>
+            <if test="filter.password!=null and filter.password!=''">
+                AND password LIKE CONCAT( '%', #{filter.password} , '%' )
+            </if>
+            <if test="filter.sex!=null">
+                AND sex = #{filter.sex}
+            </if>
+            <if test="filter.remark!=null">
+                AND remark LIKE CONCAT( '%', #{filter.remark} , '%' )
+            </if>
+        </where>
+        ORDER BY user_id DESC
+    </select>
+
+    <insert id="insertBatch">
+        INSERT INTO
+        t_user (
+        user_id, username, password,
+        sex, remark )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.userId}, #{item.username}, #{item.password},
+            #{item.sex}, #{item.remark}
+            )
+        </foreach>
+    </insert>
+
+</mapper>
