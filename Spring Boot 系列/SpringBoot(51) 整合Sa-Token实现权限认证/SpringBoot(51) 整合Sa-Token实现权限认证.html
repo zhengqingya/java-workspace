@@ -1,0 +1,256 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(51) 整合Sa-Token实现权限认证</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#SaToken_8">二、整合Sa-Token实现权限认证</a></li><ul><li><a href="#1pomxml_10">1、`pom.xml`中引入依赖</a></li><li><a href="#2applicationyml_34">2、`application.yml`配置</a></li><li><a href="#3satoken_96">3、自定义sa-token生成策略</a></li><li><a href="#4SaToken__URL__117">4、Sa-Token 拦截/开放 URL 配置类</a></li><li><a href="#5_SaToken__138">5、注册 Sa-Token 路由拦截器</a></li><li><a href="#6_158">6、全局异常处理器</a></li></ul><li><a href="#_180">三、测试</a></li><li><a href="#demo_262">本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>Sa-Token 是一个轻量级 Java 权限认证框架，主要解决：登录认证、权限认证、Session会话、单点登录、OAuth2.0、微服务网关鉴权 等一系列权限相关问题。</p>
+<p><a href="https://sa-token.dev33.cn/doc/index.html#/">https://sa-token.dev33.cn/doc/index.html#/</a></p>
+<h3><a id="SaToken_8"></a>二、整合Sa-Token实现权限认证</h3>
+<h4><a id="1pomxml_10"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- Sa-Token 权限认证, 在线文档：http://sa-token.dev33.cn/ --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>cn.dev33<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>sa-token-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.27.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- Sa-Token 整合 Redis （使用jackson序列化方式） --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>cn.dev33<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>sa-token-dao-redis-jackson<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.27.0<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- 提供Redis连接池 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.apache.commons<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>commons-pool2<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_34"></a>2、<code>application.yml</code>配置</h4>
+<blockquote>
+<p>温馨小提示：这里的配置是假设前后端分离情况下，通过请求头参数信息进行认证~</p>
+</blockquote>
+<pre><code class="prism language-yml"><span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token comment"># redis配置</span>
+  <span class="token key atrule">redis</span><span class="token punctuation">:</span>
+    <span class="token comment"># Redis数据库索引（默认为0）</span>
+    <span class="token key atrule">database</span><span class="token punctuation">:</span> <span class="token number">1</span>
+    <span class="token comment"># Redis服务器地址</span>
+    <span class="token key atrule">host</span><span class="token punctuation">:</span> 127.0.0.1
+    <span class="token comment"># Redis服务器连接端口</span>
+    <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">6379</span>
+    <span class="token comment"># Redis服务器连接密码（默认为空）</span>
+    <span class="token comment"># password: </span>
+    <span class="token comment"># 连接超时时间</span>
+    <span class="token key atrule">timeout</span><span class="token punctuation">:</span> 10s
+    <span class="token key atrule">lettuce</span><span class="token punctuation">:</span>
+      <span class="token key atrule">pool</span><span class="token punctuation">:</span>
+        <span class="token comment"># 连接池最大连接数</span>
+        <span class="token key atrule">max-active</span><span class="token punctuation">:</span> <span class="token number">200</span>
+        <span class="token comment"># 连接池最大阻塞等待时间（使用负值表示没有限制）</span>
+        <span class="token key atrule">max-wait</span><span class="token punctuation">:</span> <span class="token punctuation">-</span>1ms
+        <span class="token comment"># 连接池中的最大空闲连接</span>
+        <span class="token key atrule">max-idle</span><span class="token punctuation">:</span> <span class="token number">10</span>
+        <span class="token comment"># 连接池中的最小空闲连接</span>
+        <span class="token key atrule">min-idle</span><span class="token punctuation">:</span> <span class="token number">0</span>
+
+
+<span class="token comment"># Sa-Token配置</span>
+<span class="token key atrule">sa-token</span><span class="token punctuation">:</span>
+  <span class="token comment"># token名称 (同时也是cookie名称)  注意不能带冒号:</span>
+  <span class="token key atrule">token-name</span><span class="token punctuation">:</span> test<span class="token punctuation">-</span>satoken
+  <span class="token comment"># token有效期，单位s 这里设置2分钟, -1代表永不过期</span>
+  <span class="token key atrule">timeout</span><span class="token punctuation">:</span> <span class="token number">120</span>
+  <span class="token comment"># token临时有效期 (指定时间内无操作就视为token过期) 单位: 秒</span>
+  <span class="token key atrule">activity-timeout</span><span class="token punctuation">:</span> <span class="token number">-1</span>
+  <span class="token comment"># 是否允许同一账号并发登录 (为true时允许一起登录, 为false时新登录挤掉旧登录)</span>
+  <span class="token key atrule">is-concurrent</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token comment"># 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)</span>
+  <span class="token key atrule">is-share</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+  <span class="token comment"># token风格</span>
+  <span class="token key atrule">token-style</span><span class="token punctuation">:</span> random<span class="token punctuation">-</span><span class="token number">128</span>
+  <span class="token comment"># 是否从cookie中读取token</span>
+  <span class="token key atrule">is-read-cookie</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+  <span class="token comment"># 是否从请求体里读取token</span>
+  <span class="token key atrule">is-read-body</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+  <span class="token comment"># 是否从head中读取token</span>
+  <span class="token key atrule">is-read-head</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token comment"># 是否输出操作日志</span>
+  <span class="token key atrule">is-log</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token comment"># 拦截url</span>
+  <span class="token key atrule">intercept-url-list</span><span class="token punctuation">:</span>
+    <span class="token punctuation">-</span> /test/<span class="token important">**</span>
+  <span class="token comment"># 开放url</span>
+  <span class="token key atrule">open-url-list</span><span class="token punctuation">:</span>
+    <span class="token punctuation">-</span> /test/doLogin
+    <span class="token punctuation">-</span> /test/time
+</code></pre>
+<h4><a id="3satoken_96"></a>3、自定义sa-token生成策略</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SaTokenCustomConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 重写 Sa-Token 框架内部算法策略
+     */</span>
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">rewriteSaStrategy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 重写 Token 生成策略</span>
+        <span class="token class-name">SaStrategy</span><span class="token punctuation">.</span>me<span class="token punctuation">.</span>createToken <span class="token operator">=</span> <span class="token punctuation">(</span>loginId<span class="token punctuation">,</span> loginType<span class="token punctuation">)</span> <span class="token operator">-&gt;</span> <span class="token punctuation">{</span>
+            <span class="token comment">// 随机60位长度字符串</span>
+            <span class="token keyword">return</span> <span class="token class-name">SaFoxUtil</span><span class="token punctuation">.</span><span class="token function">getRandomString</span><span class="token punctuation">(</span><span class="token number">60</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4SaToken__URL__117"></a>4、Sa-Token 拦截/开放 URL 配置类</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@Configuration</span>
+<span class="token annotation punctuation">@ConfigurationProperties</span><span class="token punctuation">(</span>prefix <span class="token operator">=</span> <span class="token string">"sa-token"</span><span class="token punctuation">,</span> ignoreUnknownFields <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SaTokenUrlConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 拦截url
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> interceptUrlList<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 开放url
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">List</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> openUrlList<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="5_SaToken__138"></a>5、注册 Sa-Token 路由拦截器</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SaTokenWebMvcConfig</span> <span class="token keyword">implements</span> <span class="token class-name">WebMvcConfigurer</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Autowired</span>
+    <span class="token keyword">private</span> <span class="token class-name">SaTokenUrlConfig</span> saTokenUrlConfig<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">addInterceptors</span><span class="token punctuation">(</span><span class="token class-name">InterceptorRegistry</span> registry<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 注册1个登录认证拦截器</span>
+        registry<span class="token punctuation">.</span><span class="token function">addInterceptor</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">SaRouteInterceptor</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">addPathPatterns</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>saTokenUrlConfig<span class="token punctuation">.</span><span class="token function">getInterceptUrlList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">excludePathPatterns</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>saTokenUrlConfig<span class="token punctuation">.</span><span class="token function">getOpenUrlList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="6_158"></a>6、全局异常处理器</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestControllerAdvice</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyGlobalExceptionHandler</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@ExceptionHandler</span><span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token class-name">SaTokenException</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">SaResult</span> <span class="token function">saTokenException</span><span class="token punctuation">(</span><span class="token class-name">SaTokenException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"SaTokenException: "</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token class-name">SaResult</span><span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span>e<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@ExceptionHandler</span><span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token class-name">NotLoginException</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">SaResult</span> <span class="token function">notLoginException</span><span class="token punctuation">(</span><span class="token class-name">NotLoginException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"NotLoginException: "</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token class-name">SaResult</span><span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span>e<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="_180"></a>三、测试</h3>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@RestController</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">"/test"</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token string">"测试api"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"time"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"time"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">time</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"time: {}"</span><span class="token punctuation">,</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"getSaTokenConfig"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"Sa-Token配置"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">SaTokenConfig</span> <span class="token function">getSaTokenConfig</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"Sa-Token配置：{}"</span><span class="token punctuation">,</span> <span class="token class-name">SaManager</span><span class="token punctuation">.</span><span class="token function">getConfig</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token class-name">SaManager</span><span class="token punctuation">.</span><span class="token function">getConfig</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"doLogin"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"登录"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">doLogin</span><span class="token punctuation">(</span><span class="token class-name">String</span> username<span class="token punctuation">,</span> <span class="token class-name">String</span> password<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 此处仅作模拟示例，真实项目需要从数据库中查询数据进行比对</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token string">"zhang"</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>username<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token string">"123456"</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>password<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token class-name">StpUtil</span><span class="token punctuation">.</span><span class="token function">logout</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">StpUtil</span><span class="token punctuation">.</span><span class="token function">login</span><span class="token punctuation">(</span><span class="token number">10001</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token string">"登录成功"</span> <span class="token operator">+</span> <span class="token class-name">StpUtil</span><span class="token punctuation">.</span><span class="token function">getLoginId</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token class-name">StpUtil</span><span class="token punctuation">.</span><span class="token function">logout</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"登录失败"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"isLogin"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"查询登录状态"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">isLogin</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token string">"当前会话是否登录："</span> <span class="token operator">+</span> <span class="token class-name">StpUtil</span><span class="token punctuation">.</span><span class="token function">isLogin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"logout"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"退出登录"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">logout</span><span class="token punctuation">(</span><span class="token class-name">String</span> loginId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">StpUtil</span><span class="token punctuation">.</span><span class="token function">logoutByLoginId</span><span class="token punctuation">(</span>loginId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"SUCCESS"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"checkLogin"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"检查是否登录"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">checkLogin</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            <span class="token class-name">StpUtil</span><span class="token punctuation">.</span><span class="token function">checkLogin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"登录认证失效：{}"</span><span class="token punctuation">,</span> e<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token string">"FAIL:"</span> <span class="token operator">+</span> e<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"登录了..."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"SUCCESS"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"tokenInfo"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"查询Token信息"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">SaResult</span> <span class="token function">tokenInfo</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token class-name">SaResult</span><span class="token punctuation">.</span><span class="token function">data</span><span class="token punctuation">(</span><span class="token class-name">StpUtil</span><span class="token punctuation">.</span><span class="token function">getTokenInfo</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"getTokenValueByLoginId"</span><span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@ApiOperation</span><span class="token punctuation">(</span><span class="token string">"获取账号id为10001的token令牌值"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">getTokenValueByLoginId</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token class-name">StpUtil</span><span class="token punctuation">.</span><span class="token function">getTokenValueByLoginId</span><span class="token punctuation">(</span><span class="token number">10001</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>接口文档 <a href="http://127.0.0.1/doc.html">http://127.0.0.1/doc.html</a><br>
+<img src="https://img-blog.csdnimg.cn/62f92861aef147bfac0b55f1266e0778.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<p>其它的自己看着sa-token官方文档玩吧， 比较简单，就不多展示了<code>^_^</code></p>
+<h3><a id="demo_262"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+你在学习上这种尝试精神很可贵。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
