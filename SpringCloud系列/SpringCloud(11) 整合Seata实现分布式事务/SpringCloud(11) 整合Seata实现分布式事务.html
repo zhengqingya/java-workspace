@@ -4,12 +4,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SpringCloud(11) 整合seata实现分布式事务</title>
+  <title>SpringCloud(11) 整合Seata实现分布式事务</title>
   <link rel="stylesheet" href="https://stackedit.io/style.css" />
 </head>
 
 <body class="stackedit">
-  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#dockercomposeseata_19">二、docker-compose部署seata</a></li><ul><li><a href="#_31">相关配置文件</a></li><ul><li><a href="#___seata_35">配置 - - seata</a></li><ul><li><a href="#fileconf_37">file.conf</a></li><li><a href="#registryconf_107">registry.conf</a></li></ul><li><a href="#___nacos_209">配置 - - nacos</a></li><ul><li><a href="#configtxt_211">config.txt</a></li><li><a href="#nacosconfigsh_228">nacos-config.sh</a></li></ul><li><a href="#___seata_361">配置 - - seata数据库</a></li><li><a href="#seatasql_363">seata.sql</a></li><li><a href="#____441">配置 - - 每个微服务关联数据库</a></li><li><a href="#undo_logsql_443">undo_log.sql</a></li></ul></ul><li><a href="#SpringCloudseata_469">三、SpringCloud集成seata</a></li><ul><li><a href="#1pomxml_471">1、`pom.xml`中引入依赖</a></li><li><a href="#2seata_482">2、seata配置</a></li><li><a href="#3_527">3、测试分布式事务</a></li></ul><li><a href="#demo_539">本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#dockercomposeseata_19">二、docker-compose部署seata</a></li><ul><li><a href="#_31">相关配置文件</a></li><ul><li><a href="#dockercomposeseatayml_35">docker-compose-seata.yml</a></li><li><a href="#___seata_71">配置 - - seata</a></li><ul><li><a href="#fileconf_73">file.conf</a></li><li><a href="#registryconf_143">registry.conf</a></li></ul><li><a href="#___nacos_245">配置 - - nacos</a></li><ul><li><a href="#configtxt_247">config.txt</a></li><li><a href="#nacosconfigsh_264">nacos-config.sh</a></li></ul><li><a href="#___seata_397">配置 - - seata数据库</a></li><li><a href="#seatasql_399">seata.sql</a></li><li><a href="#____477">配置 - - 每个微服务关联数据库</a></li><li><a href="#undo_logsql_479">undo_log.sql</a></li></ul></ul><li><a href="#SpringCloudseata_505">三、SpringCloud集成seata</a></li><ul><li><a href="#1pomxml_507">1、`pom.xml`中引入依赖</a></li><li><a href="#2seata_518">2、seata配置</a></li><li><a href="#3_563">3、测试分布式事务</a></li></ul><li><a href="#demo_575">本文案例demo源码</a></li></ul></ul></ul></div><p></p>
 <h3><a id="_2"></a>一、前言</h3>
 <p>本文将基于以下环境整合seata实现分布式事务</p>
 <blockquote>
@@ -39,8 +39,41 @@ docker-compose -f docker-compose-seata.yml -p seata up -d
 </code></pre>
 <h4><a id="_31"></a>相关配置文件</h4>
 <p><img src="https://img-blog.csdnimg.cn/d903c47906ad43f2b65bd36b58f72f1b.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
-<h5><a id="___seata_35"></a>配置 - - seata</h5>
-<h6><a id="fileconf_37"></a>file.conf</h6>
+<h5><a id="dockercomposeseatayml_35"></a>docker-compose-seata.yml</h5>
+<pre><code class="prism language-yml"><span class="token comment"># 可参考 http://seata.io/zh-cn/docs/ops/deploy-by-docker.html</span>
+<span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
+
+<span class="token comment"># 网桥 -&gt; 方便相互通讯</span>
+<span class="token key atrule">networks</span><span class="token punctuation">:</span>
+  <span class="token key atrule">seata</span><span class="token punctuation">:</span>
+    <span class="token key atrule">driver</span><span class="token punctuation">:</span> bridge
+
+<span class="token key atrule">services</span><span class="token punctuation">:</span>
+  <span class="token key atrule">seata</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> registry.cn<span class="token punctuation">-</span>hangzhou.aliyuncs.com/zhengqing/seata<span class="token punctuation">-</span>server<span class="token punctuation">:</span>1.4.2      <span class="token comment"># 原镜像`seataio/seata-server:1.4.2`</span>
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> seata_server                                  <span class="token comment"># 容器名为'seata_server'</span>
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped                                       <span class="token comment"># 指定容器退出后的重启策略为始终重启，但是不考虑在Docker守护进程启动时就已经停止了的容器</span>
+    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>                                                      <span class="token comment"># 数据卷挂载路径设置,将本机目录映射到容器目录</span>
+      <span class="token punctuation">-</span> <span class="token string">"./seata/config:/root/seata-config"</span>
+      <span class="token punctuation">-</span> <span class="token string">"./seata/logs:/root/logs"</span>
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>                        <span class="token comment"># 设置环境变量,相当于docker run命令中的-e</span>
+      <span class="token key atrule">TZ</span><span class="token punctuation">:</span> Asia/Shanghai
+      <span class="token key atrule">LANG</span><span class="token punctuation">:</span> en_US.UTF<span class="token punctuation">-</span><span class="token number">8</span>
+      <span class="token key atrule">SEATA_IP</span><span class="token punctuation">:</span> www.zhengqingya.com <span class="token comment"># TODO 指定seata-server启动的IP, 该IP用于向注册中心注册时使用, 如nacos等</span>
+      <span class="token key atrule">SEATA_PORT</span><span class="token punctuation">:</span> <span class="token number">8091</span> <span class="token comment"># 指定seata-server启动的端口, 默认为 8091</span>
+<span class="token comment">#      STORE_MODE: file # 指定seata-server的事务日志存储方式, 支持db ,file,redis(Seata-Server 1.3及以上版本支持), 默认是 file</span>
+<span class="token comment">#      SERVER_NODE: 1 # 指定seata-server节点ID, 如 1,2,3..., 默认为 根据ip生成</span>
+<span class="token comment">#      SEATA_ENV: dev # 指定 seata-server 运行环境, 如 dev, test 等, 服务启动时会使用 registry-dev.conf 这样的配置</span>
+      <span class="token comment"># 指定配置文件位置, 如 file:/root/registry, 将会加载 /root/registry.conf 作为配置文件，</span>
+      <span class="token comment"># 如果需要同时指定 file.conf文件，需要将registry.conf的config.file.name的值改为类似file:/root/file.conf：</span>
+      <span class="token key atrule">SEATA_CONFIG_NAME</span><span class="token punctuation">:</span> file<span class="token punctuation">:</span>/root/seata<span class="token punctuation">-</span>config/registry
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>                              <span class="token comment"># 映射端口</span>
+      <span class="token punctuation">-</span> <span class="token string">"8091:8091"</span>
+    <span class="token key atrule">networks</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> seata
+</code></pre>
+<h5><a id="___seata_71"></a>配置 - - seata</h5>
+<h6><a id="fileconf_73"></a>file.conf</h6>
 <pre><code>## transaction log store, only used in seata-server
 store {
   ## store mode: file、db、redis
@@ -107,7 +140,7 @@ store {
   }
 }
 </code></pre>
-<h6><a id="registryconf_107"></a>registry.conf</h6>
+<h6><a id="registryconf_143"></a>registry.conf</h6>
 <pre><code>registry {
   # file 、nacos 、eureka、redis、zk、consul、etcd3、sofa
   type = "nacos"
@@ -205,8 +238,8 @@ config {
   }
 }
 </code></pre>
-<h5><a id="___nacos_209"></a>配置 - - nacos</h5>
-<h6><a id="configtxt_211"></a>config.txt</h6>
+<h5><a id="___nacos_245"></a>配置 - - nacos</h5>
+<h6><a id="configtxt_247"></a>config.txt</h6>
 <blockquote>
 <p>https://github.com/seata/seata/blob/develop/script/config-center/config.txt</p>
 </blockquote>
@@ -221,7 +254,7 @@ service.vgroupMapping.my_test_tx_group=default
 service.vgroupMapping.user-tx-group=default
 service.vgroupMapping.order-tx-group=default
 </code></pre>
-<h6><a id="nacosconfigsh_228"></a>nacos-config.sh</h6>
+<h6><a id="nacosconfigsh_264"></a>nacos-config.sh</h6>
 <blockquote>
 <p>https://github.com/seata/seata/blob/develop/script/config-center/nacos/nacos-config.sh</p>
 </blockquote>
@@ -346,8 +379,8 @@ fi
 <span class="token function">sh</span> nacos-config.sh -h <span class="token number">127.0</span>.0.1 -p <span class="token number">8848</span> -g SEATA_GROUP -t <span class="token builtin class-name">test</span> -u nacos -w nacos
 </code></pre>
 <p><img src="https://img-blog.csdnimg.cn/26d13169e2214763bd9aa813ecfbe408.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
-<h5><a id="___seata_361"></a>配置 - - seata数据库</h5>
-<h5><a id="seatasql_363"></a>seata.sql</h5>
+<h5><a id="___seata_397"></a>配置 - - seata数据库</h5>
+<h5><a id="seatasql_399"></a>seata.sql</h5>
 <blockquote>
 <p>https://github.com/seata/seata/blob/develop/script/server/db/mysql.sql</p>
 </blockquote>
@@ -422,8 +455,8 @@ fi
 <span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>distributed_lock<span class="token punctuation">`</span> <span class="token punctuation">(</span>lock_key<span class="token punctuation">,</span> lock_value<span class="token punctuation">,</span> expire<span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token string">'RetryRollbacking'</span><span class="token punctuation">,</span> <span class="token string">' '</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>distributed_lock<span class="token punctuation">`</span> <span class="token punctuation">(</span>lock_key<span class="token punctuation">,</span> lock_value<span class="token punctuation">,</span> expire<span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token string">'TxTimeoutCheck'</span><span class="token punctuation">,</span> <span class="token string">' '</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<h5><a id="____441"></a>配置 - - 每个微服务关联数据库</h5>
-<h5><a id="undo_logsql_443"></a>undo_log.sql</h5>
+<h5><a id="____477"></a>配置 - - 每个微服务关联数据库</h5>
+<h5><a id="undo_logsql_479"></a>undo_log.sql</h5>
 <blockquote>
 <p>tips: 需微服务 - - 每个服务中相应的数据库下存在此表</p>
 </blockquote>
@@ -444,8 +477,8 @@ fi
 </code></pre>
 <p>修改配置后，运行seata，查看nacos注册信息</p>
 <p><img src="https://img-blog.csdnimg.cn/c578c5b68f8f492d9cc95bb79e054ff0.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
-<h3><a id="SpringCloudseata_469"></a>三、SpringCloud集成seata</h3>
-<h4><a id="1pomxml_471"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<h3><a id="SpringCloudseata_505"></a>三、SpringCloud集成seata</h3>
+<h4><a id="1pomxml_507"></a>1、<code>pom.xml</code>中引入依赖</h4>
 <pre><code class="prism language-xml"><span class="token comment">&lt;!-- seata --&gt;</span>
 <span class="token comment">&lt;!-- https://mvnrepository.com/artifact/com.alibaba.cloud/spring-cloud-starter-alibaba-seata --&gt;</span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
@@ -453,7 +486,7 @@ fi
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-cloud-starter-alibaba-seata<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
 </code></pre>
-<h4><a id="2seata_482"></a>2、seata配置</h4>
+<h4><a id="2seata_518"></a>2、seata配置</h4>
 <p><img src="https://img-blog.csdnimg.cn/79f2955f5c044279adac3924fc7cadd0.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
 <blockquote>
 <p>tips: 这里只贴出其中一个user服务的配置</p>
@@ -494,7 +527,7 @@ fi
       <span class="token key atrule">username</span><span class="token punctuation">:</span> nacos
       <span class="token key atrule">password</span><span class="token punctuation">:</span> nacos
 </code></pre>
-<h4><a id="3_527"></a>3、测试分布式事务</h4>
+<h4><a id="3_563"></a>3、测试分布式事务</h4>
 <p>在主调用方加上注解<code>@GlobalTransactional</code> 即可</p>
 <p><img src="https://img-blog.csdnimg.cn/58d734432b5c42968a99e72a1419a01b.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
 <p>可访问接口文档 <a href="http://127.0.0.1:10010/doc.html">http://127.0.0.1:10010/doc.html</a> 调用测试seata分布式事务</p>
@@ -502,7 +535,7 @@ fi
 <p>tips: 小编在测试的时候，发现事务回滚有所延时，即需要等一会儿，因程序异常导致的脏数据才会回滚~</p>
 </blockquote>
 <p><img src="https://img-blog.csdnimg.cn/e05d527cfc49440687d1da4a31a7a0dd.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
-<h3><a id="demo_539"></a>本文案例demo源码</h3>
+<h3><a id="demo_575"></a>本文案例demo源码</h3>
 <p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
 <hr>
 <blockquote>

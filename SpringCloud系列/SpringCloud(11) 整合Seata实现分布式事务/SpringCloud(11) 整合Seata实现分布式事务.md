@@ -33,6 +33,42 @@ docker-compose -f docker-compose-seata.yml -p seata up -d
 
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/d903c47906ad43f2b65bd36b58f72f1b.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
 
+##### docker-compose-seata.yml
+
+```yml
+# 可参考 http://seata.io/zh-cn/docs/ops/deploy-by-docker.html
+version: '3'
+
+# 网桥 -> 方便相互通讯
+networks:
+  seata:
+    driver: bridge
+
+services:
+  seata:
+    image: registry.cn-hangzhou.aliyuncs.com/zhengqing/seata-server:1.4.2      # 原镜像`seataio/seata-server:1.4.2`
+    container_name: seata_server                                  # 容器名为'seata_server'
+    restart: unless-stopped                                       # 指定容器退出后的重启策略为始终重启，但是不考虑在Docker守护进程启动时就已经停止了的容器
+    volumes:                                                      # 数据卷挂载路径设置,将本机目录映射到容器目录
+      - "./seata/config:/root/seata-config"
+      - "./seata/logs:/root/logs"
+    environment:                        # 设置环境变量,相当于docker run命令中的-e
+      TZ: Asia/Shanghai
+      LANG: en_US.UTF-8
+      SEATA_IP: www.zhengqingya.com # TODO 指定seata-server启动的IP, 该IP用于向注册中心注册时使用, 如nacos等
+      SEATA_PORT: 8091 # 指定seata-server启动的端口, 默认为 8091
+#      STORE_MODE: file # 指定seata-server的事务日志存储方式, 支持db ,file,redis(Seata-Server 1.3及以上版本支持), 默认是 file
+#      SERVER_NODE: 1 # 指定seata-server节点ID, 如 1,2,3..., 默认为 根据ip生成
+#      SEATA_ENV: dev # 指定 seata-server 运行环境, 如 dev, test 等, 服务启动时会使用 registry-dev.conf 这样的配置
+      # 指定配置文件位置, 如 file:/root/registry, 将会加载 /root/registry.conf 作为配置文件，
+      # 如果需要同时指定 file.conf文件，需要将registry.conf的config.file.name的值改为类似file:/root/file.conf：
+      SEATA_CONFIG_NAME: file:/root/seata-config/registry
+    ports:                              # 映射端口
+      - "8091:8091"
+    networks:
+      - seata
+```
+
 ##### 配置 - - seata
 
 ###### file.conf
