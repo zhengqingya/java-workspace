@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration scan="true">
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <!-- ============================= ↓↓↓↓↓↓ 外部变量 ↓↓↓↓↓↓ ============================= -->
+
+    <!-- 应用名称 -->
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="small-tools"/>
+    <!-- 日志文件保存位置 注：前面加/ 表示以盘符为绝对路径，不加则是以项目为相对路径 -->
+    <springProperty scope="context" name="LOG_HOME" source="logging.log.home" defaultValue="logs"/>
+    <!-- 日志文件保留天数 -->
+    <springProperty scope="context" name="LOG_MAX_HISTORY_DAY" source="logging.log.max-history-day" defaultValue="30"/>
+    <!-- logstash -->
+    <springProperty scope="context" name="LOGSTASH_HOST" source="logstash.host" defaultValue="127.0.0.1"/>
+    <springProperty scope="context" name="LOGSTASH_PORT" source="logstash.port" defaultValue="5044"/>
+
+    <!-- ============================= ↓↓↓↓↓↓ 本地变量 ↓↓↓↓↓↓ ============================= -->
+
+    <!-- 日志文件输出的文件名 -->
+    <property name="LOG_FILE_NAME" value="${LOG_HOME}/${APP_NAME}.%d{yyyy-MM-dd}.log"/>
+
+    <!-- ============================= ↓↓↓↓↓↓ 日志生成配置 ↓↓↓↓↓↓ ============================= -->
+
+    <!-- 彩色日志 -->
+    <!-- 彩色日志依赖的渲染类 -->
+    <conversionRule conversionWord="clr"
+                    converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+    <conversionRule conversionWord="wex"
+                    converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+    <conversionRule conversionWord="wEx"
+                    converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
+    <!-- 彩色日志格式 -->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+
+
+    <!-- 1、设置日志控制台输出 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!--此日志appender是为开发使用，只配置最底级别，控制台输出的日志级别是大于或等于此级别的日志信息-->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!-- 设置字符集 -->
+            <charset>UTF-8</charset>
+            <!-- 格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符 -->
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <!--            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%logger{32}] %msg%n</pattern>-->
+        </encoder>
+
+
+        <!-- 替换成AspectLogbackEncoder -->
+        <!--        <encoder class="com.yomahub.tlog.core.enhance.logback.AspectLogbackEncoder">-->
+        <!--            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>-->
+        <!--        </encoder>-->
+
+    </appender>
+
+
+    <!-- 2、设置日志输出为文件： 按照每天生成日志文件 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 过滤日志 -->
+        <!--    <filter class="ch.qos.logback.classic.filter.LevelFilter">-->
+        <!--      &lt;!&ndash; 过滤的级别 &ndash;&gt;-->
+        <!--      <level>DEBUG</level>-->
+        <!--      &lt;!&ndash; 匹配时的操作：接收（记录） &ndash;&gt;-->
+        <!--      <onMatch>ACCEPT</onMatch>-->
+        <!--      &lt;!&ndash; 不匹配时的操作：拒绝（不记录） &ndash;&gt;-->
+        <!--      <onMismatch>DENY</onMismatch>-->
+        <!--    </filter>-->
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志文件输出的文件名 -->
+            <fileNamePattern>${LOG_FILE_NAME}</fileNamePattern>
+            <!-- 日志文件保留天数 -->
+            <maxHistory>${LOG_MAX_HISTORY_DAY}</maxHistory>
+        </rollingPolicy>
+
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!-- 设置字符集 -->
+            <charset>UTF-8</charset>
+            <!-- 格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符 -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+        </encoder>
+
+        <!-- 日志文件最大的大小 -->
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <MaxFileSize>100MB</MaxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+    <!-- 3、日志写入logstash -->
+    <!--    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">-->
+    <!--        <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>-->
+    <!--        <encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder"/>-->
+    <!--    </appender>-->
+
+
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
+    <!-- 日志输出级别 -->
+    <root level="DEBUG">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+        <!--        <appender-ref ref="LOGSTASH"/>-->
+    </root>
+
+    <!-- 减少部分日志 -->
+    <logger name="com.alibaba" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="springfox" level="WARN"/>
+    <logger name="com.netflix" level="WARN"/>
+    <logger name="io.swagger" level="WARN"/>
+    <logger name="sun.rmi" level="WARN"/>
+
+
+</configuration>

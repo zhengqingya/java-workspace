@@ -1,0 +1,13 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+
+
+tlog:
+  # 自动打印调用参数和时间
+  enable-invoke-time-print: true
+  # 打印上层服务名称、ip
+  pattern: '[$preApp][$preIp][$spanId][$traceId]'
