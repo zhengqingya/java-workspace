@@ -1,0 +1,10 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+
+
+logging:
+  config: classpath:log4j.properties
