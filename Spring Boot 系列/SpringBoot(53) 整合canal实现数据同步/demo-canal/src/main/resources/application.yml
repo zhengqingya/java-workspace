@@ -1,0 +1,20 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+
+  # RabbitMQ配置
+  rabbitmq:
+    addresses: www.zhengqingya.com:5672,www.zhengqingya.com:5673 # 指定client连接到的server的地址，多个以逗号分隔
+    # 填写自己安装rabbitmq时设置的账号密码，默认账号密码为`guest`
+    username: admin
+    password: admin
+    virtual-host: my_vhost # 填写自己的虚拟机名，对应可查看 `127.0.0.1:15672/#/users` 下Admin中的`Can access virtual hosts`信息
+
+
+
+canal:
+  server: www.zhengqingya.com:11111
+  destination: example

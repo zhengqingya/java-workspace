@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(53) 整合canal实现数据同步</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#dockercomposecanal_16">二、docker-compose部署canal</a></li><ul><ul><ul><li><a href="#dockercomposecanalyml_36">docker-compose-canal.yml</a></li></ul></ul></ul><li><a href="#canaladmin_99">三、`canal-admin`可视化管理</a></li><ul><li><a href="#1canalproperties_105">1、canal.properties</a></li><li><a href="#2instancepropertios_124">2、instance.propertios</a></li></ul><li><a href="#springbootcanal_142">四、springboot整合canal实现数据同步</a></li><ul><li><a href="#1pomxmlmq_144">1、`pom.xml`引入mq依赖</a></li><li><a href="#2applicationyml_153">2、`application.yml`配置</a></li><li><a href="#3mqcanal_167">3、mq监听canal消息数据</a></li><li><a href="#4_198">4、测试</a></li></ul><li><a href="#canalspringbootstarter_207">五、canal-spring-boot-starter</a></li><ul><li><a href="#1pomxml_214">1、`pom.xml`中引入依赖</a></li><li><a href="#2applicationyml_225">2、`application.yml`配置</a></li><li><a href="#3canal___233">3、监听canal数据 -- 订阅数据库增删改操作</a></li></ul><li><a href="#demo_308">本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>canal：阿里巴巴 MySQL binlog 增量订阅&amp;消费组件<br>
+<a href="https://github.com/alibaba/canal">https://github.com/alibaba/canal</a></p>
+<blockquote>
+<p>tips: 环境要求和配置参考 <a href="https://github.com/alibaba/canal/wiki/AdminGuide">https://github.com/alibaba/canal/wiki/AdminGuide</a></p>
+</blockquote>
+<p>这里额外提下Redis缓存和MySQL数据一致性解决方案</p>
+<ol>
+<li>延时双删策略</li>
+<li>异步更新缓存(基于订阅binlog的同步机制)</li>
+<li>…</li>
+</ol>
+<p>我们的canal即可作为MySQL binlog增量订阅消费组件+MQ消息队列将增量数据更新到redis</p>
+<h3><a id="dockercomposecanal_16"></a>二、docker-compose部署canal</h3>
+<blockquote>
+<p>tips: 详情可查看 <a href="https://gitee.com/zhengqingya/docker-compose">https://gitee.com/zhengqingya/docker-compose</a></p>
+</blockquote>
+<pre><code class="prism language-shell"><span class="token comment"># 准备</span>
+<span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+<span class="token builtin class-name">cd</span> docker-compose/Liunx
+
+<span class="token comment"># 导入初始化SQL</span>
+Liunx/canal/canal_admin/canal_manager.sql
+
+<span class="token comment"># 运行  (tips:先修改配置文件信息)</span>
+docker-compose -f docker-compose-canal.yml -p canal up -d
+</code></pre>
+<p>相关配置文件<br>
+<img src="https://img-blog.csdnimg.cn/1ca6dafb23fc44dcadc68ddba25050dd.png" alt="在这里插入图片描述"></p>
+<h6><a id="dockercomposecanalyml_36"></a>docker-compose-canal.yml</h6>
+<pre><code class="prism language-yml"><span class="token comment"># 可参考 https://github.com/alibaba/canal/wiki/QuickStart</span>
+
+<span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
+
+<span class="token comment"># 网桥canal -&gt; 方便相互通讯</span>
+<span class="token key atrule">networks</span><span class="token punctuation">:</span>
+  <span class="token key atrule">canal</span><span class="token punctuation">:</span>
+
+<span class="token key atrule">services</span><span class="token punctuation">:</span>
+  <span class="token key atrule">canal_admin</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> registry.cn<span class="token punctuation">-</span>hangzhou.aliyuncs.com/zhengqing/canal<span class="token punctuation">-</span>admin<span class="token punctuation">:</span>v1.1.5      <span class="token comment"># 原镜像`canal/canal-admin:v1.1.5`</span>
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> canal_admin               <span class="token comment"># 容器名为'canal_admin'</span>
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped                   <span class="token comment"># 指定容器退出后的重启策略为始终重启，但是不考虑在Docker守护进程启动时就已经停止了的容器</span>
+    <span class="token key atrule">volumes</span><span class="token punctuation">:</span> <span class="token comment"># 数据卷挂载路径设置,将本机目录映射到容器目录</span>
+      <span class="token punctuation">-</span> <span class="token string">"./canal/canal-admin/bin/startup.sh:/home/admin/canal-admin/bin/startup.sh"</span>
+      <span class="token punctuation">-</span> <span class="token string">"./canal/canal-admin/logs:/home/admin/canal-admin/logs"</span>
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span> <span class="token comment"># 设置环境变量,相当于docker run命令中的-e</span>
+      <span class="token key atrule">TZ</span><span class="token punctuation">:</span> Asia/Shanghai
+      <span class="token key atrule">LANG</span><span class="token punctuation">:</span> en_US.UTF<span class="token punctuation">-</span><span class="token number">8</span>
+      <span class="token key atrule">canal.adminUser</span><span class="token punctuation">:</span> admin
+      <span class="token key atrule">canal.adminPasswd</span><span class="token punctuation">:</span> <span class="token number">123456</span>
+      <span class="token key atrule">spring.datasource.address</span><span class="token punctuation">:</span> www.zhengqingya.com<span class="token punctuation">:</span><span class="token number">3306</span>
+      <span class="token key atrule">spring.datasource.database</span><span class="token punctuation">:</span> canal_manager
+      <span class="token key atrule">spring.datasource.username</span><span class="token punctuation">:</span> root
+      <span class="token key atrule">spring.datasource.password</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> <span class="token string">"8089:8089"</span>
+    <span class="token key atrule">networks</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> canal
+
+  <span class="token key atrule">canal_server</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> registry.cn<span class="token punctuation">-</span>hangzhou.aliyuncs.com/zhengqing/canal<span class="token punctuation">-</span>server<span class="token punctuation">:</span>v1.1.5      <span class="token comment"># 原镜像`canal/canal-server:v1.1.5`</span>
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> canal_server              <span class="token comment"># 容器名为'canal_server'</span>
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped                   <span class="token comment"># 指定容器退出后的重启策略为始终重启，但是不考虑在Docker守护进程启动时就已经停止了的容器</span>
+    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>                                  <span class="token comment"># 数据卷挂载路径设置,将本机目录映射到容器目录</span>
+      <span class="token punctuation">-</span> <span class="token string">"./canal/canal-server/logs:/home/admin/canal-server/logs"</span>
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>                              <span class="token comment"># 设置环境变量,相当于docker run命令中的-e</span>
+      <span class="token key atrule">TZ</span><span class="token punctuation">:</span> Asia/Shanghai
+      <span class="token key atrule">LANG</span><span class="token punctuation">:</span> en_US.UTF<span class="token punctuation">-</span><span class="token number">8</span>
+      <span class="token key atrule">canal.admin.manager</span><span class="token punctuation">:</span> canal_admin<span class="token punctuation">:</span><span class="token number">8089</span>
+      <span class="token key atrule">canal.admin.port</span><span class="token punctuation">:</span> <span class="token number">11110</span>
+      <span class="token key atrule">canal.admin.user</span><span class="token punctuation">:</span> admin
+      <span class="token key atrule">canal.admin.passwd</span><span class="token punctuation">:</span> 6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> <span class="token string">"11110:11110"</span>
+      <span class="token punctuation">-</span> <span class="token string">"11111:11111"</span>
+      <span class="token punctuation">-</span> <span class="token string">"11112:11112"</span>
+    <span class="token key atrule">depends_on</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> canal_admin
+    <span class="token key atrule">links</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> canal_admin
+    <span class="token key atrule">networks</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> canal
+</code></pre>
+<p>访问地址：<code>http://ip地址:8089</code><br>
+默认登录账号密码：<code>admin/123456</code></p>
+<p><img src="https://img-blog.csdnimg.cn/60947615cd744a5eb3f29e4c6e7b8737.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="canaladmin_99"></a>三、<code>canal-admin</code>可视化管理</h3>
+<blockquote>
+<p>tips: 页面使用自行多点点就会了<code>^_^</code><br>
+将数据投递到RabbitMQ配置为例，附带些其中重要的配置信息<br>
+mq的交换机和队列可通过后面java代码自动生成，无需自己手动建立</p>
+</blockquote>
+<h4><a id="1canalproperties_105"></a>1、canal.properties</h4>
+<pre><code class="prism language-yml"><span class="token comment"># canal admin config</span>
+<span class="token comment">#canal.admin.manager = 127.0.0.1:8089</span>
+canal.admin.port = 11110
+canal.admin.user = admin
+canal.admin.passwd = 6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9
+
+<span class="token comment"># tcp, kafka, rocketMQ, rabbitMQ</span>
+canal.serverMode = rabbitMQ
+
+rabbitmq.host = www.zhengqingya.com<span class="token punctuation">:</span><span class="token number">5672</span>
+rabbitmq.virtual.host = my_vhost
+rabbitmq.exchange = canal.exchange
+rabbitmq.username = admin
+rabbitmq.password = admin
+</code></pre>
+<h4><a id="2instancepropertios_124"></a>2、instance.propertios</h4>
+<pre><code class="prism language-yml">canal.instance.master.address=www.zhengqingya.com<span class="token punctuation">:</span><span class="token number">3306</span>
+<span class="token comment"># username/password</span>
+canal.instance.dbUsername=canal
+canal.instance.dbPassword=canal
+canal.instance.connectionCharset = UTF<span class="token punctuation">-</span><span class="token number">8</span>
+
+<span class="token comment"># table regex 只同步test数据库下的t_user表</span>
+canal.instance.filter.regex=test\\.t_user
+<span class="token comment"># table black regex</span>
+canal.instance.filter.black.regex=mysql\\.slave_.*
+
+<span class="token comment"># mq config</span>
+canal.mq.topic=canal_routing_key
+</code></pre>
+<h3><a id="springbootcanal_142"></a>四、springboot整合canal实现数据同步</h3>
+<h4><a id="1pomxmlmq_144"></a>1、<code>pom.xml</code>引入mq依赖</h4>
+<pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-amqp<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_153"></a>2、<code>application.yml</code>配置</h4>
+<pre><code class="prism language-yml"><span class="token comment"># RabbitMQ配置</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">rabbitmq</span><span class="token punctuation">:</span>
+    <span class="token key atrule">addresses</span><span class="token punctuation">:</span> www.zhengqingya.com<span class="token punctuation">:</span><span class="token number">5672</span><span class="token punctuation">,</span>www.zhengqingya.com<span class="token punctuation">:</span><span class="token number">5673</span> <span class="token comment"># 指定client连接到的server的地址，多个以逗号分隔</span>
+    <span class="token comment"># 填写自己安装rabbitmq时设置的账号密码，默认账号密码为`guest`</span>
+    <span class="token key atrule">username</span><span class="token punctuation">:</span> admin
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> admin
+    <span class="token key atrule">virtual-host</span><span class="token punctuation">:</span> my_vhost <span class="token comment"># 填写自己的虚拟机名，对应可查看 `127.0.0.1:15672/#/users` 下Admin中的`Can access virtual hosts`信息</span>
+</code></pre>
+<h4><a id="3mqcanal_167"></a>3、mq监听canal消息数据</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">CanalRabbitMqListener</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@RabbitListener</span><span class="token punctuation">(</span>bindings <span class="token operator">=</span> <span class="token punctuation">{</span>
+            <span class="token annotation punctuation">@QueueBinding</span><span class="token punctuation">(</span>
+                    value <span class="token operator">=</span> <span class="token annotation punctuation">@Queue</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>CANAL_QUEUE<span class="token punctuation">,</span> durable <span class="token operator">=</span> <span class="token string">"true"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    exchange <span class="token operator">=</span> <span class="token annotation punctuation">@Exchange</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>CANAL_EXCHANGE<span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    key <span class="token operator">=</span> <span class="token class-name">MqConstant</span><span class="token punctuation">.</span>CANAL_ROUTING_KEY
+            <span class="token punctuation">)</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">handleCanalDataChange</span><span class="token punctuation">(</span><span class="token class-name">String</span> message<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"[canal] 接收消息: {}"</span><span class="token punctuation">,</span> JSON<span class="token punctuation">.</span><span class="token function">toJSONString</span><span class="token punctuation">(</span>message<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">MqConstant</span> <span class="token punctuation">{</span>
+
+    <span class="token class-name">String</span> CANAL_EXCHANGE <span class="token operator">=</span> <span class="token string">"canal.exchange"</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> CANAL_QUEUE <span class="token operator">=</span> <span class="token string">"canal_queue"</span><span class="token punctuation">;</span>
+    <span class="token class-name">String</span> CANAL_ROUTING_KEY <span class="token operator">=</span> <span class="token string">"canal_routing_key"</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4_198"></a>4、测试</h4>
+<p>先启动项目让程序自动建立所需mq中的交换机和队列<br>
+<img src="https://img-blog.csdnimg.cn/39b965fd44a24ae4b415d7bdb467df11.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+再修改canal监听的表数据<br>
+<img src="https://img-blog.csdnimg.cn/9a16248114814e63a9039e721a36b585.png" alt="在这里插入图片描述"><br>
+查看程序监听的mq消息数据如下，拿到数据就可以进行数据解析处理了…<br>
+<img src="https://img-blog.csdnimg.cn/8212f62cb7f54ab7b50067f45ea1ad05.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="canalspringbootstarter_207"></a>五、canal-spring-boot-starter</h3>
+<blockquote>
+<p>tips: 可参考 <a href="https://github.com/NormanGyllenhaal/canal-client">https://github.com/NormanGyllenhaal/canal-client</a><br>
+此方式需将<code>canal.properties</code>配置文件中的<code>canal.serverMode</code>属性值修改为<code>tcp</code><br>
+<img src="https://img-blog.csdnimg.cn/c96d0a73dfbc4f40b30f394b324c954e.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+</blockquote>
+<h4><a id="1pomxml_214"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- https://mvnrepository.com/artifact/top.javatool/canal-spring-boot-starter --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>top.javatool<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>canal-spring-boot-starter<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>1.2.1-RELEASE<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_225"></a>2、<code>application.yml</code>配置</h4>
+<pre><code class="prism language-yml"><span class="token key atrule">canal</span><span class="token punctuation">:</span>
+  <span class="token key atrule">server</span><span class="token punctuation">:</span> www.zhengqingya.com<span class="token punctuation">:</span><span class="token number">11111</span>
+  <span class="token key atrule">destination</span><span class="token punctuation">:</span> example
+</code></pre>
+<h4><a id="3canal___233"></a>3、监听canal数据 – 订阅数据库增删改操作</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token annotation punctuation">@CanalTable</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token string">"t_user"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">UserHandler</span> <span class="token keyword">implements</span> <span class="token class-name">EntryHandler</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">User</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">insert</span><span class="token punctuation">(</span><span class="token class-name">User</span> user<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"insert message  {}"</span><span class="token punctuation">,</span> user<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">update</span><span class="token punctuation">(</span><span class="token class-name">User</span> before<span class="token punctuation">,</span> <span class="token class-name">User</span> after<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"update before {} "</span><span class="token punctuation">,</span> before<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"update after {}"</span><span class="token punctuation">,</span> after<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">delete</span><span class="token punctuation">(</span><span class="token class-name">User</span> user<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"delete  {}"</span><span class="token punctuation">,</span> user<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Data</span>
+<span class="token annotation punctuation">@Table</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">"t_user"</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">User</span> <span class="token keyword">implements</span> <span class="token class-name">Serializable</span> <span class="token punctuation">{</span>
+
+    <span class="token comment">/**
+     * 主键
+     */</span>
+    <span class="token annotation punctuation">@Id</span>
+    <span class="token annotation punctuation">@GeneratedValue</span><span class="token punctuation">(</span>strategy <span class="token operator">=</span> <span class="token class-name">GenerationType</span><span class="token punctuation">.</span>IDENTITY<span class="token punctuation">)</span>
+    <span class="token annotation punctuation">@Column</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">"user_id"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">Integer</span> userId<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 用户名
+     */</span>
+    <span class="token annotation punctuation">@Column</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">"username"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> username<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 密码
+     */</span>
+    <span class="token annotation punctuation">@Column</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">"password"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> password<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 性别
+     */</span>
+    <span class="token annotation punctuation">@Column</span><span class="token punctuation">(</span>name <span class="token operator">=</span> <span class="token string">"sex"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> <span class="token class-name">Integer</span> sex<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 备注
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> remark<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 时间
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">Date</span> date<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>经测试发现这个jar存在一些bug，ex：针对表字段，数据原本为空，修改为有值的时候，如果java这边用非String字段类型去接收会报错！<br>
+<img src="https://img-blog.csdnimg.cn/c32fedd8d5054a69a98ddc35c92de54c.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="demo_308"></a>本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+如果心胸不似海，又怎能有海一样的事业。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
