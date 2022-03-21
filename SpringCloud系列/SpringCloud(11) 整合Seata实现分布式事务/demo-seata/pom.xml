@@ -214,21 +214,25 @@
 
 
         <!-- seata -->
+        <!-- 注：如果出现rpc调用找不到服务问题，可考虑是否与zipkin依赖冲突，尝试注释zipkin相关依赖 -->
         <!-- https://mvnrepository.com/artifact/com.alibaba.cloud/spring-cloud-starter-alibaba-seata -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
-            <!--            <version>2021.1</version>-->
-            <!--            <version>2.2.6.RELEASE</version>-->
+            <version>2.2.1.RELEASE</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.seata</groupId>
+                    <artifactId>seata-spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
-
-
         <!-- https://mvnrepository.com/artifact/io.seata/seata-spring-boot-starter -->
-        <!--        <dependency>-->
-        <!--            <groupId>io.seata</groupId>-->
-        <!--            <artifactId>seata-spring-boot-starter</artifactId>-->
-        <!--            <version>1.4.2</version>-->
-        <!--        </dependency>-->
+        <dependency>
+            <groupId>io.seata</groupId>
+            <artifactId>seata-spring-boot-starter</artifactId>
+            <version>1.4.2</version>
+        </dependency>
     </dependencies>
 
 

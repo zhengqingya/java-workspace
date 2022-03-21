@@ -81,6 +81,7 @@ seata:
       namespace: ${spring.profiles.active}
       username: nacos
       password: nacos
+      dataId: seataServer.properties
   registry:
     type: nacos
     nacos:
