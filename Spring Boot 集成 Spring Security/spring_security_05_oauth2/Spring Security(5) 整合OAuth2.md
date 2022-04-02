@@ -2,7 +2,7 @@
 
 ### 一、前言
 
-1.  [Spring Security(1) 入门体验](https://blog.csdn.net/qq_38225558/article/details/101754743)
+1. [Spring Security(1) 入门体验](https://blog.csdn.net/qq_38225558/article/details/101754743)
 2. [Spring Security(2) 自定义登录认证](https://blog.csdn.net/qq_38225558/article/details/102542072)
 3. [Spring Security(3) 动态url权限控制](https://blog.csdn.net/qq_38225558/article/details/102637637)
 4. [Spring Security(4) 整合JWT](https://zhengqing.blog.csdn.net/article/details/102701741)
