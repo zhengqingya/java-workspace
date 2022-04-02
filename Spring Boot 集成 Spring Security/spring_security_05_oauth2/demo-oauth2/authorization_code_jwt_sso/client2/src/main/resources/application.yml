@@ -1,0 +1,27 @@
+server:
+  port: 10022
+  servlet:
+    session:
+      cookie:
+        name: client2
+
+spring:
+  application:
+    name: client2
+  profiles:
+    active: test
+
+security:
+  oauth2:
+    client:
+      # 客户端 id
+      client-id: zq_app_id
+      # 客户端密码
+      client-secret: zq_app_secret
+      # 用户授权的端点
+      user-authorization-uri: http://127.0.0.1:10010/oauth/authorize
+      # 获取令牌的端点
+      access-token-uri: http://127.0.0.1:10010/oauth/token
+    resource:
+      # 获取用户信息的接口（从资源服务器上获取）
+      user-info-uri: http://127.0.0.1:10030/user

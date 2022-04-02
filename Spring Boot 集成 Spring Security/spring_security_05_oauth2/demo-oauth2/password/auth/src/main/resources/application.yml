@@ -1,0 +1,8 @@
+server:
+  port: 10010
+
+spring:
+  application:
+    name: auth
+  profiles:
+    active: test

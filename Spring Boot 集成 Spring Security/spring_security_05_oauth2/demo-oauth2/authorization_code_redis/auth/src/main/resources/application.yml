@@ -1,0 +1,70 @@
+server:
+  port: 10010
+
+spring:
+  application:
+    name: auth
+  profiles:
+    active: test
+
+  # Redis数据源
+  redis:
+    # Redis数据库索引（默认为0）
+    database: 0
+    # Redis服务器地址
+    host: 127.0.0.1
+    # Redis服务器连接端口
+    port: 6379
+    timeout: 6000
+    # Redis服务器连接密码（默认为空）
+    password:
+    jedis:
+      pool:
+        max-active: 1000  # 连接池最大连接数（使用负值表示没有限制）
+        max-wait: -1      # 连接池最大阻塞等待时间（使用负值表示没有限制）
+        max-idle: 10      # 连接池中的最大空闲连接
+        min-idle: 5       # 连接池中的最小空闲连接
+
+  # MySQL数据源配置
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/oauth2?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver
+
+
+
+# mybatis-plus相关配置
+mybatis-plus:
+  # xml扫描，多个目录用逗号或者分号分隔（告诉 Mapper 所对应的 XML 文件位置）
+  mapper-locations: classpath:**/*Mapper.xml
+  # 实体扫描，多个package用逗号或者分号分隔
+  typeAliasesPackage: com.zhengqing.*.entity
+  # typeEnumsPackage: com.zhengqing.*.**.enumeration
+  # 以下配置均有默认值,可以不设置
+  global-config:
+    # 关闭MP3.0+自带的banner
+    banner: false
+    db-config:
+      # 主键类型  0:"数据库ID自增", 1:"不操作", 2:"用户输入ID",3:"数字型snowflake", 4:"全局唯一ID UUID", 5:"字符串型snowflake";
+      id-type: auto
+      # 字段策略
+      insert-strategy: not_null
+      update-strategy: not_null
+      select-strategy: not_null
+      # 驼峰下划线转换
+      table-underline: true
+      # 逻辑删除配置
+      logic-delete-field: isDeleted    # 全局逻辑删除的实体字段名
+      logic-delete-value: 1          # 逻辑删除全局值（1表示已删除，默认为 1）
+      logic-not-delete-value: 0      # 逻辑未删除全局值（0表示未删除，默认为 0）
+  configuration:
+    # 是否开启自动驼峰命名规则映射:从数据库列名到Java属性驼峰命名的类似映射
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    # 如果查询结果中包含空值的列，则 MyBatis 在映射的时候，不会映射这个字段
+    call-setters-on-nulls: true
+    # 这个配置会将执行的sql打印出来，在开发或测试的时候可以用
+    #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 解决oracle更新数据为null时无法转换报错，mysql不会出现此情况
+    jdbc-type-for-null: 'null'

@@ -1,0 +1,8 @@
+server:
+  port: 10020
+
+spring:
+  application:
+    name: client
+  profiles:
+    active: test

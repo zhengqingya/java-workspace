@@ -1,0 +1,752 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring Security(5) 整合OAuth2</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#OAuth2_10">二、什么是OAuth2？</a></li><li><a href="#_16">三、应用场景</a></li><li><a href="#_20">四、三部分</a></li><li><a href="#_26">五、四种授权模式</a></li><ul><li><a href="#1_authorization_code_31">1. 授权码模式（authorization code）</a></li><li><a href="#2_implicit_39">2. 简化模式（implicit）</a></li><li><a href="#3_resource_owner_password_credentials_46">3. 密码模式（resource owner password credentials）</a></li><li><a href="#4_client_credentials_52">4. 客户端模式（client credentials）</a></li></ul><li><a href="#_58">六、编程</a></li><ul><li><a href="#1_113">1、授权服务</a></li><ul><li><a href="#a_115">a、引入依赖</a></li><li><a href="#bapplicationyml_150">b、`application.yml`配置</a></li><li><a href="#cSecurity__167">c、Security 核心配置类</a></li><li><a href="#dtoken_214">d、配置生成token存储</a></li><li><a href="#eJWT_254">e、自定义JWT返回信息</a></li><li><a href="#fJWT_274">f、配置添加JWT额外信息</a></li><li><a href="#j_291">j、授权服务器配置</a></li></ul><li><a href="#2_410">2、资源服务</a></li><ul><li><a href="#a_412">a、引入依赖</a></li><li><a href="#bapplicationyml_428">b、`application.yml`配置</a></li><li><a href="#ctoken_439">c、配置生成token存储</a></li><li><a href="#d_476">d、资源服务器配置</a></li><li><a href="#eapi_523">e、测试api</a></li></ul><li><a href="#3_540">3、第三方应用</a></li><ul><li><a href="#a_542">a、引入依赖</a></li><li><a href="#bapplicationyml_551">b、`application.yml`配置</a></li><li><a href="#cindexhtml_562">c、index.html</a></li><li><a href="#dapi_589">d、测试api</a></li><li><a href="#eToken_610">e、Token获取和定时刷新任务</a></li></ul><li><a href="#4_707">4、测试</a></li></ul><li><a href="#demo_797">七、本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<ol>
+<li><a href="https://blog.csdn.net/qq_38225558/article/details/101754743">Spring Security(1) 入门体验</a></li>
+<li><a href="https://blog.csdn.net/qq_38225558/article/details/102542072">Spring Security(2) 自定义登录认证</a></li>
+<li><a href="https://blog.csdn.net/qq_38225558/article/details/102637637">Spring Security(3) 动态url权限控制</a></li>
+<li><a href="https://zhengqing.blog.csdn.net/article/details/102701741">Spring Security(4) 整合JWT</a></li>
+</ol>
+<h3><a id="OAuth2_10"></a>二、什么是OAuth2？</h3>
+<p>OAuth 是一个开放标准，允许用户授权第三方应用访问他们在某网站上存储的私密资源（ex:用户昵称、头像等），在这个过程中无需将用户名和密码提供给第三方应用。</p>
+<p>即以令牌token换资源信息数据。</p>
+<h3><a id="_16"></a>三、应用场景</h3>
+<p>第三方应用授权登录，ex：QQ、微信授权登录</p>
+<h3><a id="_20"></a>四、三部分</h3>
+<ol>
+<li>第三方应用</li>
+<li>授权服务器</li>
+<li>资源服务器</li>
+</ol>
+<h3><a id="_26"></a>五、四种授权模式</h3>
+<p><img src="https://img-blog.csdnimg.cn/d444ce23bca04ec08d7668ef9df6ac20.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h4><a id="1_authorization_code_31"></a>1. 授权码模式（authorization code）</h4>
+<blockquote>
+<p>常用模式，主流第三方验证</p>
+</blockquote>
+<ol>
+<li>第三方应用引导用户跳转到授权服务器的授权页面，授权后，授权服务器生成认证码code，然后携带code重定向返回</li>
+<li>第三方应用使用认证码code和自身应用凭证(app_id和app_secret)到授权服务器换取访问令牌(access_token)和更新令牌(refresh_token)</li>
+<li>第三方应用使用访问令牌(access_token)去资源服务器获取资源信息(ex:用户昵称，头像等)</li>
+</ol>
+<h4><a id="2_implicit_39"></a>2. 简化模式（implicit）</h4>
+<blockquote>
+<p>适用于只有前端，前端单方面即可完成</p>
+</blockquote>
+<ol>
+<li>用户在第三方网站上点击授权跳转授权服务器，授权后，携带访问令牌(access_token)返回第三方网站</li>
+<li>第三方网站再携带 access_token 去资源服务器获取用户信息(昵称，头像等)</li>
+</ol>
+<h4><a id="3_resource_owner_password_credentials_46"></a>3. 密码模式（resource owner password credentials）</h4>
+<blockquote>
+<p>适用于自家公司搭建的授权服务器，给兄弟公司用</p>
+</blockquote>
+<p>直接使用用户名/密码从授权服务器获取访问令牌(access_token)</p>
+<h4><a id="4_client_credentials_52"></a>4. 客户端模式（client credentials）</h4>
+<blockquote>
+<p>此过程中无需用户参与，一般用于提供给完全信任的服务端服务</p>
+</blockquote>
+<p>客户端请求就返回访问令牌(access_token)</p>
+<h3><a id="_58"></a>六、编程</h3>
+<blockquote>
+<p>参考 <a href="https://mp.weixin.qq.com/mp/appmsgalbum?__biz=MzI1NDY0MTkzNQ==&amp;action=getalbum&amp;album_id=1319833457266163712">https://mp.weixin.qq.com/mp/appmsgalbum?__biz=MzI1NDY0MTkzNQ==&amp;action=getalbum&amp;album_id=1319833457266163712</a><br>
+<code>^_^</code>建议跟着这个大佬的OAuth2系列学习下<code>^_^</code></p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/b5008ecd11d44287878b789424cd2b31.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_16,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+
+<table>
+<thead>
+<tr>
+<th align="left">项目</th>
+<th align="left">端口</th>
+<th align="left">备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">auth</td>
+<td align="left">10010</td>
+<td align="left">授权服务器</td>
+</tr>
+<tr>
+<td align="left">client</td>
+<td align="left">10020</td>
+<td align="left">第三方应用</td>
+</tr>
+<tr>
+<td align="left">user</td>
+<td align="left">10030</td>
+<td align="left">资源服务器</td>
+</tr>
+</tbody>
+</table><p><code>oauth2.sql</code></p>
+<pre><code class="prism language-sql"><span class="token keyword">SET</span> NAMES utf8mb4<span class="token punctuation">;</span>
+<span class="token keyword">SET</span> FOREIGN_KEY_CHECKS <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+
+<span class="token comment">-- 建库</span>
+<span class="token keyword">create</span> <span class="token keyword">database</span> <span class="token keyword">if</span> <span class="token operator">not</span> <span class="token keyword">exists</span> oauth2 <span class="token keyword">default</span> <span class="token keyword">charset</span> <span class="token operator">=</span> utf8mb4<span class="token punctuation">;</span>
+<span class="token keyword">use</span> oauth2<span class="token punctuation">;</span>
+
+
+<span class="token comment">-- ----------------------------</span>
+<span class="token comment">-- Table structure for oauth_client_details</span>
+<span class="token comment">-- ----------------------------</span>
+<span class="token keyword">DROP</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token keyword">EXISTS</span> <span class="token identifier"><span class="token punctuation">`</span>oauth_client_details<span class="token punctuation">`</span></span><span class="token punctuation">;</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token identifier"><span class="token punctuation">`</span>oauth_client_details<span class="token punctuation">`</span></span>  <span class="token punctuation">(</span>
+     <span class="token identifier"><span class="token punctuation">`</span>client_id<span class="token punctuation">`</span></span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">256</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8 <span class="token keyword">COLLATE</span> utf8_general_ci <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'客户端ID，唯一标识'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>client_secret<span class="token punctuation">`</span></span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">256</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8 <span class="token keyword">COLLATE</span> utf8_general_ci <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'客户端访问秘钥，BCryptPasswordEncoder加密算法加密'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>resource_ids<span class="token punctuation">`</span></span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">256</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8 <span class="token keyword">COLLATE</span> utf8_general_ci <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'可访问资源id(英文逗号分隔)'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>scope<span class="token punctuation">`</span></span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">256</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8 <span class="token keyword">COLLATE</span> utf8_general_ci <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'授权范围(英文逗号分隔)'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>authorized_grant_types<span class="token punctuation">`</span></span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">256</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8 <span class="token keyword">COLLATE</span> utf8_general_ci <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'授权类型(英文逗号分隔)'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>web_server_redirect_uri<span class="token punctuation">`</span></span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">256</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8 <span class="token keyword">COLLATE</span> utf8_general_ci <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'重定向uri'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>authorities<span class="token punctuation">`</span></span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">256</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8 <span class="token keyword">COLLATE</span> utf8_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'@PreAuthorize(\"hasAuthority(\'admin\')\")可以在方法上标志 用户或者说client 需要说明样的权限\r\n\n\n指定客户端所拥有的Spring Security的权限值\r\n(英文逗号分隔)'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>access_token_validity<span class="token punctuation">`</span></span> <span class="token keyword">int</span><span class="token punctuation">(</span><span class="token number">11</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'令牌有效期(单位:秒)'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>refresh_token_validity<span class="token punctuation">`</span></span> <span class="token keyword">int</span><span class="token punctuation">(</span><span class="token number">11</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'刷新令牌有效期(单位:秒)'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>additional_information<span class="token punctuation">`</span></span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">4096</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8 <span class="token keyword">COLLATE</span> utf8_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'预留字段,在Oauth的流程中没有实际的使用(JSON格式数据)'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>autoapprove<span class="token punctuation">`</span></span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">256</span><span class="token punctuation">)</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> utf8 <span class="token keyword">COLLATE</span> utf8_general_ci <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'设置用户是否自动Approval操作, 默认值为 \'false\'\r\n可选值包括 \'true\',\'false\', \'read\',\'write\'.\r\n该字段只适用于grant_type=\"authorization_code\"的情况,当用户登录成功后,若该值为\'true\'或支持的scope值,则会跳过用户Approve的页面, 直接授权'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>create_time<span class="token punctuation">`</span></span> <span class="token keyword">datetime</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token keyword">CURRENT_TIMESTAMP</span> <span class="token keyword">COMMENT</span> <span class="token string">'创建时间'</span><span class="token punctuation">,</span>
+     <span class="token identifier"><span class="token punctuation">`</span>update_time<span class="token punctuation">`</span></span> <span class="token keyword">datetime</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token boolean">NULL</span> <span class="token keyword">ON</span> <span class="token keyword">UPDATE</span> <span class="token keyword">CURRENT_TIMESTAMP</span> <span class="token keyword">COMMENT</span> <span class="token string">'更新时间'</span><span class="token punctuation">,</span>
+     <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token identifier"><span class="token punctuation">`</span>client_id<span class="token punctuation">`</span></span><span class="token punctuation">)</span> <span class="token keyword">USING</span> <span class="token keyword">BTREE</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span> <span class="token operator">=</span> <span class="token keyword">InnoDB</span> <span class="token keyword">CHARACTER</span> <span class="token keyword">SET</span> <span class="token operator">=</span> utf8 <span class="token keyword">COLLATE</span> <span class="token operator">=</span> utf8_general_ci ROW_FORMAT <span class="token operator">=</span> Dynamic<span class="token punctuation">;</span>
+
+<span class="token comment">-- ----------------------------</span>
+<span class="token comment">-- Records of oauth_client_details</span>
+<span class="token comment">-- ----------------------------</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token identifier"><span class="token punctuation">`</span>oauth_client_details<span class="token punctuation">`</span></span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token string">'zq_app_id'</span><span class="token punctuation">,</span> <span class="token string">'$2a$10$kdh16TzZoILQmaC4VkKdq.Ah2/u4LBbNJ7lpTqC8NXZVXKiu2LnVa'</span><span class="token punctuation">,</span> <span class="token string">'res1'</span><span class="token punctuation">,</span> <span class="token string">'all'</span><span class="token punctuation">,</span> <span class="token string">'authorization_code,refresh_token'</span><span class="token punctuation">,</span> <span class="token string">'http://127.0.0.1:10020/index.html'</span><span class="token punctuation">,</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span> <span class="token number">3600</span><span class="token punctuation">,</span> <span class="token number">259200</span><span class="token punctuation">,</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span> <span class="token boolean">NULL</span><span class="token punctuation">,</span> <span class="token string">'2022-04-02 09:31:10'</span><span class="token punctuation">,</span> <span class="token string">'2022-04-02 09:34:22'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">SET</span> FOREIGN_KEY_CHECKS <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+</code></pre>
+<h4><a id="1_113"></a>1、授权服务</h4>
+<h5><a id="a_115"></a>a、引入依赖</h5>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!--Spring Security --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-security<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- OAuth2 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.cloud<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-cloud-starter-oauth2<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.security.oauth<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-security-oauth2<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token comment">&lt;!-- 指明版本，解决redis存储出现的问题：java.lang.NoSuchMethodError: org.springframework.data.redis.connection.RedisConnection.set([B[B)V --&gt;</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>2.3.3.RELEASE<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- 数据库相关 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-jdbc<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+<span class="token comment">&lt;!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>mysql<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>mysql-connector-java<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>5.1.40<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h5><a id="bapplicationyml_150"></a>b、<code>application.yml</code>配置</h5>
+<pre><code class="prism language-yml"><span class="token key atrule">server</span><span class="token punctuation">:</span>
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">10010</span>
+
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">application</span><span class="token punctuation">:</span>
+    <span class="token key atrule">name</span><span class="token punctuation">:</span> auth
+  <span class="token comment"># MySQL数据源配置</span>
+  <span class="token key atrule">datasource</span><span class="token punctuation">:</span>
+    <span class="token key atrule">url</span><span class="token punctuation">:</span> jdbc<span class="token punctuation">:</span>mysql<span class="token punctuation">:</span>//127.0.0.1<span class="token punctuation">:</span>3306/oauth2<span class="token punctuation">?</span>allowMultiQueries=true<span class="token important">&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false</span> <span class="token comment"># MySQL在高版本需要指明是否进行SSL连接 解决则加上 &amp;useSSL=false</span>
+    <span class="token key atrule">username</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">password</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">driver-class-name</span><span class="token punctuation">:</span> com.mysql.jdbc.Driver
+</code></pre>
+<h5><a id="cSecurity__167"></a>c、Security 核心配置类</h5>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">SecurityConfig</span> <span class="token keyword">extends</span> <span class="token class-name">WebSecurityConfigurerAdapter</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">PasswordEncoder</span> <span class="token function">passwordEncoder</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">BCryptPasswordEncoder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 配置用户 -- 校验用户
+     * 校验客户端见 {@link com.zhengqing.auth.config.AuthorizationServerConfig#configure(org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer)}
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">configure</span><span class="token punctuation">(</span><span class="token class-name">AuthenticationManagerBuilder</span> auth<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        auth<span class="token punctuation">.</span><span class="token function">inMemoryAuthentication</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                <span class="token comment">// admin</span>
+                <span class="token punctuation">.</span><span class="token function">withUser</span><span class="token punctuation">(</span><span class="token string">"admin"</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">password</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">BCryptPasswordEncoder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span><span class="token string">"123456"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">roles</span><span class="token punctuation">(</span><span class="token string">"admin"</span><span class="token punctuation">)</span>
+                <span class="token comment">// test</span>
+                <span class="token punctuation">.</span><span class="token function">and</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">withUser</span><span class="token punctuation">(</span><span class="token string">"test"</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">password</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">BCryptPasswordEncoder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span><span class="token string">"123456"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">roles</span><span class="token punctuation">(</span><span class="token string">"test"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">AuthenticationManager</span> <span class="token function">authenticationManagerBean</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">authenticationManagerBean</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 权限配置
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">configure</span><span class="token punctuation">(</span><span class="token class-name">HttpSecurity</span> http<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 禁用CSRF 表单登录</span>
+        http<span class="token punctuation">.</span><span class="token function">csrf</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">disable</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">formLogin</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a id="dtoken_214"></a>d、配置生成token存储</h5>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AccessTokenConfig</span> <span class="token punctuation">{</span>
+
+<span class="token comment">//    @Resource</span>
+<span class="token comment">//    RedisConnectionFactory redisConnectionFactory;</span>
+
+    <span class="token comment">/**
+     * JWT 字符串生成时所需签名
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">String</span> SIGNING_KEY <span class="token operator">=</span> <span class="token string">"zhengqingya"</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">TokenStore</span> <span class="token function">tokenStore</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 内存</span>
+<span class="token comment">//        return new InMemoryTokenStore();</span>
+        <span class="token comment">// redis</span>
+<span class="token comment">//        return new RedisTokenStore(this.redisConnectionFactory);</span>
+        <span class="token comment">// jwt -- 无状态登录，服务端不需要保存信息</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">JwtTokenStore</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">jwtAccessTokenConverter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 实现将用户信息和 JWT 进行转换（将用户信息转为 jwt 字符串，或者从 jwt 字符串提取出用户信息）
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">JwtAccessTokenConverter</span> <span class="token function">jwtAccessTokenConverter</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 原生jwt</span>
+<span class="token comment">//        JwtAccessTokenConverter converter = new JwtAccessTokenConverter();</span>
+        <span class="token comment">// 自定义JWT返回信息</span>
+        <span class="token class-name">JwtAccessTokenConverter</span> converter <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MyJwt</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        converter<span class="token punctuation">.</span><span class="token function">setSigningKey</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>SIGNING_KEY<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> converter<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a id="eJWT_254"></a>e、自定义JWT返回信息</h5>
+<pre><code class="prism language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MyJwt</span> <span class="token keyword">extends</span> <span class="token class-name">JwtAccessTokenConverter</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">OAuth2AccessToken</span> <span class="token function">enhance</span><span class="token punctuation">(</span><span class="token class-name">OAuth2AccessToken</span> accessToken<span class="token punctuation">,</span> <span class="token class-name">OAuth2Authentication</span> authentication<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">Object</span><span class="token punctuation">&gt;</span></span> additionalInformation <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">LinkedHashMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">Object</span><span class="token punctuation">&gt;</span></span> info <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">LinkedHashMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        info<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"author"</span><span class="token punctuation">,</span> <span class="token string">"zhengqingya"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        info<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"gitee"</span><span class="token punctuation">,</span> <span class="token string">"https://gitee.com/zhengqingya"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        info<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"user"</span><span class="token punctuation">,</span> <span class="token class-name">SecurityContextHolder</span><span class="token punctuation">.</span><span class="token function">getContext</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getAuthentication</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getPrincipal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        additionalInformation<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"info"</span><span class="token punctuation">,</span> info<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token class-name">DefaultOAuth2AccessToken</span><span class="token punctuation">)</span> accessToken<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setAdditionalInformation</span><span class="token punctuation">(</span>additionalInformation<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">enhance</span><span class="token punctuation">(</span>accessToken<span class="token punctuation">,</span> authentication<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a id="fJWT_274"></a>f、配置添加JWT额外信息</h5>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Component</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">CustomAdditionalInformation</span> <span class="token keyword">implements</span> <span class="token class-name">TokenEnhancer</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token class-name">OAuth2AccessToken</span> <span class="token function">enhance</span><span class="token punctuation">(</span><span class="token class-name">OAuth2AccessToken</span> accessToken<span class="token punctuation">,</span> <span class="token class-name">OAuth2Authentication</span> authentication<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">Object</span><span class="token punctuation">&gt;</span></span> info <span class="token operator">=</span> accessToken<span class="token punctuation">.</span><span class="token function">getAdditionalInformation</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        info<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token string">"author"</span><span class="token punctuation">,</span> <span class="token string">"zhengqingya"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token class-name">DefaultOAuth2AccessToken</span><span class="token punctuation">)</span> accessToken<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">setAdditionalInformation</span><span class="token punctuation">(</span>info<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> accessToken<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a id="j_291"></a>j、授权服务器配置</h5>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token comment">// 开启授权服务器的自动化配置</span>
+<span class="token annotation punctuation">@EnableAuthorizationServer</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AuthorizationServerConfig</span> <span class="token keyword">extends</span> <span class="token class-name">AuthorizationServerConfigurerAdapter</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Resource</span>
+    <span class="token class-name">TokenStore</span> tokenStore<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Resource</span>
+    <span class="token class-name">ClientDetailsService</span> clientDetailsService<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Resource</span>
+    <span class="token class-name">DataSource</span> dataSource<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Resource</span>
+    <span class="token class-name">JwtAccessTokenConverter</span> jwtAccessTokenConverter<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Resource</span>
+    <span class="token class-name">CustomAdditionalInformation</span> customAdditionalInformation<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * {@link com.zhengqing.auth.config.SecurityConfig#authenticationManagerBean()}
+     */</span>
+    <span class="token annotation punctuation">@Resource</span>
+    <span class="token class-name">AuthenticationManager</span> authenticationManager<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">ClientDetailsService</span> <span class="token function">jdbcClientDetailsService</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">JdbcClientDetailsService</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>dataSource<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 配置令牌端点的安全约束
+     * 即这个端点谁能访问，谁不能访问
+     * checkTokenAccess: 指一个 Token 校验的端点，这个端点我们设置为可以直接访问（当资源服务器收到 Token 之后，需要去校验 Token 的合法性，就会访问这个端点）
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">configure</span><span class="token punctuation">(</span><span class="token class-name">AuthorizationServerSecurityConfigurer</span> security<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        security<span class="token punctuation">.</span><span class="token function">checkTokenAccess</span><span class="token punctuation">(</span><span class="token string">"permitAll()"</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">allowFormAuthenticationForClients</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 配置客户端的详细信息 -- 校验客户端
+     * 校验用户见 {@link com.zhengqing.auth.config.SecurityConfig#configure(org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder)}
+     */</span>
+<span class="token comment">//    @Override</span>
+<span class="token comment">//    public void configure(ClientDetailsServiceConfigurer clients) throws Exception {</span>
+<span class="token comment">//        clients.inMemory()</span>
+<span class="token comment">//                // id</span>
+<span class="token comment">//                .withClient("zq_app_id")</span>
+<span class="token comment">//                // secret</span>
+<span class="token comment">//                .secret(new BCryptPasswordEncoder().encode("zq_app_secret"))</span>
+<span class="token comment">//                // 资源id</span>
+<span class="token comment">//                .resourceIds("res1")</span>
+<span class="token comment">//                // 授权类型 -- 授权码模式</span>
+<span class="token comment">//                .authorizedGrantTypes("authorization_code", "refresh_token")</span>
+<span class="token comment">//                // 授权范围</span>
+<span class="token comment">//                .scopes("all")</span>
+<span class="token comment">//                // 重定向uri</span>
+<span class="token comment">//                .redirectUris("http://127.0.0.1:10020/index.html");</span>
+<span class="token comment">//    }</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">configure</span><span class="token punctuation">(</span><span class="token class-name">ClientDetailsServiceConfigurer</span> clients<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        clients<span class="token punctuation">.</span><span class="token function">withClientDetails</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">jdbcClientDetailsService</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 配置令牌的访问端点和令牌服务
+     * 授权码和令牌有什么区别？授权码是用来获取令牌的，使用一次就失效，令牌则是用来获取资源的
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">configure</span><span class="token punctuation">(</span><span class="token class-name">AuthorizationServerEndpointsConfigurer</span> endpoints<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 配置授权码的存储</span>
+        endpoints<span class="token punctuation">.</span><span class="token function">authorizationCodeServices</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">authorizationCodeServices</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">authenticationManager</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>authenticationManager<span class="token punctuation">)</span>
+                <span class="token comment">// 配置令牌的存储</span>
+                <span class="token punctuation">.</span><span class="token function">tokenServices</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">tokenServices</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 配置授权码的存储
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">AuthorizationCodeServices</span> <span class="token function">authorizationCodeServices</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 内存</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">InMemoryAuthorizationCodeServices</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 配置 Token 的一些基本信息
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">AuthorizationServerTokenServices</span> <span class="token function">tokenServices</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">DefaultTokenServices</span> services <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">DefaultTokenServices</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        services<span class="token punctuation">.</span><span class="token function">setClientDetailsService</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>clientDetailsService<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 是否支持刷新</span>
+        services<span class="token punctuation">.</span><span class="token function">setSupportRefreshToken</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 存储位置</span>
+        services<span class="token punctuation">.</span><span class="token function">setTokenStore</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>tokenStore<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment">// 有效期</span>
+<span class="token comment">//        services.setAccessTokenValiditySeconds(60 * 60 * 1);</span>
+        <span class="token comment">// 刷新token的有效期 -- 当token块过期的时候，需要获取一个新的token，在获取新token的时候，需要一个凭证信息，这个凭证信息不是旧的 Token，而是另外一个 refresh_token，这个 refresh_token 也是有有效期的。</span>
+<span class="token comment">//        services.setRefreshTokenValiditySeconds(60 * 60 * 24 * 3);</span>
+
+        <span class="token comment">// 注入“jwt添加额外信息”相关实例</span>
+        <span class="token class-name">TokenEnhancerChain</span> tokenEnhancerChain <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">TokenEnhancerChain</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        tokenEnhancerChain<span class="token punctuation">.</span><span class="token function">setTokenEnhancers</span><span class="token punctuation">(</span><span class="token class-name">Arrays</span><span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>jwtAccessTokenConverter<span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">.</span>customAdditionalInformation<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        services<span class="token punctuation">.</span><span class="token function">setTokenEnhancer</span><span class="token punctuation">(</span>tokenEnhancerChain<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">return</span> services<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="2_410"></a>2、资源服务</h4>
+<h5><a id="a_412"></a>a、引入依赖</h5>
+<pre><code class="prism language-xml"> <span class="token comment">&lt;!-- Spring Security --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-security<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token comment">&lt;!-- OAuth2 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.cloud<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-cloud-starter-oauth2<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h5><a id="bapplicationyml_428"></a>b、<code>application.yml</code>配置</h5>
+<pre><code class="prism language-yml"><span class="token key atrule">server</span><span class="token punctuation">:</span>
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">10030</span>
+
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">application</span><span class="token punctuation">:</span>
+    <span class="token key atrule">name</span><span class="token punctuation">:</span> user
+</code></pre>
+<h5><a id="ctoken_439"></a>c、配置生成token存储</h5>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">AccessTokenConfig</span> <span class="token punctuation">{</span>
+
+<span class="token comment">//    @Resource</span>
+<span class="token comment">//    RedisConnectionFactory redisConnectionFactory;</span>
+
+    <span class="token comment">/**
+     * JWT 字符串生成时所需签名
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token class-name">String</span> SIGNING_KEY <span class="token operator">=</span> <span class="token string">"zhengqingya"</span><span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">TokenStore</span> <span class="token function">tokenStore</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 内存</span>
+<span class="token comment">//        return new InMemoryTokenStore();</span>
+        <span class="token comment">// redis</span>
+<span class="token comment">//        return new RedisTokenStore(this.redisConnectionFactory);</span>
+        <span class="token comment">// jwt -- 无状态登录，服务端不需要保存信息</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">JwtTokenStore</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">jwtAccessTokenConverter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 实现将用户信息和 JWT 进行转换（将用户信息转为 jwt 字符串，或者从 jwt 字符串提取出用户信息）
+     */</span>
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">JwtAccessTokenConverter</span> <span class="token function">jwtAccessTokenConverter</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token class-name">JwtAccessTokenConverter</span> converter <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">JwtAccessTokenConverter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        converter<span class="token punctuation">.</span><span class="token function">setSigningKey</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>SIGNING_KEY<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> converter<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a id="d_476"></a>d、资源服务器配置</h5>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token annotation punctuation">@EnableResourceServer</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ResourceServerConfig</span> <span class="token keyword">extends</span> <span class="token class-name">ResourceServerConfigurerAdapter</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Resource</span>
+    <span class="token class-name">TokenStore</span> tokenStore<span class="token punctuation">;</span>
+
+    <span class="token comment">/**
+     * 配置一个 RemoteTokenServices 的实例，因为资源服务器和授权服务器是分开的；
+     * 如果资源服务器和授权服务器是放在一起的，就不需要配置 RemoteTokenServices 了。
+     * 校验客户端见 {@link com.zhengqing.auth.config.AuthorizationServerConfig#configure(org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer)}
+     * &lt;p&gt;
+     * 当用户来资源服务器请求资源时，会携带上一个 access_token，通过这里的配置，就能够校验出 token 是否正确等。
+     */</span>
+<span class="token comment">//    @Bean</span>
+<span class="token comment">//    RemoteTokenServices tokenServices() {</span>
+<span class="token comment">//        RemoteTokenServices services = new RemoteTokenServices();</span>
+<span class="token comment">//        // access_token 的校验地址</span>
+<span class="token comment">//        services.setCheckTokenEndpointUrl("http://127.0.0.1:10010/oauth/check_token");</span>
+<span class="token comment">//        services.setClientId("zq_app_id");</span>
+<span class="token comment">//        services.setClientSecret("zq_app_secret");</span>
+<span class="token comment">//        return services;</span>
+<span class="token comment">//    }</span>
+
+    <span class="token comment">/**
+     * 自动调用 JwtAccessTokenConverter 将 jwt 解析出来，jwt 里边就包含了用户的基本信息，所以就不用上面一样远程校验 access_token 了。
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">configure</span><span class="token punctuation">(</span><span class="token class-name">ResourceServerSecurityConfigurer</span> resources<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        resources<span class="token punctuation">.</span><span class="token function">resourceId</span><span class="token punctuation">(</span><span class="token string">"res1"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">tokenStore</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>tokenStore<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 配置资源的拦截规则
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">configure</span><span class="token punctuation">(</span><span class="token class-name">HttpSecurity</span> http<span class="token punctuation">)</span> <span class="token keyword">throws</span> <span class="token class-name">Exception</span> <span class="token punctuation">{</span>
+        http<span class="token punctuation">.</span><span class="token function">authorizeRequests</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">antMatchers</span><span class="token punctuation">(</span><span class="token string">"/admin/**"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">hasRole</span><span class="token punctuation">(</span><span class="token string">"admin"</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">anyRequest</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">authenticated</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a id="eapi_523"></a>e、测试api</h5>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@RestController</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloController</span> <span class="token punctuation">{</span>
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/hello"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">hello</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token string">"hello"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/admin/hello"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">admin</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token string">"admin"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3_540"></a>3、第三方应用</h4>
+<h5><a id="a_542"></a>a、引入依赖</h5>
+<pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+   <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>org.springframework.boot<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>spring-boot-starter-thymeleaf<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h5><a id="bapplicationyml_551"></a>b、<code>application.yml</code>配置</h5>
+<pre><code class="prism language-yml"><span class="token key atrule">server</span><span class="token punctuation">:</span>
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">10020</span>
+
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">application</span><span class="token punctuation">:</span>
+    <span class="token key atrule">name</span><span class="token punctuation">:</span> client
+</code></pre>
+<h5><a id="cindexhtml_562"></a>c、index.html</h5>
+<pre><code class="prism language-html"><span class="token doctype"><span class="token punctuation">&lt;!</span><span class="token doctype-tag">DOCTYPE</span> <span class="token name">html</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>html</span> <span class="token attr-name">lang</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>en<span class="token punctuation">"</span></span> <span class="token attr-name"><span class="token namespace">xmlns:</span>th</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>http://www.thymeleaf.org<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>head</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>meta</span> <span class="token attr-name">charset</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>UTF-8<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>title</span><span class="token punctuation">&gt;</span></span>APP<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>title</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>head</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>body</span><span class="token punctuation">&gt;</span></span>
+Hello World! <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>br</span><span class="token punctuation">/&gt;</span></span>
+
+<span class="token comment">&lt;!--
+    点击超链接实现第三方登录
+    client_id 客户端 ID，根据我们在授权服务器中的实际配置填写。
+    response_type 表示响应类型，这里是 code 表示响应一个授权码。
+    redirect_uri 表示授权成功后的重定向地址，这里表示回到第三方应用的首页。
+    scope 表示授权范围。
+--&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>http://127.0.0.1:10010/oauth/authorize?client_id=zq_app_id&amp;response_type=code&amp;scope=all&amp;redirect_uri=http://127.0.0.1:10020/index.html<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>第三方登录<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>h1</span> <span class="token attr-name"><span class="token namespace">th:</span>text</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>${msg}<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>h1</span><span class="token punctuation">&gt;</span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>body</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>html</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h5><a id="dapi_589"></a>d、测试api</h5>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Controller</span>
+<span class="token annotation punctuation">@RequestMapping</span><span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">)</span>
+<span class="token annotation punctuation">@Api</span><span class="token punctuation">(</span>tags <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"测试api"</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TestController</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Resource</span>
+    <span class="token keyword">private</span> <span class="token class-name">TokenTask</span> tokenTask<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@GetMapping</span><span class="token punctuation">(</span><span class="token string">"/index.html"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">hello</span><span class="token punctuation">(</span><span class="token class-name">String</span> code<span class="token punctuation">,</span> <span class="token class-name">Model</span> model<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        model<span class="token punctuation">.</span><span class="token function">addAttribute</span><span class="token punctuation">(</span><span class="token string">"msg"</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">.</span>tokenTask<span class="token punctuation">.</span><span class="token function">getData</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token string">"index"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h5><a id="eToken_610"></a>e、Token获取和定时刷新任务</h5>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Slf4j</span>
+<span class="token annotation punctuation">@Component</span>
+<span class="token annotation punctuation">@SessionScope</span>
+<span class="token annotation punctuation">@EnableScheduling</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TokenTask</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">String</span> access_token <span class="token operator">=</span> <span class="token string">""</span><span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token class-name">String</span> refresh_token <span class="token operator">=</span> <span class="token string">""</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token class-name">String</span> <span class="token function">getData</span><span class="token punctuation">(</span><span class="token class-name">String</span> code<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">isBlank</span><span class="token punctuation">(</span>code<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token string">"未认证"</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">isBlank</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>access_token<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment">/**
+             * 如果 code 不为 null，标识是通过授权服务器重定向到这个地址来的
+             * 根据拿到的 code 去获取 Token
+             */</span>
+            <span class="token class-name">MultiValueMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> map <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">LinkedMultiValueMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"code"</span><span class="token punctuation">,</span> code<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"client_id"</span><span class="token punctuation">,</span> <span class="token string">"zq_app_id"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"client_secret"</span><span class="token punctuation">,</span> <span class="token string">"zq_app_secret"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"redirect_uri"</span><span class="token punctuation">,</span> <span class="token string">"http://127.0.0.1:10020/index.html"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"grant_type"</span><span class="token punctuation">,</span> <span class="token string">"authorization_code"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> authResponseMap <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">RestTemplate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">postForObject</span><span class="token punctuation">(</span><span class="token string">"http://127.0.0.1:10010/oauth/token"</span><span class="token punctuation">,</span> map<span class="token punctuation">,</span> <span class="token class-name">Map</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"authResponse: {}"</span><span class="token punctuation">,</span> JSON<span class="token punctuation">.</span><span class="token function">toJSONString</span><span class="token punctuation">(</span>authResponseMap<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">this</span><span class="token punctuation">.</span>access_token <span class="token operator">=</span> authResponseMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"access_token"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>refresh_token <span class="token operator">=</span> authResponseMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"refresh_token"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">loadDataFromResServer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">loadDataFromResServer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 加载资源服务器数据
+     */</span>
+    <span class="token keyword">private</span> <span class="token class-name">String</span> <span class="token function">loadDataFromResServer</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            <span class="token class-name">HttpHeaders</span> headers <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">HttpHeaders</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            headers<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"Authorization"</span><span class="token punctuation">,</span> <span class="token string">"Bearer "</span> <span class="token operator">+</span> <span class="token keyword">this</span><span class="token punctuation">.</span>access_token<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">HttpEntity</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">Object</span><span class="token punctuation">&gt;</span></span> httpEntity <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">HttpEntity</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>headers<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token class-name">ResponseEntity</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> entity <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">RestTemplate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">exchange</span><span class="token punctuation">(</span><span class="token string">"http://127.0.0.1:10030/admin/hello"</span><span class="token punctuation">,</span> <span class="token class-name">HttpMethod</span><span class="token punctuation">.</span>GET<span class="token punctuation">,</span> httpEntity<span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> entity<span class="token punctuation">.</span><span class="token function">getBody</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">RestClientException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            log<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">"加载资源服务器数据:"</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token string">"未加载"</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 刷新令牌定时任务
+     * 每隔 55 分钟去刷新一下 access_token（access_token 有效期是 60 分钟）。
+     */</span>
+<span class="token comment">//    @Scheduled(cron = "0 */55 * * * ?")</span>
+    <span class="token annotation punctuation">@Scheduled</span><span class="token punctuation">(</span>cron <span class="token operator">=</span> <span class="token string">"*/30 * * * * ?"</span><span class="token punctuation">)</span> <span class="token comment">// 每隔30秒</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">tokenTask</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"&lt;&lt;&lt;&lt;&lt;&lt; 刷新令牌定时任务 Start: 【{}】 &gt;&gt;&gt;&gt;&gt;&gt;"</span><span class="token punctuation">,</span> <span class="token class-name">DateTime</span><span class="token punctuation">.</span><span class="token function">now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">isBlank</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>refresh_token<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token class-name">MultiValueMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> map <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">LinkedMultiValueMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"client_id"</span><span class="token punctuation">,</span> <span class="token string">"zq_app_id"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"client_secret"</span><span class="token punctuation">,</span> <span class="token string">"zq_app_secret"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"grant_type"</span><span class="token punctuation">,</span> <span class="token string">"refresh_token"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"refresh_token"</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">.</span>refresh_token<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> authResponseMap <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">RestTemplate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">postForObject</span><span class="token punctuation">(</span><span class="token string">"http://127.0.0.1:10010/oauth/token"</span><span class="token punctuation">,</span> map<span class="token punctuation">,</span> <span class="token class-name">Map</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"刷新令牌定时任务 authResponse: {}"</span><span class="token punctuation">,</span> JSON<span class="token punctuation">.</span><span class="token function">toJSONString</span><span class="token punctuation">(</span>authResponseMap<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">this</span><span class="token punctuation">.</span>access_token <span class="token operator">=</span> authResponseMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"access_token"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>refresh_token <span class="token operator">=</span> authResponseMap<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">"refresh_token"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 测试解析用户信息</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span><span class="token function">checkToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">/**
+     * 解析jwt中的用户信息
+     */</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">checkToken</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token class-name">StringUtils</span><span class="token punctuation">.</span><span class="token function">isBlank</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>access_token<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token class-name">MultiValueMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> map <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">LinkedMultiValueMap</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        map<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token string">"token"</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">.</span>access_token<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token class-name">Map</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">String</span><span class="token punctuation">,</span> <span class="token class-name">String</span><span class="token punctuation">&gt;</span></span> authResponseMap <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">RestTemplate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">postForObject</span><span class="token punctuation">(</span><span class="token string">"http://127.0.0.1:10010/oauth/check_token"</span><span class="token punctuation">,</span> map<span class="token punctuation">,</span> <span class="token class-name">Map</span><span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"解析jwt中的用户信息 authResponse: {}"</span><span class="token punctuation">,</span> JSON<span class="token punctuation">.</span><span class="token function">toJSONString</span><span class="token punctuation">(</span>authResponseMap<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="4_707"></a>4、测试</h4>
+<p>访问 <a href="http://127.0.0.1:10020/index.html">http://127.0.0.1:10020/index.html</a> 进行授权</p>
+<p>这里贴出相关数据</p>
+<p>普通token存储认证返回</p>
+<pre><code class="prism language-json"><span class="token punctuation">{</span>
+  <span class="token string-property property">"access_token"</span><span class="token operator">:</span> <span class="token string">"b220ad2b-0907-47a7-b7a3-036f15f06834"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"token_type"</span><span class="token operator">:</span> <span class="token string">"bearer"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"refresh_token"</span><span class="token operator">:</span> <span class="token string">"7a1aefaa-8070-4bb4-8b15-e829a2584b12"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"expires_in"</span><span class="token operator">:</span> <span class="token number">3775</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"scope"</span><span class="token operator">:</span> <span class="token string">"all"</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<hr>
+<p>token使用jwt存储认证返回</p>
+<pre><code class="prism language-json"><span class="token punctuation">{</span>
+  <span class="token string-property property">"access_token"</span><span class="token operator">:</span> <span class="token string">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsicmVzMSJdLCJ1c2VyX25hbWUiOiJhZG1pbiIsInNjb3BlIjpbImFsbCJdLCJleHAiOjE2NDg4NzEyODAsImF1dGhvcml0aWVzIjpbIlJPTEVfYWRtaW4iXSwianRpIjoiZDI2YzAxZGItY2E4ZC00ODBjLTk4MzAtMzdkODk0M2U4YWY5IiwiY2xpZW50X2lkIjoienFfYXBwX2lkIn0.tzjoVFzsPjRPUPnsL3xaFVGENEBg2_V7bDEVk7EbfA0"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"token_type"</span><span class="token operator">:</span> <span class="token string">"bearer"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"refresh_token"</span><span class="token operator">:</span> <span class="token string">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsicmVzMSJdLCJ1c2VyX25hbWUiOiJhZG1pbiIsInNjb3BlIjpbImFsbCJdLCJhdGkiOiJkMjZjMDFkYi1jYThkLTQ4MGMtOTgzMC0zN2Q4OTQzZThhZjkiLCJleHAiOjE2NDkxMjY4MTIsImF1dGhvcml0aWVzIjpbIlJPTEVfYWRtaW4iXSwianRpIjoiNmFjZDQwYmYtYjk4Yi00Y2RkLWI4MDQtMTBlMzM1ZDNjY2YzIiwiY2xpZW50X2lkIjoienFfYXBwX2lkIn0.gnrtIKXhE71pJ1Fn5HmTZU-_3GW-Wst8lNrMplveipw"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"expires_in"</span><span class="token operator">:</span> <span class="token number">3599</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"scope"</span><span class="token operator">:</span> <span class="token string">"all"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"jti"</span><span class="token operator">:</span> <span class="token string">"d26c01db-ca8d-480c-9830-37d8943e8af9"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"author"</span><span class="token operator">:</span> <span class="token string">"zhengqingya"</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>解析jwt中的用户信息，即上面的<code>access_token</code></p>
+<p>原生JWT返回信息</p>
+<pre><code class="prism language-json"><span class="token punctuation">{</span>
+  <span class="token string-property property">"aud"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token string">"res1"</span>
+  <span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"user_name"</span><span class="token operator">:</span> <span class="token string">"admin"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"scope"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token string">"all"</span>
+  <span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"active"</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"exp"</span><span class="token operator">:</span> <span class="token number">1648871280</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"authorities"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token string">"ROLE_admin"</span>
+  <span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"jti"</span><span class="token operator">:</span> <span class="token string">"d26c01db-ca8d-480c-9830-37d8943e8af9"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"client_id"</span><span class="token operator">:</span> <span class="token string">"zq_app_id"</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>自定义JWT返回信息</p>
+<pre><code class="prism language-json"><span class="token punctuation">{</span>
+  <span class="token string-property property">"aud"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token string">"res1"</span>
+  <span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"user_name"</span><span class="token operator">:</span> <span class="token string">"admin"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"scope"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token string">"all"</span>
+  <span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"active"</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"exp"</span><span class="token operator">:</span> <span class="token number">1648890210</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"authorities"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token string">"ROLE_admin"</span>
+  <span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"jti"</span><span class="token operator">:</span> <span class="token string">"d26c01db-ca8d-480c-9830-37d8943e8af9"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"client_id"</span><span class="token operator">:</span> <span class="token string">"zq_app_id"</span><span class="token punctuation">,</span>
+  <span class="token string-property property">"info"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token string-property property">"author"</span><span class="token operator">:</span> <span class="token string">"zhengqingya"</span><span class="token punctuation">,</span>
+    <span class="token string-property property">"gitee"</span><span class="token operator">:</span> <span class="token string">"https://gitee.com/zhengqingya"</span><span class="token punctuation">,</span>
+    <span class="token string-property property">"user"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token string-property property">"username"</span><span class="token operator">:</span> <span class="token string">"zq_app_id"</span><span class="token punctuation">,</span>
+      <span class="token string-property property">"authorities"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+      <span class="token string-property property">"accountNonExpired"</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+      <span class="token string-property property">"accountNonLocked"</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+      <span class="token string-property property">"credentialsNonExpired"</span><span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+      <span class="token string-property property">"enabled"</span><span class="token operator">:</span> <span class="token boolean">true</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3><a id="demo_797"></a>七、本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+你勤奋充电努力工作保持身材，对人微笑这些都不是为了取悦他人，而是为了扮靓自己照亮自己的心，告诉自己我是一股独立向上的力量。</p>
+</blockquote>
+</div>
+</body>
+
+</html>

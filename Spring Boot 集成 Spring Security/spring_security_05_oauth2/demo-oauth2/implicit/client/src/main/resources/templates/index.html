@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>APP</title>
+    <script src="/jquery-3.5.0.min.js"></script>
+</head>
+<body>
+Hello World! <br/>
+
+<!--
+    点击超链接实现第三方登录
+    client_id 客户端 ID，根据我们在授权服务器中的实际配置填写。
+    response_type 表示响应类型，这里是 token 表示直接返回授权码。
+    redirect_uri 表示授权成功后的重定向地址，这里表示回到第三方应用的首页。
+    scope 表示授权范围。
+-->
+<a href="http://127.0.0.1:10010/oauth/authorize?client_id=zq_app_id&response_type=token&scope=all&redirect_uri=http://127.0.0.1:10020/index.html">第三方登录（简化模式）</a>
+
+<div id="div1"></div>
+<script>
+    var hash = window.location.hash;//提取出参数，类似这种格式#access_token=9fda1800-3b57-4d32-ad01-05ff700d44cc&token_type=bearer&expires_in=7199
+    if (hash && hash.length > 0) {
+        var params = hash.substring(1).split("&");
+        var token = params[0].split("=");//[access_token,9fda1800-3b57-4d32-ad01-05ff700d44cc]
+        $.ajax({
+            type: 'get',
+            headers: {
+                'Authorization': 'Bearer ' + token[1]
+            },
+            url: 'http://127.0.0.1:10030/admin/hello',
+            success: function (data) {
+                $("#div1").html(data)
+            }
+        })
+    }
+</script>
+</body>
+</html>
