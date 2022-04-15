@@ -1,0 +1,16 @@
+server:
+  port: 9200
+
+spring:
+  application:
+    name: demo
+
+# http://127.0.0.1:9200/actuator/prometheus
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  metrics:
+    tags:
+      application: ${spring.application.name}

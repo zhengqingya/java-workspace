@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>运维(32) Prometheus+Grafana监控SpringBoot</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#SpringBootMicrometer_10">二、SpringBoot集成Micrometer</a></li><ul><li><a href="#1pomxml_12">1、`pom.xml`中引入依赖</a></li><li><a href="#2applicationyml_22">2、`application.yml`配置</a></li><li><a href="#3Micrometer_42">3、Micrometer配置</a></li></ul><li><a href="#PrometheusGrafana_60">三、部署Prometheus+Grafana</a></li><li><a href="#SpringBoot_88">四、监控SpringBoot</a></li><ul><li><a href="#1Prometheus_90">1、新增Prometheus数据源</a></li><li><a href="#2Dashboard_97">2、导入Dashboard</a></li></ul><li><a href="#_107">五、邮件告警</a></li><ul><li><a href="#1grafanaini_109">1、配置`grafana.ini`</a></li><li><a href="#2Alerting__Notification_channels_141">2、`Alerting` -&gt; `Notification channels`</a></li><li><a href="#3Add_panel_147">3、`Add panel`</a></li></ul><li><a href="#demo_166">六、本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<ol>
+<li>Prometheus：一个开源系统监控和警报工具包。</li>
+<li>Grafana：Go语言开发的开源数据可视化工具，可以做数据监控和数据统计，带有告警功能。</li>
+<li>Micrometer：收集Java性能数据</li>
+</ol>
+<p><a href="https://zhengqing.blog.csdn.net/article/details/120464947">运维(12) Prometheus+Grafana 搭建监控系统监控Liunx主机</a></p>
+<h3><a id="SpringBootMicrometer_10"></a>二、SpringBoot集成Micrometer</h3>
+<h4><a id="1pomxml_12"></a>1、<code>pom.xml</code>中引入依赖</h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- micrometer:收集Java性能数据 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>io.micrometer<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>micrometer-registry-prometheus<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_22"></a>2、<code>application.yml</code>配置</h4>
+<pre><code class="prism language-yml"><span class="token key atrule">server</span><span class="token punctuation">:</span>
+  <span class="token key atrule">port</span><span class="token punctuation">:</span> <span class="token number">9200</span>
+
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">application</span><span class="token punctuation">:</span>
+    <span class="token key atrule">name</span><span class="token punctuation">:</span> demo
+
+<span class="token key atrule">management</span><span class="token punctuation">:</span>
+  <span class="token key atrule">endpoints</span><span class="token punctuation">:</span>
+    <span class="token key atrule">web</span><span class="token punctuation">:</span>
+      <span class="token key atrule">exposure</span><span class="token punctuation">:</span>
+        <span class="token key atrule">include</span><span class="token punctuation">:</span> <span class="token string">'*'</span>
+  <span class="token key atrule">metrics</span><span class="token punctuation">:</span>
+    <span class="token key atrule">tags</span><span class="token punctuation">:</span>
+      <span class="token key atrule">application</span><span class="token punctuation">:</span> $<span class="token punctuation">{</span>spring.application.name<span class="token punctuation">}</span>
+</code></pre>
+<h4><a id="3Micrometer_42"></a>3、Micrometer配置</h4>
+<pre><code class="prism language-java"><span class="token annotation punctuation">@Configuration</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MetricsConfig</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@Bean</span>
+    <span class="token class-name">MeterRegistryCustomizer</span><span class="token generics"><span class="token punctuation">&lt;</span><span class="token class-name">MeterRegistry</span><span class="token punctuation">&gt;</span></span> <span class="token function">configurer</span><span class="token punctuation">(</span>
+            <span class="token annotation punctuation">@Value</span><span class="token punctuation">(</span><span class="token string">"${spring.application.name}"</span><span class="token punctuation">)</span> <span class="token class-name">String</span> applicationName<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token punctuation">(</span>registry<span class="token punctuation">)</span> <span class="token operator">-&gt;</span> registry<span class="token punctuation">.</span><span class="token function">config</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">commonTags</span><span class="token punctuation">(</span><span class="token string">"application"</span><span class="token punctuation">,</span> applicationName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre>
+<p>启动应用，访问 <a href="http://127.0.0.1:9200/actuator/prometheus">http://127.0.0.1:9200/actuator/prometheus</a><br>
+<img src="https://img-blog.csdnimg.cn/c9ceb1278ce743f980c04e85b2ff2344.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="PrometheusGrafana_60"></a>三、部署Prometheus+Grafana</h3>
+<p><img src="https://img-blog.csdnimg.cn/db65ec8e55d747a29b9763e4d7c4044a.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<pre><code class="prism language-shell"><span class="token comment"># 准备</span>
+<span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+<span class="token builtin class-name">cd</span> docker-compose/Liunx
+
+<span class="token comment"># `docker-compose-prometheus.yml` 需修改grafana中配置的mysql连接信息</span>
+<span class="token comment"># `prometheus.yml` 自行配置</span>
+
+<span class="token comment"># 运行服务</span>
+docker-compose -f docker-compose-prometheus.yml -p prometheus up -d
+</code></pre>
+<ol>
+<li>grafana访问地址 <code>ip地址:3000</code><br>
+默认登录账号密码：<code>admin/admin</code></li>
+<li>prometheus访问地址: <code>ip地址:9090</code></li>
+<li>exporter访问地址: <code>ip地址:9100/metrics</code></li>
+</ol>
+<p><img src="https://img-blog.csdnimg.cn/8d4ada76671440139993d172158e79d7.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<p>注意<code>prometheus.yml</code>配置需和<code>springboot</code>应用对应<br>
+<img src="https://img-blog.csdnimg.cn/7b08f9b94eb34e93beb3a92a30c2019d.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="SpringBoot_88"></a>四、监控SpringBoot</h3>
+<h4><a id="1Prometheus_90"></a>1、新增Prometheus数据源</h4>
+<p><code>Configuration</code> -&gt; <code>Data sources</code> -&gt; <code>Add data source</code> -&gt; <code>Prometheus</code><br>
+<img src="https://img-blog.csdnimg.cn/78b899ecc47c47ac9041b6cbc2b39acb.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/db919f1efe9f4bbf9488f41d4b113307.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/38b4c638296f45c796b367af200ba9b3.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h4><a id="2Dashboard_97"></a>2、导入Dashboard</h4>
+<p><code>Create</code> -&gt; <code>Import</code></p>
+<blockquote>
+<p>grafana面板资源 <a href="https://grafana.com/grafana/dashboards/4701">https://grafana.com/grafana/dashboards/4701</a></p>
+</blockquote>
+<p><img src="https://img-blog.csdnimg.cn/053ec6365411408b8eb791aa3079b087.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/f1655c9f36e44114ba9fc3b484672305.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/2bdecb737d06465388819daa7d472b43.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="_107"></a>五、邮件告警</h3>
+<h4><a id="1grafanaini_109"></a>1、配置<code>grafana.ini</code></h4>
+<p><img src="https://img-blog.csdnimg.cn/8022ff90bd4944cca15fa5b7908a5806.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<pre><code>#################################### SMTP / Emailing ##########################
+[smtp]
+# 是否启用
+enabled = true
+# 服务地址
+host = smtp.qq.com:465
+# 邮箱用户名
+user = xxx@qq.com
+# If the password contains # or ; you have to wrap it with triple quotes. Ex """#password;"""
+# 授权密码
+password = xxx
+;cert_file =
+;key_file =
+skip_verify = true
+# 邮件From地址
+from_address = xxx@qq.com
+from_name = Grafana
+# EHLO identity in SMTP dialog (defaults to instance_name)
+;ehlo_identity = dashboard.example.com
+# SMTP startTLS policy (defaults to 'OpportunisticStartTLS')
+;startTLS_policy = NoStartTLS
+
+[emails]
+;welcome_email_on_sign_up = false
+;templates_pattern = emails/*.html
+</code></pre>
+<h4><a id="2Alerting__Notification_channels_141"></a>2、<code>Alerting</code> -&gt; <code>Notification channels</code></h4>
+<p><img src="https://img-blog.csdnimg.cn/b45390050e654dadb339838fc7c19959.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/d4e81c9d6f1e4455a6605605e70fd901.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+测试发送通知<br>
+<img src="https://img-blog.csdnimg.cn/28cf53f71dc548ee970e3e811abe5285.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h4><a id="3Add_panel_147"></a>3、<code>Add panel</code></h4>
+<p><img src="https://img-blog.csdnimg.cn/7bdb2fadb48243f9b7a5cfe2f310b208.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+仿造<code>Heap used</code>配置一个</p>
+<blockquote>
+<p>tips: <code>Metrics browser</code>中不支持<code>模板变量</code> ( ex: <code>$application</code> )</p>
+</blockquote>
+<pre><code>sum(jvm_memory_used_bytes{application="demo", instance="192.168.101.88:9200", area="heap"})*100/sum(jvm_memory_max_bytes{application="demo",instance="192.168.101.88:9200", area="heap"})
+</code></pre>
+<p><img src="https://img-blog.csdnimg.cn/33bfeae5c7124d09afd4f610b6afb7f5.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/35fc6382c36c4be8afd85af06aa1d7c6.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+Apply<br>
+<img src="https://img-blog.csdnimg.cn/bb78b80be37547c9991023f56943666a.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+超标告警通知<br>
+<img src="https://img-blog.csdnimg.cn/ae60b042770f41cbb19dc20fabf83932.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/8b1a153484f64b538cc4e989c5e353a8.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述"></p>
+<h3><a id="demo_166"></a>六、本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+不奋斗，你的才华如何配得上你的任性。<br>
+不奋斗，你的脚步如何赶得上父母老去的速度。<br>
+不奋斗，世界这么大你靠什么去看看。</p>
+</blockquote>
+</div>
+</body>
+
+</html>
