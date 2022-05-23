@@ -1,10 +1,10 @@
 package com.alibaba.csp.sentinel.dashboard.rule.nacos;
 
 import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.RuleEntity;
-import com.alibaba.csp.sentinel.dashboard.util.JSONUtils;
 import com.alibaba.csp.sentinel.slots.block.Rule;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.StringUtil;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
 import org.springframework.stereotype.Component;
@@ -85,14 +85,14 @@ public final class NacosConfigUtil {
         configService.publishConfig(
                 dataId,
                 NacosConfigUtil.GROUP_ID,
-                JSONUtils.toJSONString(ruleForApp)
+                JSON.toJSONString(ruleForApp)
         );
 
         // 存储，给控制台显示使用,由于数据太多,会出现转化异常,虽然可以提供控制台显示,但是无法对微服务进行保护
         configService.publishConfig(
                 dataId + DASHBOARD_POSTFIX,
                 NacosConfigUtil.GROUP_ID,
-                JSONUtils.toJSONString(rules)
+                JSON.toJSONString(rules)
         );
     }
 
@@ -116,7 +116,7 @@ public final class NacosConfigUtil {
         if (StringUtil.isEmpty(rules)) {
             return new ArrayList<>();
         }
-        return JSONUtils.parseObject(clazz, rules);
+        return JSON.parseArray(rules, clazz);
     }
 
     private static String genDataId(String appName, String postfix) {
