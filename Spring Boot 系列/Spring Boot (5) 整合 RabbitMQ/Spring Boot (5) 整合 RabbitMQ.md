@@ -19,9 +19,10 @@ docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 -v `pwd`/rabbitmq/data
 #### 1、`pom.xml` 中引入 `rabbitmq` 依赖
 
 ```xml
+
 <dependency>
-   <groupId>org.springframework.boot</groupId>
-   <artifactId>spring-boot-starter-amqp</artifactId>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-amqp</artifactId>
 </dependency>
 ```
 
@@ -37,6 +38,23 @@ spring:
     username: admin
     password: admin
     virtual-host: my_vhost # 填写自己的虚拟机名，对应可查看 `127.0.0.1:15672/#/users` 下Admin中的`Can access virtual hosts`信息
+    listener:
+      simple:
+        # 表示消息确认方式，其有三种配置方式，分别是none、manual和auto；默认auto
+        acknowledge-mode: auto
+        # 最小的消费者数量
+        concurrency: 5
+        # 最大的消费者数量
+        max-concurrency: 10
+        # 指定一个请求能处理多少个消息，如果有事务的话，必须大于等于transaction数量.
+        prefetch: 3
+        retry:
+          # 是否开启重试
+          enabled: true
+          # 最大重试次数
+          max-attempts: 5
+          # 第一次和第二次尝试发布或传递消息之间的间隔（单位：毫秒）
+          initial-interval: 30000
 ```
 
 #### 3、rabbitmq配置文件 - 配置一个简单的Queue(消息队列)
@@ -44,6 +62,7 @@ spring:
 > 生产者发送消息到队列，消费者从队列中获取消息
 
 ```java
+
 @Configuration
 public class RabbitConfig {
 
@@ -61,6 +80,7 @@ public class RabbitConfig {
 #### 4、生产者 - 发送消息
 
 ```java
+
 @Slf4j
 @Component
 public class MsgSender {
@@ -80,6 +100,7 @@ public class MsgSender {
 #### 5、消费者 - 接收消息
 
 ```java
+
 @Slf4j
 @Component
 @RabbitListener(queues = RabbitConfig.QUEUE_KEY)
@@ -96,6 +117,7 @@ public class MsgReceiver {
 #### 6、测试
 
 ```java
+
 @RestController
 public class RabbitController {
 

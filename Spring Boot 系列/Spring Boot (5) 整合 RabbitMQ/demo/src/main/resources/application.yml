@@ -79,7 +79,23 @@ spring:
     username: admin
     password: admin
     virtual-host: my_vhost # 填写自己的虚拟机名，对应可查看 `127.0.0.1:15672/#/users` 下Admin中的`Can access virtual hosts`信息
-
+    listener:
+      simple:
+        # 表示消息确认方式，其有三种配置方式，分别是none、manual和auto；默认auto
+        acknowledge-mode: auto
+        # 最小的消费者数量
+        concurrency: 5
+        # 最大的消费者数量
+        max-concurrency: 10
+        # 指定一个请求能处理多少个消息，如果有事务的话，必须大于等于transaction数量.
+        prefetch: 3
+        retry:
+          # 是否开启重试
+          enabled: true
+          # 最大重试次数
+          max-attempts: 5
+          # 第一次和第二次尝试发布或传递消息之间的间隔（单位：毫秒）
+          initial-interval: 30000
 
 management:
   security:
