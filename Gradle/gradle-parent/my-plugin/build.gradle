@@ -1,0 +1,44 @@
+plugins {
+    id 'groovy'
+    id 'java'
+    id 'maven-publish'
+}
+
+group 'com.zhengqing'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation gradleApi()
+    implementation localGroovy()
+}
+
+// 设置项目入口为`src/main/groovy`
+sourceSets {
+    main {
+        groovy {
+            srcDir 'src/main/groovy'
+        }
+    }
+}
+
+publishing {
+    publications {
+        // 可定义多个组件
+        myPlugin(MavenPublication) {
+            // 指定GAV坐标信息
+            groupId = 'com.zhengqing.myplugin'
+            artifactId = 'my-plugin'
+            version = '1.0'
+            // 发布jar包
+            from components.java
+        }
+    }
+    repositories {
+        // 发布到本地目录
+        maven { url "$rootDir/lib/release" }
+    }
+}

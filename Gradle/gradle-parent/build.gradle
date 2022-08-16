@@ -1,0 +1,36 @@
+buildscript {
+    repositories {
+        maven { url "$rootDir/lib/release" }
+    }
+    dependencies {
+        classpath "com.zhengqing.myplugin:my-plugin:1.0"
+    }
+}
+
+plugins {
+    id 'java'
+}
+
+group 'com.zhengqing'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// ***************************************************************
+
+// 应用buildSrc插件
+apply plugin: 'com.zhengqing.plugin'
+
+// 应用自定义插件
+apply plugin: 'com.zhengqing.myplugin'
