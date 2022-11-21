@@ -1,0 +1,34 @@
+plugins {
+    id 'org.springframework.boot' version '2.7.2'
+    id 'io.spring.dependency-management' version '1.0.12.RELEASE'
+    id 'java'
+}
+
+group = 'com.zhengqing'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+task task1 {
+    // 任务的配置段：在配置阶段执行
+    println "****** this is my first task"
+    // 任务的行为：在执行阶段依次执行 doFirst -> doLast
+    doFirst {
+        println "****** doFirst"
+    }
+    doLast {
+        println "****** doLast: $version"
+    }
+}

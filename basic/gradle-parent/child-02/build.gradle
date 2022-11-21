@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+}
+
+group 'com.zhengqing'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// ***************************************************************
+
+//task 'B' {
+//    dependsOn(":child-01:A")
+//    doLast {
+//        println "****** task B"
+//    }
+//}
+//
+//task 'C' {
+//    dependsOn(":child-01:A", "B")
+//    doLast {
+//        println "****** task C"
+//    }
+//}
