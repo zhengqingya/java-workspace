@@ -4,3 +4,8 @@ server:
 spring:
   application:
     name: demo
+
+
+# 配置日志地址
+logging:
+  config: classpath:logback-spring.xml
