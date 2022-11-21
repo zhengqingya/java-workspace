@@ -4,3 +4,8 @@ server:
 spring:
   application:
     name: demo
+
+# TODO: 修改为自己的ip地址
+logstash:
+  host: 127.0.0.1
+  port: 5044

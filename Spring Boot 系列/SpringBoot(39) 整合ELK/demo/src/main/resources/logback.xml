@@ -65,9 +65,10 @@
     </appender>
 
     <!-- ③ 日志写入logstash -->
+    <springProperty scope="context" name="LOGSTASH_HOST" source="logstash.host" defaultValue="127.0.0.1"/>
+    <springProperty scope="context" name="LOGSTASH_PORT" source="logstash.port" defaultValue="5044"/>
     <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <!-- TODO: 修改为自己的ip地址 -->
-        <destination>www.zhengqingya.com:5044</destination>
+        <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
         <encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
 
