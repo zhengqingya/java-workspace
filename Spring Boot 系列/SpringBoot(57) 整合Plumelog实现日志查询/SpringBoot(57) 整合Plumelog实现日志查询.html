@@ -1,0 +1,169 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpringBoot(57) 整合Plumelog实现日志查询</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p></p><div class="toc"><h3>文章目录</h3><ul><ul><ul><li><a href="#_2">一、前言</a></li><li><a href="#dockercompose_8">二、docker-compose一键搭建日志服务</a></li><ul><li><a href="#dockercomposeyml_30">docker-compose.yml</a></li></ul><li><a href="#SpringBootPlumelog_108">三、SpringBoot整合Plumelog</a></li><ul><li><a href="#1pomxml_110">1、`pom.xml`</a></li><li><a href="#2applicationyml_120">2、`application.yml`</a></li><li><a href="#3logbackspringxml_139">3、`logback-spring.xml`</a></li><li><a href="#4_161">4、启动项目记录日志</a></li></ul><li><a href="#demo_167">四、本文案例demo源码</a></li></ul></ul></ul></div><p></p>
+<h3><a id="_2"></a>一、前言</h3>
+<p>Plumelog 一个简单易用的java分布式日志组件</p>
+<blockquote>
+<p><a href="https://gitee.com/plumeorg/plumelog">https://gitee.com/plumeorg/plumelog</a></p>
+</blockquote>
+<h3><a id="dockercompose_8"></a>二、docker-compose一键搭建日志服务</h3>
+<p><code>plumelog</code> + <code>elasticsearch</code> + <code>redis</code></p>
+<blockquote>
+<p>tips: 详情可查看 <a href="https://gitee.com/zhengqingya/docker-compose">https://gitee.com/zhengqingya/docker-compose</a></p>
+</blockquote>
+<pre><code class="prism language-shell"><span class="token comment"># 准备</span>
+<span class="token function">git</span> clone https://gitee.com/zhengqingya/docker-compose.git
+<span class="token builtin class-name">cd</span> docker-compose/Linux/plumelog
+
+<span class="token comment"># 运行</span>
+<span class="token function">docker-compose</span> <span class="token parameter variable">-f</span> docker-compose.yml <span class="token parameter variable">-p</span> plumelog up <span class="token parameter variable">-d</span>
+
+<span class="token comment"># 当前目录下所有文件赋予权限(读、写、执行)  -- 解决es启动报错问题...</span>
+<span class="token function">chmod</span> <span class="token parameter variable">-R</span> <span class="token number">777</span> ./app/elasticsearch
+</code></pre>
+<ul>
+<li>访问地址：ip地址:8891</li>
+<li>账号：admin</li>
+<li>密码：admin</li>
+</ul>
+<h4><a id="dockercomposeyml_30"></a>docker-compose.yml</h4>
+<pre><code class="prism language-yml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">"3"</span>
+
+<span class="token comment"># 网桥 -&gt; 方便相互通讯</span>
+<span class="token key atrule">networks</span><span class="token punctuation">:</span>
+  <span class="token key atrule">plumelog</span><span class="token punctuation">:</span>
+    <span class="token key atrule">ipam</span><span class="token punctuation">:</span>
+      <span class="token key atrule">driver</span><span class="token punctuation">:</span> default
+      <span class="token key atrule">config</span><span class="token punctuation">:</span>
+        <span class="token punctuation">-</span> <span class="token key atrule">subnet</span><span class="token punctuation">:</span> <span class="token string">"172.23.0.0/24"</span>
+
+<span class="token key atrule">services</span><span class="token punctuation">:</span>
+  <span class="token key atrule">plumelog</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> registry.cn<span class="token punctuation">-</span>hangzhou.aliyuncs.com/zhengqing/plumelog<span class="token punctuation">:</span>3.5.3
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> plumelog
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped
+    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>
+      <span class="token comment"># 引用外部配置文件    ex: es,redis   (配置也可通过 -e 去修改)</span>
+      <span class="token punctuation">-</span> ./app/plumelog/application.properties<span class="token punctuation">:</span>/home/application.properties
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span> <span class="token comment"># 设置环境变量,相当于docker run命令中的-e</span>
+      <span class="token key atrule">TZ</span><span class="token punctuation">:</span> Asia/Shanghai
+      <span class="token key atrule">LANG</span><span class="token punctuation">:</span> en_US.UTF<span class="token punctuation">-</span><span class="token number">8</span>
+      <span class="token key atrule">JAVA_OPTS</span><span class="token punctuation">:</span> <span class="token string">"-XX:+UseG1GC -Dspring.config.location=/home/application.properties,classpath:application.properties,"</span>
+      <span class="token key atrule">plumelog.queue.redis.redisHost</span><span class="token punctuation">:</span> 172.23.0.33<span class="token punctuation">:</span><span class="token number">6379</span>
+      <span class="token key atrule">plumelog.redis.redisHost</span><span class="token punctuation">:</span> 172.23.0.33<span class="token punctuation">:</span><span class="token number">6379</span>
+      <span class="token key atrule">plumelog.es.esHosts</span><span class="token punctuation">:</span> 172.23.0.22<span class="token punctuation">:</span><span class="token number">9200</span>
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> <span class="token string">"8891:8891"</span>
+    <span class="token key atrule">depends_on</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> elasticsearch
+      <span class="token punctuation">-</span> redis
+    <span class="token key atrule">networks</span><span class="token punctuation">:</span>
+      <span class="token key atrule">plumelog</span><span class="token punctuation">:</span>
+        <span class="token key atrule">ipv4_address</span><span class="token punctuation">:</span> 172.23.0.11
+
+  <span class="token key atrule">elasticsearch</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> registry.cn<span class="token punctuation">-</span>hangzhou.aliyuncs.com/zhengqing/elasticsearch<span class="token punctuation">:</span>7.14.1      <span class="token comment"># 原镜像`elasticsearch:7.14.1`</span>
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> plumelog_elasticsearch         <span class="token comment"># 容器名为'elk_elasticsearch'</span>
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped                   <span class="token comment"># 指定容器退出后的重启策略为始终重启，但是不考虑在Docker守护进程启动时就已经停止了的容器</span>
+    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>                                  <span class="token comment"># 数据卷挂载路径设置,将本机目录映射到容器目录</span>
+      <span class="token punctuation">-</span> <span class="token string">"./app/elasticsearch/data:/usr/share/elasticsearch/data"</span>
+      <span class="token punctuation">-</span> <span class="token string">"./app/elasticsearch/logs:/usr/share/elasticsearch/logs"</span>
+      <span class="token punctuation">-</span> <span class="token string">"./app/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"</span>
+    <span class="token comment">#      - "./app/elasticsearch/config/jvm.options:/usr/share/elasticsearch/config/jvm.options"</span>
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>                              <span class="token comment"># 设置环境变量,相当于docker run命令中的-e</span>
+      <span class="token key atrule">TZ</span><span class="token punctuation">:</span> Asia/Shanghai
+      <span class="token key atrule">LANG</span><span class="token punctuation">:</span> en_US.UTF<span class="token punctuation">-</span><span class="token number">8</span>
+      <span class="token key atrule">discovery.type</span><span class="token punctuation">:</span> single<span class="token punctuation">-</span>node
+      <span class="token key atrule">ES_JAVA_OPTS</span><span class="token punctuation">:</span> <span class="token string">"-Xmx512m -Xms512m"</span>
+      <span class="token key atrule">ELASTIC_PASSWORD</span><span class="token punctuation">:</span> <span class="token string">"123456"</span> <span class="token comment"># elastic账号密码</span>
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> <span class="token string">"9200:9200"</span>
+      <span class="token punctuation">-</span> <span class="token string">"9300:9300"</span>
+    <span class="token key atrule">networks</span><span class="token punctuation">:</span>
+      <span class="token key atrule">plumelog</span><span class="token punctuation">:</span>
+        <span class="token key atrule">ipv4_address</span><span class="token punctuation">:</span> 172.23.0.22
+
+  <span class="token key atrule">redis</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> registry.cn<span class="token punctuation">-</span>hangzhou.aliyuncs.com/zhengqing/redis<span class="token punctuation">:</span>7.0.5                    <span class="token comment"># 镜像'redis:7.0.5'</span>
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> plumelog_redis                                                             <span class="token comment"># 容器名为'redis'</span>
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> unless<span class="token punctuation">-</span>stopped                                                                   <span class="token comment"># 指定容器退出后的重启策略为始终重启，但是不考虑在Docker守护进程启动时就已经停止了的容器</span>
+    <span class="token key atrule">command</span><span class="token punctuation">:</span> redis<span class="token punctuation">-</span>server /etc/redis/redis.conf <span class="token punctuation">-</span><span class="token punctuation">-</span>requirepass 123456 <span class="token punctuation">-</span><span class="token punctuation">-</span>appendonly no <span class="token comment"># 启动redis服务并添加密码为：123456,默认不开启redis-aof方式持久化配置</span>
+    <span class="token comment">#    command: redis-server --requirepass 123456 --appendonly yes # 启动redis服务并添加密码为：123456,并开启redis持久化配置</span>
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>                        <span class="token comment"># 设置环境变量,相当于docker run命令中的-e</span>
+      <span class="token key atrule">TZ</span><span class="token punctuation">:</span> Asia/Shanghai
+      <span class="token key atrule">LANG</span><span class="token punctuation">:</span> en_US.UTF<span class="token punctuation">-</span><span class="token number">8</span>
+    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>                            <span class="token comment"># 数据卷挂载路径设置,将本机目录映射到容器目录</span>
+      <span class="token punctuation">-</span> <span class="token string">"./app/redis/data:/data"</span>
+      <span class="token punctuation">-</span> <span class="token string">"./app/redis/config/redis.conf:/etc/redis/redis.conf"</span>  <span class="token comment"># `redis.conf`文件内容`http://download.redis.io/redis-stable/redis.conf`</span>
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>                              <span class="token comment"># 映射端口</span>
+      <span class="token punctuation">-</span> <span class="token string">"6379:6379"</span>
+    <span class="token key atrule">networks</span><span class="token punctuation">:</span>
+      <span class="token key atrule">plumelog</span><span class="token punctuation">:</span>
+        <span class="token key atrule">ipv4_address</span><span class="token punctuation">:</span> 172.23.0.33
+</code></pre>
+<h3><a id="SpringBootPlumelog_108"></a>三、SpringBoot整合Plumelog</h3>
+<h4><a id="1pomxml_110"></a>1、<code>pom.xml</code></h4>
+<pre><code class="prism language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dependency</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>groupId</span><span class="token punctuation">&gt;</span></span>com.plumelog<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>groupId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>artifactId</span><span class="token punctuation">&gt;</span></span>plumelog-logback<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>artifactId</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>version</span><span class="token punctuation">&gt;</span></span>3.5.3<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>version</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dependency</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="2applicationyml_120"></a>2、<code>application.yml</code></h4>
+<pre><code class="prism language-yml"><span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">profiles</span><span class="token punctuation">:</span>
+    <span class="token key atrule">active</span><span class="token punctuation">:</span> dev
+
+<span class="token comment"># 配置日志地址</span>
+<span class="token key atrule">logging</span><span class="token punctuation">:</span>
+  <span class="token key atrule">config</span><span class="token punctuation">:</span> classpath<span class="token punctuation">:</span>logback<span class="token punctuation">-</span>spring.xml
+
+<span class="token key atrule">plumelog</span><span class="token punctuation">:</span>
+  <span class="token key atrule">appName</span><span class="token punctuation">:</span> plumelog_demo
+  <span class="token comment"># 需要和plumelog服务端的redis配置一致</span>
+  <span class="token key atrule">redisHost</span><span class="token punctuation">:</span> 127.0.0.1<span class="token punctuation">:</span><span class="token number">6379</span>
+  <span class="token key atrule">redisAuth</span><span class="token punctuation">:</span> <span class="token number">123456</span>
+  <span class="token key atrule">redisDb</span><span class="token punctuation">:</span> <span class="token number">10</span>
+</code></pre>
+<h4><a id="3logbackspringxml_139"></a>3、<code>logback-spring.xml</code></h4>
+<pre><code class="prism language-xml"><span class="token comment">&lt;!-- 环境配置 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>springProperty</span> <span class="token attr-name">scope</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>context<span class="token punctuation">"</span></span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog.appName<span class="token punctuation">"</span></span> <span class="token attr-name">source</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog.appName<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>springProperty</span> <span class="token attr-name">scope</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>context<span class="token punctuation">"</span></span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog.redisHost<span class="token punctuation">"</span></span> <span class="token attr-name">source</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog.redisHost<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>springProperty</span> <span class="token attr-name">scope</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>context<span class="token punctuation">"</span></span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog.redisAuth<span class="token punctuation">"</span></span> <span class="token attr-name">source</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog.redisAuth<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>springProperty</span> <span class="token attr-name">scope</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>context<span class="token punctuation">"</span></span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog.redisDb<span class="token punctuation">"</span></span> <span class="token attr-name">source</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog.redisDb<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>springProperty</span> <span class="token attr-name">scope</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>context<span class="token punctuation">"</span></span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog.env<span class="token punctuation">"</span></span> <span class="token attr-name">source</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>spring.profiles.active<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+<span class="token comment">&lt;!-- plumelog --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>appender</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog<span class="token punctuation">"</span></span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>com.plumelog.logback.appender.RedisAppender<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>appName</span><span class="token punctuation">&gt;</span></span>${plumelog.appName}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>appName</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>redisHost</span><span class="token punctuation">&gt;</span></span>${plumelog.redisHost}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>redisHost</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>redisAuth</span><span class="token punctuation">&gt;</span></span>${plumelog.redisAuth}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>redisAuth</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>redisDb</span><span class="token punctuation">&gt;</span></span>${plumelog.redisDb}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>redisDb</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>env</span><span class="token punctuation">&gt;</span></span>${plumelog.env}<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>env</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>appender</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>root</span> <span class="token attr-name">level</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>DEBUG<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>appender-ref</span> <span class="token attr-name">ref</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>plumelog<span class="token punctuation">"</span></span><span class="token punctuation">/&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>root</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h4><a id="4_161"></a>4、启动项目记录日志</h4>
+<p>访问plumelog的ui界面查看日志</p>
+<p><img src="https://img-blog.csdnimg.cn/d9bcc4cebb5b45889ea4b40eb3099380.png" alt="在这里插入图片描述"></p>
+<h3><a id="demo_167"></a>四、本文案例demo源码</h3>
+<p><a href="https://gitee.com/zhengqingya/java-workspace">https://gitee.com/zhengqingya/java-workspace</a></p>
+<hr>
+<blockquote>
+<p>今日分享语句：<br>
+我一定会加油，直追我的目标，有些该放弃的我会放弃，再也不会幻想了，未来的日子，我想你一样，坚强，达到我想要的目标！</p>
+</blockquote>
+</div>
+</body>
+
+</html>

@@ -1,0 +1,19 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+  profiles:
+    active: dev
+
+# 配置日志地址
+logging:
+  config: classpath:logback-spring.xml
+
+plumelog:
+  appName: plumelog_demo
+  # 需要和plumelog服务端的redis配置一致
+  redisHost: 127.0.0.1:6379
+  redisAuth: 123456
+  redisDb: 10
