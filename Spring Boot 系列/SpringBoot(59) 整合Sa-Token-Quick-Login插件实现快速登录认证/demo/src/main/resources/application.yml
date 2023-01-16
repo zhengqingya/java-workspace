@@ -1,0 +1,25 @@
+server:
+  port: 666
+
+# 配置日志地址
+logging:
+  config: classpath:logback-spring.xml
+
+# Sa-Token-Quick-Login 配置
+sa:
+  # 登录账号
+  name: test
+  # 登录密码
+  pwd: 123456
+  # 是否自动随机生成账号密码 (此项为true时, name与pwd失效)
+  auto: false
+  # 是否开启全局认证(关闭后将不再强行拦截)
+  auth: true
+  # 登录页标题
+  title: 登录
+  # 是否显示底部版权信息
+  copr: true
+  # 指定拦截路径
+  include: /**
+  # 指定排除路径
+  exclude: /1.jpg
