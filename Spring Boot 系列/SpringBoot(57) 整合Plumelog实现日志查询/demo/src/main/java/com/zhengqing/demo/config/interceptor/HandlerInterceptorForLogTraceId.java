@@ -1,7 +1,5 @@
 package com.zhengqing.demo.config.interceptor;
 
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.StrUtil;
 import com.plumelog.core.TraceId;
 import com.zhengqing.demo.config.WebAppConfig;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -25,11 +23,7 @@ public class HandlerInterceptorForLogTraceId implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String traceId = request.getHeader("traceId");
-        if (StrUtil.isEmpty(traceId)) {
-            TraceId.logTraceID.set(String.valueOf(IdUtil.getSnowflakeNextId()));
-        } else {
-            TraceId.logTraceID.set(traceId);
-        }
+        TraceId.getTraceId(traceId);
         return true;
     }
 
