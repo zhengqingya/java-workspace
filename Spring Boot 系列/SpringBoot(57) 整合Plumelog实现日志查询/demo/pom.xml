@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.4.0</version>
+        <version>2.3.2.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.zhengqing</groupId>
@@ -75,6 +75,18 @@
         <dependency>
             <groupId>com.plumelog</groupId>
             <artifactId>plumelog-logback</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+        <!-- sleuth：用于traceID生成 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-sleuth</artifactId>
+            <version>2.2.7.RELEASE</version>
+        </dependency>
+        <!-- plumelog-trace 提供链路日志  （并发高的模块不要过度使用！！！） -->
+        <dependency>
+            <groupId>com.plumelog</groupId>
+            <artifactId>plumelog-trace</artifactId>
             <version>3.5.3</version>
         </dependency>
 

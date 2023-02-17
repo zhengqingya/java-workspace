@@ -1,6 +1,5 @@
 package com.zhengqing.demo.config.interceptor;
 
-import com.plumelog.core.TraceId;
 import com.zhengqing.demo.config.WebAppConfig;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
@@ -22,8 +21,6 @@ public class HandlerInterceptorForLogTraceId implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String traceId = request.getHeader("traceId");
-        TraceId.getTraceId(traceId);
         return true;
     }
 

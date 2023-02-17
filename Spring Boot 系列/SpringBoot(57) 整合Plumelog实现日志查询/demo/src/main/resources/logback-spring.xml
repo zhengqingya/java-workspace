@@ -77,5 +77,6 @@
     <logger name="sun.rmi" level="WARN"/>
     <logger name="org.apache" level="WARN"/>
     <logger name="springfox" level="WARN"/>
+    <logger name="sun.net" level="WARN"/>
 
 </configuration>
