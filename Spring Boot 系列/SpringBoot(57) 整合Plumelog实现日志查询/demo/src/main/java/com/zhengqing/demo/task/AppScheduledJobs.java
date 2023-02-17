@@ -1,6 +1,7 @@
 package com.zhengqing.demo.task;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.http.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,6 +29,7 @@ public class AppScheduledJobs {
         log.warn("<<<<<< warn Start: 【{}】 >>>>>>", DateUtil.now());
         log.info("<<<<<< info Start: 【{}】 >>>>>>", DateUtil.now());
         log.debug("<<<<<< debug Start: 【{}】 >>>>>>", DateUtil.now());
+        log.debug(HttpUtil.get("http://127.0.0.1/test"));
     }
 
 }

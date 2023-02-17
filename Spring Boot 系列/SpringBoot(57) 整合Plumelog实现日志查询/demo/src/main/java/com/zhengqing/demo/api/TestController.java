@@ -2,6 +2,7 @@ package com.zhengqing.demo.api;
 
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.http.HttpUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,14 @@ public class TestController {
     public String time() {
         log.info("time: {}", DateUtil.date());
         return DateUtil.date().toString();
+    }
+
+    @GetMapping("test")
+    @ApiOperation("test")
+    public String test() {
+        String time = HttpUtil.get("http://127.0.0.1/time");
+        log.debug(time);
+        return time;
     }
 
 }
