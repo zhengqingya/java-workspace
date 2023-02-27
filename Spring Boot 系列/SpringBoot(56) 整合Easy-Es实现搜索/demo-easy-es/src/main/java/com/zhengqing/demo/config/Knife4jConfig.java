@@ -37,7 +37,7 @@ public class Knife4jConfig {
                 .title("API文档")
                 .description("API文档")
                 .termsOfServiceUrl("http://localhost:80/")
-                .contact(new Contact("zhengqingya", "http://gitee.com/zhengqingya", "960869719@qq.com"))
+                .contact(new Contact("zhengqingya", "http://gitee.com/zhengqingya", "zhengqingya@it.com"))
                 .version("1.0.0")
                 .build();
     }
