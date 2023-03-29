@@ -1,0 +1,17 @@
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+**/src/main/resources/rebel.xml
+**/src/main/resources/rebel-remote.xml
+**/**/src/main/resources/rebel.xml
+**/**/src/main/resources/rebel-remote.xml
+
+# 日志
+logs
+
