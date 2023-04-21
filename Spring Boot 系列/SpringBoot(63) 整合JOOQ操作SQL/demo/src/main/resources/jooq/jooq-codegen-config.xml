@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<configuration>
+    <!--数据源配置-->
+    <jdbc>
+        <driver>com.mysql.cj.jdbc.Driver</driver>
+        <url>jdbc:mysql://127.0.0.1:3306/jooq?useSSL=false</url>
+        <user>root</user>
+        <password>root</password>
+    </jdbc>
+
+    <generator>
+
+        <database>
+            <name>org.jooq.meta.mysql.MySQLDatabase</name>
+            <!--数据库中的哪个库-->
+            <schemata>
+                <schema>
+                    <inputSchema>jooq</inputSchema>
+                </schema>
+            </schemata>
+            <!--数据库中需要生成的表-->
+            <includes>t_user|t_product</includes>
+
+            <unsignedTypes>false</unsignedTypes>
+
+            <!--数据库中要排除的表-->
+            <!--            <excludes></excludes>-->
+            <!--            <forcedTypes></forcedTypes>-->
+            <!--            <outputSchemaToDefault>true</outputSchemaToDefault>-->
+        </database>
+
+        <generate>
+            <!--是否生成dao和pojo-->
+            <daos>true</daos>
+            <pojos>true</pojos>
+            <!--是否把数据库时间类型映射到java 8时间类型-->
+            <javaTimeTypes>true</javaTimeTypes>
+            <!--<interfaces>true</interfaces>-->
+            <!--是否在生成的代码中添加spring注释，比如@Repository-->
+            <springAnnotations>true</springAnnotations>
+        </generate>
+
+        <!--文件生成位置-->
+        <target>
+            <packageName>com.zhengqing.demo.dsl.jooq</packageName>
+            <directory>src/main/java</directory>
+        </target>
+    </generator>
+</configuration>
