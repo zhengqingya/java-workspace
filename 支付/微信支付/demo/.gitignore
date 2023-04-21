@@ -1,0 +1,10 @@
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+target
+logs
+
+src/main/resources/application-pay.yml
+

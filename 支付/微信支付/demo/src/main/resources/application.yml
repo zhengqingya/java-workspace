@@ -1,0 +1,14 @@
+server:
+  port: 888
+
+spring:
+  application:
+    name: demo
+
+  profiles:
+    include:
+      - pay
+
+# 配置日志地址
+logging:
+  config: classpath:logback-spring.xml
