@@ -38,4 +38,12 @@ public class PayOrderCreateVO implements Serializable {
     @ApiModelProperty("签名")
     private String paySign;
 
+    // --------------------------------------------
+
+    /**
+     * trade_type为NATIVE时有返回，用于生成二维码，展示给用户进行扫码支付
+     */
+    @ApiModelProperty("生成二维码-扫码支付")
+    private String codeUrl;
+
 }
