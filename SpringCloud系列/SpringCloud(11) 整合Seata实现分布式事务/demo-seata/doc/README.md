@@ -1,0 +1,102 @@
+# 说明
+
+### undo_log 表中的回滚信息查看
+
+```sql
+SELECT CONVERT(rollback_info USING utf8)
+FROM undo_log LIMIT 2;
+```
+
+eg:
+
+```
+{
+    "@class":"io.seata.rm.datasource.undo.BranchUndoLog",
+    "xid":"172.16.16.88:8091:144503564361253490",
+    "branchId":144503564361253492,
+    "sqlUndoLogs":[
+        "java.util.ArrayList",
+        [
+            {
+                "@class":"io.seata.rm.datasource.undo.SQLUndoLog",
+                "sqlType":"INSERT",
+                "tableName":"t_order",
+                "beforeImage":{
+                    "@class":"io.seata.rm.datasource.sql.struct.TableRecords$EmptyTableRecords",
+                    "tableName":"t_order",
+                    "rows":[
+                        "java.util.ArrayList",
+                        [
+
+                        ]
+                    ]
+                },
+                "afterImage":{
+                    "@class":"io.seata.rm.datasource.sql.struct.TableRecords",
+                    "tableName":"t_order",
+                    "rows":[
+                        "java.util.ArrayList",
+                        [
+                            {
+                                "@class":"io.seata.rm.datasource.sql.struct.Row",
+                                "fields":[
+                                    "java.util.ArrayList",
+                                    [
+                                        {
+                                            "@class":"io.seata.rm.datasource.sql.struct.Field",
+                                            "name":"order_id",
+                                            "keyType":"PRIMARY_KEY",
+                                            "type":-5,
+                                            "value":[
+                                                "java.math.BigInteger",
+                                                93
+                                            ]
+                                        },
+                                        {
+                                            "@class":"io.seata.rm.datasource.sql.struct.Field",
+                                            "name":"user_id",
+                                            "keyType":"NULL",
+                                            "type":-5,
+                                            "value":[
+                                                "java.lang.Long",
+                                                1
+                                            ]
+                                        },
+                                        {
+                                            "@class":"io.seata.rm.datasource.sql.struct.Field",
+                                            "name":"pay_time",
+                                            "keyType":"NULL",
+                                            "type":93,
+                                            "value":[
+                                                "java.sql.Timestamp",
+                                                [
+                                                    1683258369000,
+                                                    0
+                                                ]
+                                            ]
+                                        },
+                                        {
+                                            "@class":"io.seata.rm.datasource.sql.struct.Field",
+                                            "name":"pay_money",
+                                            "keyType":"NULL",
+                                            "type":4,
+                                            "value":100
+                                        },
+                                        {
+                                            "@class":"io.seata.rm.datasource.sql.struct.Field",
+                                            "name":"remark",
+                                            "keyType":"NULL",
+                                            "type":12,
+                                            "value":"seata-order"
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            }
+        ]
+    ]
+}
+```
