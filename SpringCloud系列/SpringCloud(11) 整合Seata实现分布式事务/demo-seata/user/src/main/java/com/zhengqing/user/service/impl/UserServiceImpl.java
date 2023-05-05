@@ -6,6 +6,7 @@ import com.zhengqing.user.feign.OrderClient;
 import com.zhengqing.user.mapper.UserMapper;
 import com.zhengqing.user.service.IUserService;
 import io.seata.spring.annotation.GlobalTransactional;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,9 +46,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         this.addData(user);
     }
 
+    @SneakyThrows
     @Transactional(rollbackFor = Exception.class)
     public void addData(User user) {
         user.insertOrUpdate();
+//        TimeUnit.SECONDS.sleep(10); // 测试其它事务去修改数据时的全局锁
         int i = 1 / 0;
     }
 
