@@ -1,0 +1,15 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+
+  # RabbitMQ配置
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    # 填写自己安装rabbitmq时设置的账号密码，默认账号密码为`guest`
+    username: admin
+    password: admin
+    virtual-host: my_vhost # 填写自己的虚拟机名，对应可查看 `127.0.0.1:15672/#/users` 下Admin中的`Can access virtual hosts`信息
