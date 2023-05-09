@@ -1,11 +1,7 @@
-#back-end
-/.idea_modules/
-/*.iml
-/.idea/
-/target/
-
-#front-end
-/node_modules/
-/dist/
-
+### IntelliJ IDEA ###
 .idea
+*.iws
+*.iml
+*.ipr
+target
+
