@@ -11,7 +11,7 @@ spring:
   application:
     name: user
   profiles:
-    active: test # 环境配置
+    active: dev # 环境配置
   cloud:
     nacos:
       discovery:

@@ -5,7 +5,7 @@ spring:
   application:
     name: order
   profiles:
-    active: test # 环境配置
+    active: dev # 环境配置
   cloud:
     nacos:
       discovery:
