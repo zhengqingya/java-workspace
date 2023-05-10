@@ -2,15 +2,15 @@ package com.zhengqing.user.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhengqing.common.core.util.IdGeneratorUtil;
 import com.zhengqing.common.db.config.dynamic.DataSourceConfig;
 import com.zhengqing.user.entity.User;
 import com.zhengqing.user.feign.OrderClient;
 import com.zhengqing.user.mapper.UserMapper;
 import com.zhengqing.user.service.IUserService;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.transaction.annotation.ShardingTransactionType;
-import org.apache.shardingsphere.transaction.core.TransactionType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,18 +46,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 //    @GlobalTransactional(name = "db-user",
 //            rollbackFor = Exception.class,
 //            propagation = Propagation.REQUIRES_NEW)
-//    @GlobalTransactional
+    @GlobalTransactional
     // Sharding+Seata分布式事务
-    @ShardingTransactionType(TransactionType.BASE)
-    @Transactional(rollbackFor = Exception.class)
+//    @ShardingTransactionType(TransactionType.BASE)
+//    @Transactional(rollbackFor = Exception.class)
     public void testSeata(User user) {
         this.orderClient.insertData();
         this.addData(user);
     }
 
     @SneakyThrows
-//    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public void addData(User user) {
+        if (user.getUserId() == null) {
+            long id = IdGeneratorUtil.snowflakeId();
+            if (id % 2 == 0) {
+                id += 1;
+            }
+            user.setUserId(id);
+        }
         user.setCreateTime(new Date());
         user.insertOrUpdate();
 //        TimeUnit.SECONDS.sleep(10); // 测试其它事务去修改数据时的全局锁
