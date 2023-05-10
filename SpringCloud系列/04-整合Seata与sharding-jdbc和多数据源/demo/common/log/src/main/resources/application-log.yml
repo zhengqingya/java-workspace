@@ -1,0 +1,9 @@
+# 配置日志地址
+logging:
+  #  config: classpath:log/logback.xml
+  config: classpath:logback-spring.xml
+  log:
+    home: logs            # 日志文件保存位置
+    max-history-day: 30   # 日志文件保留天数
+#  file:
+#    name: ${logging.log.home}/${spring.application.name}.log  # Spring Boot Admin提供了基于Web页面的方式实时查看服务输出的本地日志，前提是服务中配置了`logging.file.name`

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.zhengqing</groupId>
+        <artifactId>common</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>core</artifactId>
+
+    <name>${project.artifactId}</name>
+    <version>${revision}</version>
+    <packaging>jar</packaging>
+
+    <properties>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>base</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>log</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>db</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>feign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>log</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>nacos</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>seata</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>swagger</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zhengqing</groupId>
+            <artifactId>web</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

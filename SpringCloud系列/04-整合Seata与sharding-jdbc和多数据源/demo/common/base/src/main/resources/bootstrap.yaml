@@ -1,0 +1,99 @@
+spring:
+  # 聚合各个基础组件配置
+  profiles:
+    include:
+      - db
+      - feign
+      - file
+      - log
+      - nacos
+      - seata
+      - swagger
+      - web
+      - common # 每个业务服务中的common模块配置文件
+
+  # cloud:
+  #   config:
+  #     # 相同配置下优先使用本地配置 (注：需在nacos上配置才生效！)
+  #     override-none: true
+  #     allow-override: true
+  #     override-system-properties: false
+
+  # 微服务配置
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848 # nacos服务注册地址
+        register-enabled: true # 是否注册到注册中心上，默认true，若为false则不会注册到注册中心，但是可以从注册中心获取服务列表
+        namespace: ${spring.profiles.active}   # 命名空间
+        group: test                            # 分组
+        username: nacos
+        password: nacos
+        metadata:
+          #当前实例版本
+          version: ${spring.cloud.client.ip-address}
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}  # 配置中心地址
+        namespace: ${spring.cloud.nacos.discovery.namespace}      # 命名空间
+        group: ${spring.cloud.nacos.discovery.group}              # 分组
+        # dataId完整格式: ${prefix}-${spring.profiles.active}.${file-extension}
+        prefix: ${spring.application.name}  # 默认为`spring.application.name`的值
+        file-extension: yml                 # 配置文件格式
+        refresh-enabled: true               # 开启自动刷新配置
+        # 指定要读取共享配置文件的DataID,多个文件用`,`分隔
+        #        shared-dataids: common-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+        # 指定共享配置文件支持自动刷新
+        #        refreshable-dataids: ${spring.cloud.nacos.config.shared-dataids}
+        # 指定共享配置文件+自动刷新配置
+        extension-configs:
+          - data-id: common.${spring.cloud.nacos.config.file-extension}
+            group: ${spring.cloud.nacos.discovery.group}
+            refresh: true
+        username: ${spring.cloud.nacos.discovery.username}
+        password: ${spring.cloud.nacos.discovery.password}
+
+
+  lifecycle:
+    timeout-per-shutdown-phase: 30s # 设置缓冲期，最大等待时间（即超时间后，无论线程任务是否执行完毕都会停机处理，需合理设置哦）
+  servlet:
+    multipart:
+      enabled: true # 是否开启文件上传支持，默认为true
+      #      location: E:/tmp # 指定文件上传路径 【注：文件路径必须存在！  windows： "E:/tmp" liunx： "/tmp"】
+      max-file-size: 50MB # 指定文件大小最大值，默认1MB
+      max-request-size: 100MB # 指定每次请求的最大值，默认为10MB
+      file-size-threshold: 0 # 设定文件写入磁盘的阈值，单位为MB或KB，默认为0。表示收到文件到达这么大后，不在放入缓存，而是写入临时文件
+  mvc:
+    throw-exception-if-no-handler-found: true # 关闭springboot的异常自动资源映射，让其抛出异常
+  web:
+    resources:
+      add-mappings: true # 是否开启默认的资源处理，默认为true
+
+# 服务器配置
+server:
+  servlet:
+    #    context-path: /api
+    #    application-display-name: SmallTools
+    encoding:
+      charset: UTF-8
+      force: true
+  # 下面是配置undertow作为服务器的参数
+  # undertow:
+  #   # 是否分配的直接内存(NIO直接分配的堆外内存)
+  #   direct-buffers: true
+  #   # 以下的配置会影响buffer,这些buffer会用于服务器连接的IO操作,有点类似netty的池化内存管理
+  #   # 每块buffer的空间大小,越小的空间被利用越充分，不要设置太大，以免影响其他应用，合适即可
+  #   buffer-size: 1024
+  #   threads:
+  #     io: 4        # 设置IO线程数, 它主要执行非阻塞的任务,它们会负责多个连接, 默认设置每个CPU核心一个线程 （不要设置过大，如果过大，启动项目会报错：打开文件数过多）
+  #     worker: 20   # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统线程执行任务的阻塞系数，默认值是IO线程数*8
+  shutdown: graceful # 开启优雅停机，默认`IMMEDIATE`是立即关机
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'  # 暴露监控端点
+#  security:
+#    enabled: false   # 关闭安全验证
+

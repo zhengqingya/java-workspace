@@ -1,0 +1,8 @@
+server:
+  port: 10010
+
+spring:
+  application:
+    name: user
+  profiles:
+    active: dev # 环境配置

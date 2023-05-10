@@ -1,0 +1,25 @@
+server:
+  tomcat:
+    threads:
+      max: 200      # 最大线程数
+      min-spare: 10 # 最小工作线程数
+    max-connections: 8192 # 接受和处理的最大连接数
+    accept-count: 100 # 可以放到处理队列中的请求数
+
+spring:
+  # jackson全局处理
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss  # JSON入参及返回值Date时间格式
+    time-zone: GMT+8                  # 时区
+    # property-naming-strategy: LOWER_CAMEL_CASE # 属性命名策略->转驼峰式 {@see com.fasterxml.jackson.databind.PropertyNamingStrategies }
+  lifecycle:
+    timeout-per-shutdown-phase: 30s # 设置缓冲期，最大等待时间（即超时间后，无论线程任务是否执行完毕都会停机处理，需合理设置哦）
+  mvc:
+    throw-exception-if-no-handler-found: true # 关闭springboot的异常自动资源映射，让其抛出异常
+  web:
+    resources:
+      add-mappings: true # 是否开启默认的资源处理，默认为true
+
+  # 模板引擎
+  freemarker:
+    checkTemplateLocation: false # 不检查模板位置是否存在 -- 解决启动警告问题 “Cannot find template location(s): [classpath:/templates/] (please add some templates, check your FreeMarker configuration, or set spring.freemarker.checkTemplateLocation=false)”

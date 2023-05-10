@@ -1,0 +1,14 @@
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+**/src/main/resources/rebel.xml
+**/src/main/resources/rebel-remote.xml
+**/**/src/main/resources/rebel.xml
+**/**/src/main/resources/rebel-remote.xml
+
+# 业务相关
+logs
+docker/*.jar
+tmp

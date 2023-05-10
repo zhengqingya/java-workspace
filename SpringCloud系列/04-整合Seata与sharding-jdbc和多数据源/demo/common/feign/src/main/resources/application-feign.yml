@@ -1,0 +1,32 @@
+# feign配置
+feign:
+  sentinel:
+    enabled: true # openfeign整合sentinel，开启sentinel监控功能
+  hystrix:
+    enabled: true # 开启Feign的熔断功能 默认是关闭的
+  rule-type: version # 负载均衡策略
+
+#spring:
+#  cloud:
+#    # 使用spring loadbalancer，弃用ribbon
+#    loadbalancer:
+#      ribbon:
+#        enabled: false
+
+
+# 此配置主要解决：在服务都成功启动的时候第一次访问会有报错的情况发生,但是之后又恢复正常访问！
+# 产生原因：主要是Ribbon进行客户端负载均衡的Client并不是在服务启动的时候就初始化好的，而是在调用的时候才会去创建相应的Client。
+#         所以第一次调用的耗时不仅仅包含发送HTTP请求的时间，还包含了创建RibbonClient的时间，
+#         这样一来如果创建时间速度较慢，同时设置的超时时间又比较短的话，很容易就会出现上面所描述的显现。
+# 可参考 https://cloud.spring.io/spring-cloud-static/Dalston.SR5/multi/multi_spring-cloud-ribbon.html#_customizing_the_ribbon_client
+#ribbon:
+#  rule-type: version
+#  # 配置饥饿加载模式
+#  eager-load:
+#    # 开启饥饿加载模式
+#    enabled: true
+#    # 指定需要饥饿加载的服务名
+#    clients:
+#      - "demo"
+#      - "system"
+#      - "tool"
