@@ -25,7 +25,7 @@ https://shardingsphere.apache.org/document/legacy/4.x/document/cn/features/trans
 
 #### 分库分表
 
-##### 父服务声明
+##### 父服务声明（主业务调用方）
 
 > tips:
 > 网上有资料说这里的2个注解不能同时使用，但在我测试看是必须一起使用！
