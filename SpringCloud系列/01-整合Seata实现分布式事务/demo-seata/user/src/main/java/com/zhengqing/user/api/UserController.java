@@ -4,13 +4,18 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.zhengqing.user.entity.User;
 import com.zhengqing.user.feign.OrderClient;
 import com.zhengqing.user.service.IUserService;
+import io.seata.core.context.RootContext;
 import io.seata.spring.annotation.GlobalTransactional;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import javax.sql.DataSource;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -23,15 +28,14 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/user")
 @Api(tags = {"用户api"})
 public class UserController {
 
-    @Autowired
-    private IUserService userService;
-
-    @Autowired
-    private OrderClient orderClient;
+    private final IUserService userService;
+    private final OrderClient orderClient;
+    private final DataSource dataSource;
 
     @GetMapping("/hello")
     public String hello() {
@@ -45,15 +49,6 @@ public class UserController {
         return this.userService.detail(userId);
     }
 
-    @PostMapping("")
-    @ApiOperation("保存数据")
-//    @GlobalTransactional(name = "db-user", rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
-//    @Transactional(rollbackFor = Exception.class)
-    public String insertData(@RequestBody User user) {
-        this.userService.addOrUpdateData(user);
-        return "OK";
-    }
-
     @PutMapping("update")
     @ApiOperation("更新数据")
     @GlobalTransactional
@@ -64,18 +59,37 @@ public class UserController {
         return user;
     }
 
+    @PostMapping("testSeata")
+    @ApiOperation("测试分布式事务")
+//    @GlobalTransactional(name = "db-user", rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
+//    @Transactional(rollbackFor = Exception.class)
+    public String testSeata() {
+        this.userService.testSeata();
+        return "OK";
+    }
+
+    @SneakyThrows
     @PostMapping("testDynamicDataShource")
     @ApiOperation("测试多数据源")
-    @Transactional(rollbackFor = Exception.class)
-//    @DSTransactional
+    @GlobalTransactional
     @DS("db-test")
-    public void testDynamicDataShource(@RequestBody User user) {
-        boolean b = this.userService.saveOrUpdate(user);
+    public void testDynamicDataShource() {
+        this.userService.save(
+                User.builder()
+                        .username("test")
+                        .password("123456")
+                        .date(new Date())
+                        .build()
+        );
+        System.err.println("xid:" + RootContext.getXID());
 
-//        int i = 1 / 0;
+        // 观察 seata-server 库下的 lock_table 表信息
+        TimeUnit.SECONDS.sleep(5);
 
-        //手动切换
-//        DynamicDataSourceContextHolder.push(UcmsDataSourceConstant.CALLING);
+        int i = 1 / 0;
+
+        // 手动切换数据源
+//        DynamicDataSourceContextHolder.push("ds-test");
 //        String peek = DynamicDataSourceContextHolder.peek();
 //        DynamicDataSourceContextHolder.poll();
     }

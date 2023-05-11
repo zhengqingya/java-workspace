@@ -25,13 +25,12 @@ public interface IUserService extends IService<User> {
     User detail(Long userId);
 
     /**
-     * 新增或者更新数据
+     * 测试分布式事务
      *
-     * @param user 用户信息
      * @return void
      * @author zhengqingya
      * @date 2021/11/16 9:28 下午
      */
-    void addOrUpdateData(User user);
+    void testSeata();
 
 }

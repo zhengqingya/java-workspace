@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
+
 /**
  * <p>
  * 用户 服务实现类
@@ -40,16 +42,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 //    @GlobalTransactional(name = "db-user",
 //            rollbackFor = Exception.class,
 //            propagation = Propagation.REQUIRES_NEW)
-    @GlobalTransactional
-    public void addOrUpdateData(User user) {
+    @GlobalTransactional(rollbackFor = Exception.class)
+    public void testSeata() {
         this.orderClient.insertData();
-        this.addData(user);
+
+        this.addData();
     }
 
     @SneakyThrows
     @Transactional(rollbackFor = Exception.class)
-    public void addData(User user) {
-        user.insertOrUpdate();
+    public void addData() {
+        this.save(
+                User.builder()
+                        .username("test")
+                        .password("123456")
+                        .date(new Date())
+                        .build()
+        );
 //        TimeUnit.SECONDS.sleep(10); // 测试其它事务去修改数据时的全局锁
         int i = 1 / 0;
     }
