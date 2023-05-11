@@ -98,7 +98,8 @@ public class SeataController {
     }
 
     @PostMapping("testLock")
-    @GlobalTransactional
+    @GlobalTransactional(rollbackFor = Exception.class)
+    @ShardingTransactionType(TransactionType.BASE)
     @ApiOperation("测试seata全局锁")
     public User testLock() {
         User user = this.userService.detail(1L);

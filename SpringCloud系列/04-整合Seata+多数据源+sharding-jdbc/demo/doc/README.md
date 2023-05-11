@@ -1,5 +1,7 @@
 # 说明
 
+> 下面为熟练后的简版快速使用文档
+
 ### tips
 
 1. 测试环境中导入数据库[test.sql](./test.sql)
@@ -21,7 +23,9 @@ https://shardingsphere.apache.org/document/legacy/4.x/document/cn/features/trans
 
 ### Sharding+Seata+多数据源 整合
 
-#### 父服务声明
+#### 分库分表
+
+##### 父服务声明
 
 > tips:
 > 网上有资料说这里的2个注解不能同时使用，但在我测试看是必须一起使用！
@@ -33,12 +37,23 @@ https://shardingsphere.apache.org/document/legacy/4.x/document/cn/features/trans
 @ShardingTransactionType(TransactionType.BASE)
 ```
 
-#### 子服务声明
+##### 子服务声明
 
 ```
 @Transactional(rollbackFor = Exception.class)
 @ShardingTransactionType(TransactionType.BASE)
 ```
+
+#### 多数据源
+
+单库单表
+
+```
+@GlobalTransactional(rollbackFor = Exception.class)
+@DS("db-test")
+```
+
+---
 
 ### undo_log 表中的回滚信息查看
 
