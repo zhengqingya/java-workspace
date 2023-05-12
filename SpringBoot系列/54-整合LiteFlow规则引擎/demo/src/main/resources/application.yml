@@ -1,0 +1,18 @@
+server:
+  port: 81
+
+spring:
+  application:
+    name: demo
+  jackson:
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false
+
+# 配置日志地址
+logging:
+  config: classpath:logback-spring.xml
+
+
+liteflow:
+  rule-source: config/flow.el.xml
+
