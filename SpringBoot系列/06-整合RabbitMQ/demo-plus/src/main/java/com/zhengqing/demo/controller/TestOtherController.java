@@ -1,19 +1,26 @@
 package com.zhengqing.demo.controller;
 
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.util.RandomUtil;
+import com.rabbitmq.client.Channel;
 import com.zhengqing.demo.util.MqUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.rabbit.annotation.RabbitHandler;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.annotation.*;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.context.annotation.Bean;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Api(tags = "其它测试")
@@ -65,6 +72,56 @@ public class TestOtherController {
     }
 
     // ----------------------------------------------------------------------------------
+
+    // ----------------------------------------------------------------------------------
+
+    @ApiOperation("测试顺序消费")
+    @PostMapping("sort")
+    public String sort() {
+        String msgContent = "Hello World " + DateTime.now() + "\n" + RandomUtil.randomNumber();
+        MqUtil.send("test_exchange", "test_sort_routing_key", msgContent);
+        return "SUCCESS";
+    }
+
+    @SneakyThrows
+    @RabbitHandler
+    @RabbitListener(
+            bindings = @QueueBinding(
+                    value = @Queue(value = "test_sort_queue", durable = "true"),
+                    exchange = @Exchange(value = "test_exchange", type = "direct", durable = "true"),
+                    key = "test_sort_routing_key"
+            ),
+            concurrency = "1-1", // 最小1个，最大1个consumer
+            containerFactory = "mqConsumerListenerContainer", // 指定队列配置
+            ackMode = "MANUAL"// 手动ack
+    )
+    public void sort(String msg, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
+        TimeUnit.SECONDS.sleep(3);
+        log.info("{} [消费者] 接收消息: {}", DateTime.now(), msg);
+        try {
+            channel.basicAck(deliveryTag, false);
+            // int num = 1 / 0;
+        } catch (Exception e) {
+            // 丢弃消息
+            channel.basicReject(deliveryTag, false);
+            e.printStackTrace();
+        }
+    }
+
+    @Resource
+    private CachingConnectionFactory connectionFactory;
+
+    @Bean(name = "mqConsumerListenerContainer")
+    public SimpleRabbitListenerContainerFactory mqConsumerListenerContainer() {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(this.connectionFactory);
+        // 消费者每次只接收处理一条消息
+        factory.setPrefetchCount(1);
+        return factory;
+    }
+
+    // ----------------------------------------------------------------------------------
+
 
 //    @Resource
 //    private ConnectionFactory connectionFactory;

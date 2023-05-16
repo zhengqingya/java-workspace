@@ -105,6 +105,8 @@ org.springframework.amqp.core.AcknowledgeMode（确认模式）: 用于定义如
 
 开启手动ACK
 
+> 手动ack会导致yml中配置的重试次数失效，如果需要重试次数能力，自行编写代码实现...
+
 #### a:全局方式
 
 `application.yml`中配置：`spring.rabbitmq.listener.simple.acknowledge-mode=manual`
