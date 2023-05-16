@@ -1,6 +1,7 @@
 package com.zhengqing.demo.controller;
 
 import cn.hutool.core.date.DateTime;
+import com.zhengqing.demo.util.MqUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.SneakyThrows;
@@ -43,6 +44,23 @@ public class TestOtherController {
     @RabbitListener(queues = "demo.test_delay.queue")
     public void delayMsg(String msg) {
         log.info("----------------------------------------------");
+        log.info("{} [消费者] 接收消息: {}", DateTime.now(), msg);
+    }
+
+    // ----------------------------------------------------------------------------------
+
+    @ApiOperation("发送消息并确认")
+    @PostMapping("sendWithConfirm")
+    public String sendWithConfirm() {
+        String msgContent = "Hello World " + DateTime.now();
+        MqUtil.send("test_exchange", "test_ack_sender_routing_key", msgContent);
+        return "SUCCESS";
+    }
+
+    @SneakyThrows
+    @RabbitHandler
+    @RabbitListener(queues = "test_ack_sender_queue")
+    public void sendWithConfirm(String msg) {
         log.info("{} [消费者] 接收消息: {}", DateTime.now(), msg);
     }
 

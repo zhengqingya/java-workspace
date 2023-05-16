@@ -17,6 +17,10 @@ spring:
     username: admin
     password: admin
     virtual-host: my_vhost # 填写自己的虚拟机名，对应可查看 `127.0.0.1:15672/#/users` 下Admin中的`Can access virtual hosts`信息
+    # 发送方消息确认（ACK）
+    publisher-confirm-type: correlated # 确认消息已发送到交换机(Exchange)
+    publisher-returns: true # 确认消息已发送到队列(Queue)
+    # 消息接收方
     listener:
       simple:
         # 表示消息确认方式，其有三种配置方式，分别是none、manual和auto；默认auto
@@ -86,4 +90,12 @@ spring:
           type: direct
           name: test_exchange
         routing-key: test_ack_manual_routing_key
+
+      # 测试发送方消息确认
+      - queue:
+          name: test_ack_sender_queue
+        exchange:
+          type: direct
+          name: test_exchange
+        routing-key: test_ack_sender_routing_key
 

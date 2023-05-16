@@ -1,6 +1,98 @@
-# 手动ACK
+# 消息确认机制
 
-### 一、开启手动ACK
+为了保证消息从队列可靠的达到消费者，RabbitMQ 提供了消息确认机制（Message Acknowledgement）。
+
+1. 发送方确认
+    - 生产者到交换机到确认（消息达到交换器）
+    - 交换机到队列的确认（交换器绑定队列）
+2. 接收方确认
+
+### 一、生产方确认
+
+`application.yml`中配置
+
+```yml
+spring:
+  rabbitmq:
+    publisher-confirm-type: correlated # 确认消息已发送到交换机(Exchange)
+    publisher-returns: true # 确认消息已发送到队列(Queue)
+```
+
+> tips:
+>
+只能选择下面其中一种方式进行配置，否则会报错：`Only one ConfirmCallback/ReturnCallback is supported by each RabbitTemplate`
+
+#### 方式1
+
+```
+@Bean
+public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+    RabbitTemplate rabbitTemplate = new RabbitTemplate();
+    rabbitTemplate.setConnectionFactory(connectionFactory);
+    // 设置开启Mandatory,才能触发回调函数,无论消息推送结果怎么样都强制调用回调函数
+    rabbitTemplate.setMandatory(true);
+
+    // 确认消息送到交换机(Exchange)回调
+    rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+        // do your business
+        log.debug("\n[确认消息送到交换机(Exchange)回调] 是否成功:[{}] 数据：[{}] 异常：[{}]", ack, JSONUtil.toJsonStr(correlationData), cause);
+    });
+
+    // 确认消息送到队列(Queue)回调 -- 只有在出现错误时才回调
+    rabbitTemplate.setReturnsCallback(returnedMessage -> {
+        // do your business
+        log.error("\n[确认消息送到队列(Queue)回调] 返回信息：[{}]", JSONUtil.toJsonStr(returnedMessage));
+    });
+
+    return rabbitTemplate;
+}
+```
+
+#### 方式2
+
+```java
+package com.zhengqing.demo.util;
+
+import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.UUID;
+import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.ReturnedMessage;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Slf4j
+@Component
+public class MqUtil implements RabbitTemplate.ConfirmCallback, RabbitTemplate.ReturnsCallback {
+
+    private RabbitTemplate rabbitTemplate;
+
+    public void sendWithConfirm(String exchange, String routingKey, Object msgData) {
+        log.info("[MQ生产者] 发送方确认模式 交换机:[{}] 路由key:[{}] 发送消息:[{}]", exchange, routingKey, JSONUtil.toJsonStr(msgData));
+        this.rabbitTemplate.setMandatory(true);
+        this.rabbitTemplate.setReturnsCallback(this);
+        this.rabbitTemplate.setConfirmCallback(this);
+        this.rabbitTemplate.convertAndSend(exchange, routingKey, msgData, new CorrelationData(UUID.randomUUID().toString()));
+    }
+
+    @Override
+    public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+        // do your business
+        log.debug("\n[确认消息送到交换机(Exchange)回调] 是否成功:[{}] 数据：[{}] 异常：[{}]", ack, JSONUtil.toJsonStr(correlationData), cause);
+    }
+
+    @Override
+    public void returnedMessage(ReturnedMessage returnedMessage) {
+        // do your business
+        log.error("\n[确认消息送到队列(Queue)回调] 返回信息：[{}]", JSONUtil.toJsonStr(returnedMessage));
+    }
+
+}
+```
+
+### 二、消费方确认
 
 org.springframework.amqp.core.AcknowledgeMode（确认模式）: 用于定义如何确认消息的传递
 
@@ -10,6 +102,8 @@ org.springframework.amqp.core.AcknowledgeMode（确认模式）: 用于定义如
 - `MANUAL`：手动确认模式，也称为显式确认模式，它需要应用显式地确认消息妥善处理，以便通知 RabbitMQ
   该消息已经被处理完毕，并且可以将其删除。使用手动确认模式时必须考虑如何把未处理的消息进行重新处理。手动确认模式比自动模式更加安全，能够精确地控制消费吞吐量和错误处理。
 - `AUTO`: 自动确认模式，在一些场景下，我们可以选择自动确认消息的传递，每当消费者从队列中获取到一条消息时，就会立即确认收到了该消息。这种确认方式针对简单的应用场景非常实用。但是它不能精确地控制消费吞吐量和错误处理。
+
+开启手动ACK
 
 #### a:全局方式
 
@@ -79,6 +173,8 @@ public class AckController {
 
 #### b:指定单个消费者的ack模式
 
+当全局为默认auto自动确认模式时，可以通过手动注册 SimpleMessageListenerContainer 容器实现指定单个消费的ack模式
+
 ```java
 package com.zhengqing.demo.controller;
 
@@ -145,7 +241,7 @@ public class AckController {
 }
 ```
 
-### 二、ACK参数说明
+#### ACK参数说明
 
 ```
 // ack正常确认
