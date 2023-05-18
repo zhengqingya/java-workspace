@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>2.3.1.RELEASE</version>
+    <relativePath/> <!-- lookup parent from repository -->
+  </parent>
+  <groupId>com.zhengqing</groupId>
+  <artifactId>demo-fastdfs</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>demo</name>
+  <description>Demo project for Spring Boot</description>
+
+  <properties>
+    <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
+    <docker.plugin.version>1.1.0</docker.plugin.version>
+    <docker.repostory>registry.cn-hangzhou.aliyuncs.com</docker.repostory>
+    <docker.registry.name>zhengqing</docker.registry.name>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- 添加适用于生产环境的功能，如性能指标和监测等功能 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- lombok插件 -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- ================================================================= -->
+
+    <!-- https://mvnrepository.com/artifact/com.github.tobato/fastdfs-client -->
+    <!--    <dependency>-->
+    <!--      <groupId>com.github.tobato</groupId>-->
+    <!--      <artifactId>fastdfs-client</artifactId>-->
+    <!--      <version>1.27.2</version>-->
+    <!--    </dependency>-->
+
+    <!--    <dependency>-->
+    <!--      <groupId>com.zhengqing</groupId>-->
+    <!--      <artifactId>fastdfs_client</artifactId>-->
+    <!--      <version>1.20</version>-->
+    <!--      <scope>system</scope>-->
+    <!--      <systemPath>${project.basedir}/lib/fastdfs_client_v1.20.jar</systemPath>-->
+    <!--    </dependency>-->
+
+    <!-- https://mvnrepository.com/artifact/net.oschina.zcx7878/fastdfs-client-java -->
+    <dependency>
+      <groupId>net.oschina.zcx7878</groupId>
+      <artifactId>fastdfs-client-java</artifactId>
+      <version>1.27.0.0</version>
+    </dependency>
+
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <!-- 作用:项目打成jar，同时把本地jar包也引入进去 -->
+        <configuration>
+          <includeSystemScope>true</includeSystemScope>
+        </configuration>
+      </plugin>
+
+      <!--添加配置跳过测试-->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.22.1</version>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+      <!--添加配置跳过测试-->
+
+    </plugins>
+
+  </build>
+
+
+</project>
