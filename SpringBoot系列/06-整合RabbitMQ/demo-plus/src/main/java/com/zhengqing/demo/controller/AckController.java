@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Api(tags = "测试mq-ack")
@@ -46,16 +47,18 @@ public class AckController {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         try {
             log.info("----------------------------------------------");
+            TimeUnit.SECONDS.sleep(10);
             log.info("{} [消费者] deliveryTag:{} 接收消息: {}", DateTime.now(), deliveryTag, msg);
 //            int num = 1 / 0;
             // 手动确认消息已被消费
 //            channel.basicAck(deliveryTag, false);
         } catch (Exception e) {
             // 丢弃消息
-            channel.basicReject(deliveryTag, false);
+//            channel.basicReject(deliveryTag, false);
             // 重新入队再次消费
 //            channel.basicReject(deliveryTag, true);
-            e.printStackTrace();
+//            e.printStackTrace();
+            throw e;
         }
     }
 
