@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhengqing.demo.mapper.DemoMapper">
+
+    <select id="selectDataList" resultType="com.zhengqing.demo.model.vo.DemoListVO">
+        SELECT
+        id ,
+        username,
+        password
+        FROM t_demo
+        <where>
+            <if test="filter.id!=null">
+                AND id = #{filter.id}
+            </if>
+            <if test="filter.username!=null and filter.username!=''">
+                AND username LIKE CONCAT( '%', #{filter.username} , '%' )
+            </if>
+        </where>
+    </select>
+
+</mapper>
