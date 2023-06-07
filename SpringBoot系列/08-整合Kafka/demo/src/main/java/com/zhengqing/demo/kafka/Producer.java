@@ -1,4 +1,3 @@
-
 package com.zhengqing.demo.kafka;
 
 import com.zhengqing.demo.Constants;
@@ -21,9 +20,9 @@ public class Producer {
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
 
-    @RequestMapping("send")
+    @RequestMapping("send") // http://localhost/api/send?msg=helloworld
     public String send(String msg) {
-        kafkaTemplate.send(Constants.KAFKA_TOPIC_HELLO, msg);
+        this.kafkaTemplate.send(Constants.KAFKA_TOPIC_HELLO, msg);
         return "SUCCESS";
     }
 
