@@ -18,17 +18,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-
-        <springfox.version>2.9.2</springfox.version>
-        <knife4j.version>2.0.4</knife4j.version>
-        <fastjson.version>1.2.73</fastjson.version>
-        <commons-lang3.version>3.6</commons-lang3.version>
-        <commons-beanutils.version>1.9.3</commons-beanutils.version>
-        <hutool-all.version>5.3.8</hutool-all.version>
-        <guava.version>29.0-jre</guava.version>
-
-        <mybatis-plus-boot-starter.version>3.4.3.1</mybatis-plus-boot-starter.version>
-        <mysql.version>8.0.25</mysql.version>
     </properties>
 
     <dependencies>
@@ -36,19 +25,18 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- 添加适用于生产环境的功能，如性能指标和监测等功能 -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
-
-        <!-- ========================= 常用库依赖 ========================== -->
 
         <!-- lombok插件 -->
         <dependency>
@@ -62,7 +50,7 @@
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
-            <version>${hutool-all.version}</version>
+            <version>5.8.3</version>
         </dependency>
 
         <!-- guava -->
@@ -70,19 +58,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-
-        <!-- swagger -->
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>${springfox.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>${springfox.version}</version>
+            <version>31.1-jre</version>
         </dependency>
 
         <!-- knife4j -->
@@ -90,36 +66,7 @@
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
             <artifactId>knife4j-spring-boot-starter</artifactId>
-            <version>${knife4j.version}</version>
-        </dependency>
-
-
-        <!-- 阿里FastJson转换工具依赖 -->
-        <!-- https://mvnrepository.com/artifact/com.alibaba/fastjson -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>${fastjson.version}</version>
-        </dependency>
-
-        <!-- StringUtils工具类 -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>${commons-lang3.version}</version>
-        </dependency>
-
-        <!-- commons-beanutil -->
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>${commons-beanutils.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
+            <version>3.0.3</version>
         </dependency>
 
         <!-- ========================= 数据库相关 ========================== -->
@@ -131,18 +78,16 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>${mysql.version}</version>
+            <version>8.0.25</version>
         </dependency>
-
 
         <!-- mybatis-plus -->
         <!-- https://mvnrepository.com/artifact/com.baomidou/mybatis-plus-boot-starter -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>
-            <version>${mybatis-plus-boot-starter.version}</version>
+            <version>3.4.3.1</version>
         </dependency>
-
 
     </dependencies>
 
