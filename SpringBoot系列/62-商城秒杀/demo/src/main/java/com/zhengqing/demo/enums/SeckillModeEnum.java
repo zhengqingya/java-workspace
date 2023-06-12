@@ -19,11 +19,8 @@ public enum SeckillModeEnum {
 
     秒杀一_不加锁("✘"),
     秒杀二_加锁_ReentrantLock("✘"),
-
     秒杀三_加锁_ReentrantLock_AOP("✔"),
-
     秒杀四_加锁_DB悲观锁("✔"),
-
     秒杀五_加锁_DB乐观锁("✔"),
     秒杀六_加锁_Redis分布式锁("✘"),
     秒杀七_加锁_Redis分布式锁_AOP("✔");
