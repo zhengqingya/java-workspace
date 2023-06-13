@@ -56,13 +56,14 @@ public class SeckillController {
     @SneakyThrows(Exception.class)
     public String seckill(@ApiParam(value = "秒杀模式", allowableValues = "秒杀一_不加锁,秒杀二_加锁_ReentrantLock,秒杀三_加锁_ReentrantLock_AOP,秒杀四_加锁_DB悲观锁,秒杀五_加锁_DB乐观锁,秒杀六_加锁_Redis分布式锁,秒杀七_加锁_Redis分布式锁_AOP")
                           @RequestParam String mode,
-                          @ApiParam(value = "秒杀人数", example = "20") @RequestParam int num) {
+                          @ApiParam(value = "库存", example = "10") @RequestParam int stock,
+                          @ApiParam(value = "秒杀人数", example = "20") @RequestParam int userNum) {
         // 1、初始化数据
-        this.seckillService.initData();
+        this.seckillService.initData(stock);
 
         // 2、秒杀
-        final CountDownLatch countDownLatch = new CountDownLatch(num);
-        for (int i = 0; i < num; i++) {
+        final CountDownLatch countDownLatch = new CountDownLatch(userNum);
+        for (int i = 0; i < userNum; i++) {
             this.executor.execute(() -> {
                 try {
 //                System.out.println("线程: " + Thread.currentThread().getName());
@@ -104,7 +105,7 @@ public class SeckillController {
         countDownLatch.await();
 
         // 3、查询库存
-        return StrUtil.format("总库存：10 \n秒杀人数：20 \n剩余库存：{}", this.seckillService.getStock());
+        return StrUtil.format("总库存：{} \n秒杀人数：{} \n剩余库存：{}", stock, userNum, this.seckillService.getStock());
     }
 
 }

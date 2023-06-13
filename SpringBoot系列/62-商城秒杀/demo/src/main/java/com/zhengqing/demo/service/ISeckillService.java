@@ -14,7 +14,7 @@ public interface ISeckillService {
     /**
      * 初始化数据
      */
-    void initData();
+    void initData(int stock);
 
     /**
      * 查询库存

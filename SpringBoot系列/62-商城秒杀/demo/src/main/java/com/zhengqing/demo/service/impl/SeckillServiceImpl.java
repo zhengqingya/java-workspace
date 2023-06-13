@@ -13,6 +13,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -34,7 +35,7 @@ public class SeckillServiceImpl implements ISeckillService {
     private final RedissonClient redissonClient;
 
     @Override
-    public void initData() {
+    public void initData(int stock) {
         this.jdbcTemplate.execute(
                 "DROP TABLE IF EXISTS `t_seckill`;\n" +
                         "\n" +
@@ -46,7 +47,7 @@ public class SeckillServiceImpl implements ISeckillService {
                         "    PRIMARY KEY (`id`) USING BTREE\n" +
                         ") ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '秒杀表' ROW_FORMAT = Dynamic;\n" +
                         "\n" +
-                        "INSERT INTO `t_seckill` VALUES (1, 10, 1);"
+                        "INSERT INTO `t_seckill` VALUES (1, " + stock + ", 1);"
         );
     }
 
@@ -144,6 +145,7 @@ public class SeckillServiceImpl implements ISeckillService {
     }
 
     @Override
+    @SneakyThrows(Exception.class)
     @Transactional(rollbackFor = Exception.class)
     public void seckillRedisLock() {
         /**
@@ -158,6 +160,8 @@ public class SeckillServiceImpl implements ISeckillService {
         } finally {
             redisLock.unlock();
         }
+        // 放大并发问题 100毫秒
+        TimeUnit.MILLISECONDS.sleep(100);
     }
 
     @Override

@@ -40,6 +40,18 @@ public class RedisLockAspect {
         } catch (Exception e) {
             throw e;
         } finally {
+            /**
+             * 如果此时出现极端情况，redis宕机，锁在事务外层无法回滚，如何解决？
+             * org.redisson.client.WriteRedisConnectionException: Unable to write command into connection!
+             *
+             * redis部署集群，RedissonRedLock红锁采用了多节点上的锁控制和超时策略，可以有效解决单点故障、网络延迟以及时钟漂移等问题，降低了分布式系统多节点竞争出错的风险和误判率。
+             * 总的来说，Redis 红锁提供了一种高可用、高并发的分布式锁解决方案，能够广泛应用于各种需要资源控制或者避免多个进程同时操作共享资源的场景中，例如：秒杀系统、抢购系统等等。
+             *
+             * 个人觉得特殊极端情况下最终还是得靠业务进行兜底，你们觉得呢？？？
+             * 如果有牛逼点的处理方式，欢迎指出，谢谢 ^_^ ^_^ ^_^
+             */
+//            TimeUnit.SECONDS.sleep(10);
+
             // 释放锁
             lock.unlock();
         }
