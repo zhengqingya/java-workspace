@@ -63,11 +63,11 @@
         </dependency>
 
         <!-- knife4j -->
-        <!-- https://mvnrepository.com/artifact/com.github.xiaoymin/knife4j-spring-boot-starter -->
+        <!-- https://mvnrepository.com/artifact/com.github.xiaoymin/knife4j-openapi2-spring-boot-starter -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
-            <artifactId>knife4j-spring-boot-starter</artifactId>
-            <version>3.0.3</version>
+            <artifactId>knife4j-openapi2-spring-boot-starter</artifactId>
+            <version>4.1.0</version>
         </dependency>
 
     </dependencies>

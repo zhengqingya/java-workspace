@@ -60,5 +60,6 @@
     <logger name="sun.rmi" level="WARN"/>
     <logger name="org.apache" level="WARN"/>
     <logger name="springfox" level="WARN"/>
+    <logger name="com.github.xiaoymin" level="WARN"/>
 
 </configuration>
