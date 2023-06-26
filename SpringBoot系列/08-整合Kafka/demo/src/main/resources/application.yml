@@ -7,7 +7,7 @@ spring:
 
   # ======================== ↓↓↓↓↓↓ kafka相关配置 ↓↓↓↓↓↓ ===============================
   kafka:
-    bootstrap-servers: www.zhengqingya.com:9092 # 指定kafka server地址，集群（多个逗号分隔）
+    bootstrap-servers: 127.0.0.1:9093,127.0.0.1:9094 # 指定kafka server地址，集群（多个逗号分隔）
     producer:
       # 指定消息key和消息体的编解码方式
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -32,3 +32,30 @@ spring:
       # 指定消息key和消息体的编解码方式
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+# 配置日志地址
+logging:
+  config: classpath:logback-spring.xml
+
+
+# Knife4j接口文档
+knife4j:
+  enable: true
+  basic:
+    enable: false
+    username: admin
+    password: 123456
+  openapi:
+    title: 在线文档
+    description: "API文档"
+    concat: zhengqingya
+    email: zhengqingya@it.com
+    url: http://gitee.com/zhengqingya
+    version: v1.0.0
+    license: MIT
+    group:
+      demo:
+        group-name: demo
+        api-rule: package
+        api-rule-resources:
+          - com.zhengqing.demo

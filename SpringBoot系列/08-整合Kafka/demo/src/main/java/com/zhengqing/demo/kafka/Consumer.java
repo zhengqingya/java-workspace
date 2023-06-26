@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 /**
  * <p> 消费者 - 接收消息 </p>
  *
- * @author : zhengqing
- * @description : 监听kafka消息
- * @date : 2020/4/21 22:34
+ * @author zhengqing
+ * @description 监听kafka消息
+ * @date 2020/4/21 22:34
  */
 @Slf4j
 @Component
