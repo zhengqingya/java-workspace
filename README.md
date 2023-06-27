@@ -2,7 +2,7 @@
 
 ---
 
-> 每天学习一点点，慢慢日积月累，你总会成为你喜欢的样子，加油。
+> 🏆 每天学习一点点，慢慢日积月累，你总会成为你喜欢的样子，加油。 ^_^
 
 --- 
 
@@ -49,7 +49,7 @@
 - [37-整合spring-retry实现服务重试](./SpringBoot系列/37-整合spring-retry实现服务重试)
 - [38-集成MobileIMSDK实现即时通讯](./SpringBoot系列/38-集成MobileIMSDK实现即时通讯)
 - [39-整合Plumelog实现日志查询](./SpringBoot系列/39-整合Plumelog实现日志查询)
-- [40-整合X Spring File Storage文件存储](./SpringBoot系列/40-整合X Spring File Storage文件存储)
+- [40-整合X Spring File Storage文件存储](./SpringBoot系列/40-整合X%20Spring%20File%20Storage文件存储)
 - [41-整合Sa-Token-Quick-Login插件实现快速登录认证](./SpringBoot系列/41-整合Sa-Token-Quick-Login插件实现快速登录认证)
 - [42-整合flink-cdc-connectors实现MySQL实时数据同步](./SpringBoot系列/42-整合flink-cdc-connectors实现MySQL实时数据同步)
 - [43-整合mysql-binlog-connector-java实现MySQL数据同步](./SpringBoot系列/43-整合mysql-binlog-connector-java实现MySQL数据同步)
@@ -77,7 +77,7 @@
 #### SpringCloud系列
 
 - [01-整合Seata实现分布式事务](./SpringCloud系列/01-整合Seata实现分布式事务)
-- [02-Sentinel 1.8.4 规则持久化到Nacos](./SpringCloud系列/02-Sentinel 1.8.4 规则持久化到Nacos)
+- [02-Sentinel 1.8.4 规则持久化到Nacos](./SpringCloud系列/02-Sentinel%201.8.4%20规则持久化到Nacos)
 - [03-sentinel-dashboard-1.8.2-mysql](./SpringCloud系列/03-sentinel-dashboard-1.8.2-mysql)
 - [04-整合Seata+多数据源+sharding-jdbc](./SpringCloud系列/04-整合Seata+多数据源+sharding-jdbc)
 
@@ -116,9 +116,9 @@
 
 #### Nepxion Discovery
 
-- [01-全链路蓝绿发布](./Nepxion Discovery/01-全链路蓝绿发布)
-- [02-全链路条件蓝绿发布](./Nepxion Discovery/02-全链路条件蓝绿发布)
-- [03-全链路蓝绿发布编排建模（图形化桌面端操作）](./Nepxion Discovery/03-全链路蓝绿发布编排建模（图形化桌面端操作）)
+- [01-全链路蓝绿发布](./Nepxion%20Discovery/01-全链路蓝绿发布)
+- [02-全链路条件蓝绿发布](./Nepxion%20Discovery/02-全链路条件蓝绿发布)
+- [03-全链路蓝绿发布编排建模（图形化桌面端操作）](./Nepxion%20Discovery/03-全链路蓝绿发布编排建模（图形化桌面端操作）)
 
 #### IDE工具
 
