@@ -22,8 +22,12 @@
 
 #### 区别
 
-1. 方式1： 对队列中的消息设置过期时间，如果先设置1条消息过期时间为30分钟，再设置1条消息过期时间为10分钟，此时需要前1条消息消费完之后，才会消费第2条消息，队列先进先出。
-2. 方式2：不用考虑消息的先后，只要消费过期时间到了，就消费它。
+1. 方式1-【TTL+死信队列】： 对队列中的消息设置过期时间，如果先设置1条消息过期时间为30分钟，再设置1条消息过期时间为10分钟，此时需要前1条消息消费完之后，才会消费第2条消息，队列先进先出。
+   消息成为死信的三种情况：
+    1. 队列消息长度到达限制；
+    2. 消费者拒接消费消息，并且不重回队列；
+    3. 原队列存在消息过期设置，消息到达超时时间未被消费；
+2. 方式2-【延迟队列】：不用考虑消息的先后，只要消费过期时间到了，就消费它。
 
 下面开始编写demo吧
 
@@ -57,7 +61,7 @@ public interface MqConstant {
 }
 ```
 
-#### 法一：`TTL`+`DLX`
+#### 法一：TTL+死信队列 - （ `TTL`+`DLX` ）
 
 ```java
 
@@ -136,6 +140,7 @@ public class DlxProducer {
     public void send() {
         String msgContent = "Hello World " + DateTime.now();
         log.info("{} [生产者] 发送消息: {}", DateTime.now(), msgContent);
+        // 单条消息设置过期时间，如果队列中也设置了过期时间，以两者的最小过期时间计算
         this.rabbitTemplate.convertAndSend(MqConstant.ORDER_EXCHANGE, MqConstant.ORDER_ROUTING_KEY, msgContent, message -> {
             message.getMessageProperties().setExpiration("3000");
             return message;
@@ -195,7 +200,7 @@ public class DlxController {
 }
 ```
 
-#### 法二：MQ插件`rabbitmq-delayed-message-exchange`
+#### 法二：延迟队列 - MQ插件`rabbitmq-delayed-message-exchange`
 
 ###### docker-compose部署rabbitmq并安装延时插件
 
