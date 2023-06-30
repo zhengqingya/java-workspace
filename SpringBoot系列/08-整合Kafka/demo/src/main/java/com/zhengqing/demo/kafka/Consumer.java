@@ -2,7 +2,6 @@ package com.zhengqing.demo.kafka;
 
 import com.zhengqing.demo.Constants;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -17,9 +16,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class Consumer {
 
+//    @KafkaListener(topics = Constants.KAFKA_TOPIC_HELLO)
+//    public void listen(ConsumerRecord<?, ?> record) {
+//        log.info("topic: " + record.topic() + "  <|============|>  消息内容：" + record.value());
+//    }
+
     @KafkaListener(topics = Constants.KAFKA_TOPIC_HELLO)
-    public void listen(ConsumerRecord<?, ?> record) {
-        log.info("topic: " + record.topic() + "  <|============|>  消息内容：" + record.value());
+    public void listen(String value) {
+        log.info("消费者: " + value);
     }
 
 }
