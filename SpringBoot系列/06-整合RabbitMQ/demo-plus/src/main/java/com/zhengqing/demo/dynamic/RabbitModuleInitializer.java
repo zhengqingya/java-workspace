@@ -98,7 +98,7 @@ public class RabbitModuleInitializer implements SmartInitializingSingleton {
         String deadLetterRoutingKey = queue.getDeadLetterRoutingKey();
         if (StrUtil.isNotBlank(deadLetterExchange) && StrUtil.isNotBlank(deadLetterRoutingKey)) {
             if (arguments == null) {
-                arguments = new HashMap<>(2);
+                arguments = new HashMap<>(16);
             }
             // 设置死信交换机
             arguments.put("x-dead-letter-exchange", deadLetterExchange);

@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.zhengqing.demo.dynamic.RabbitModuleInitializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -31,12 +32,16 @@ public class RabbitMqConfig {
     }
 
     /**
-     * 消息发送回调
+     * 生产者配置
      */
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate();
         rabbitTemplate.setConnectionFactory(connectionFactory);
+
+        /**
+         * 1、消息发送回调
+         */
         // 设置开启Mandatory,才能触发回调函数,无论消息推送结果怎么样都强制调用回调函数
         rabbitTemplate.setMandatory(true);
 
@@ -52,7 +57,34 @@ public class RabbitMqConfig {
             log.error("\n[确认消息送到队列(Queue)回调] 返回信息：[{}]", JSONUtil.toJsonStr(returnedMessage));
         });
 
+        /**
+         * 2、配置自定义消息转换器
+         * rabbitmq默认的消息转换器 {@link org.springframework.amqp.support.converter.SimpleMessageConverter}
+         */
+        rabbitTemplate.setMessageConverter(new CustomMessageConverter());
+
         return rabbitTemplate;
     }
+
+
+    /**
+     * 消费者配置
+     */
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        /**
+         * 配置自定义消息转换器
+         * rabbitmq默认的消息转换器 {@link org.springframework.amqp.support.converter.SimpleMessageConverter}
+         */
+        factory.setMessageConverter(new CustomMessageConverter());
+        return factory;
+    }
+
+//    @Bean
+//    public Jackson2JsonMessageConverter jsonMessageConverter() {
+//        return new Jackson2JsonMessageConverter();
+//    }
 
 }
