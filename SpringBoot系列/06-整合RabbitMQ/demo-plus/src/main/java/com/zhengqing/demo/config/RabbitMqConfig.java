@@ -62,6 +62,8 @@ public class RabbitMqConfig {
          * rabbitmq默认的消息转换器 {@link org.springframework.amqp.support.converter.SimpleMessageConverter}
          */
         rabbitTemplate.setMessageConverter(new CustomMessageConverter());
+        // json消息转换器
+//        rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
 
         return rabbitTemplate;
     }

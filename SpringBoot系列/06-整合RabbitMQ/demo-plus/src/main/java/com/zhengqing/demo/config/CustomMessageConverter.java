@@ -36,14 +36,14 @@ public class CustomMessageConverter implements MessageConverter {
             if (String.class.getName().equals(targetClassName)) {
                 return msg;
             } else {
-                // 返回反序列化后的对象
-//                Class<?> targetClass = Class.forName(targetClassName);
-//                return JSONUtil.toBean(msg, targetClass);
+                // 返回反序列化后的对象 tips：可以有效解决由于实体类字段变更或类名修改等原因导致消费者序列化问题，很nice！！！
+                Class<?> targetClass = Class.forName(targetClassName);
+                return JSONUtil.toBean(msg, targetClass);
                 /**
-                 * 消费者配置使用 Jackson2JsonMessageConverter 转换器  =》 tips：可以有效解决由于实体类字段变更或类名修改等原因导致消费者序列化问题，很nice！！！
-                 * {@link AbstractJackson2MessageConverter#fromMessage(Message, Object)}
+                 * 消费者也可配置使用 {@link Jackson2JsonMessageConverter} 转换器
+                 * 最终走 {@link AbstractJackson2MessageConverter#fromMessage(Message, Object)}
                  */
-                return new Jackson2JsonMessageConverter().fromMessage(message);
+//                return new Jackson2JsonMessageConverter().fromMessage(message);
             }
         } catch (Exception e) {
             e.printStackTrace();
