@@ -34,7 +34,7 @@ spring:
       properties:
         # 自定义生产者拦截器
         #        interceptor.classes: com.zhengqing.demo.config.CustomProducerInterceptor
-        linger.ms: 0 # 设置消息发送的最大等待时间 单位：毫秒
+        linger.ms: 5 # 设置消息发送的最大等待时间 单位：毫秒  -- tips: 如果设置为0ms（立即发送消息），那么batch-size参数等于无效设置
     consumer:
       # 消息键值的反序列化
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -47,7 +47,7 @@ spring:
       max-poll-records: 500 # 每次拉取消息的最大记录数。用于控制每次消费的批量大小。
       group-id: my-group # 消费者所属的消费者组ID。同一个消费者组内的消费者会共享消息的消费负载。
       enable-auto-commit: true # 是否启用自动提交消费位移（offset）。如果设置为true，消费者会定期自动提交消费位移。
-      auto-commit-interval: 1000ms # 消费者自动提交偏移量的时间间隔
+      auto-commit-interval: 5000ms # 消费者自动提交偏移量的时间间隔
     #      properties:
     #        # 自定义消费者拦截器
     #        interceptor.classes: com.zhengqing.demo.config.CustomConsumerInterceptor
