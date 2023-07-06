@@ -1,17 +1,27 @@
-server:
-  port: 80
+﻿# SpringBoot整合Kafka
 
+> https://docs.spring.io/spring-kafka/docs/current/reference/html/
+
+#### 1、`pom.xml`中引入依赖
+
+```
+<dependency>
+    <groupId>org.springframework.kafka</groupId>
+    <artifactId>spring-kafka</artifactId>
+</dependency>
+```
+
+#### 2、`application.yml`配置
+
+```yml
+# ======================== ↓↓↓↓↓↓ kafka相关配置 ↓↓↓↓↓↓ ===============================
 spring:
-  application:
-    name: demo
-
-  # ======================== ↓↓↓↓↓↓ kafka相关配置 ↓↓↓↓↓↓ ===============================
   kafka:
     bootstrap-servers: 127.0.0.1:9092,127.0.0.1:9093 # 127.0.0.1:9092,127.0.0.1:9093,127.0.0.1:9094 # Kafka服务器的地址。集群用多个逗号分隔
     producer:
       # 消息键值的序列化
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       compression-type: gzip  # 发送消息时的压缩类型 (none, gzip, snappy, lz4)
       retries: 3 # 生产者在发送消息时的重试次数。当发送失败或遇到可重试异常时，生产者会自动尝试重新发送消息。
       batch-size: 16384 # 生产者在进行批量发送之前等待累积的消息大小。当待发送消息的大小达到这个阈值时，生产者会将消息一起发送。默认值: 16384字节 (16KB)
@@ -22,13 +32,13 @@ spring:
       #  - -1或all: 生产者在发送消息后需要等待来自所有副本（包括主节点和副本节点）的确认。这种方式提供了最高的数据可靠性保证，但也带来了较大的延迟和吞吐量下降。
       acks: all
       properties:
-        # 自定义消息拦截器 -- 生产者
-        interceptor.classes: com.zhengqing.demo.config.CustomProducerInterceptor
+        # 自定义生产者拦截器
+        #        interceptor.classes: com.zhengqing.demo.config.CustomProducerInterceptor
         linger.ms: 0 # 设置消息发送的最大等待时间 单位：毫秒
     consumer:
       # 消息键值的反序列化
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       # 如果消费者组的offset已经失效（例如，消费者加入时没有有效的offset），这个属性指定了从哪里开始消费：
       #   - earliest表示从最早的offset开始;
       #   - latest表示从最新的offset开始;
@@ -38,41 +48,55 @@ spring:
       group-id: my-group # 消费者所属的消费者组ID。同一个消费者组内的消费者会共享消息的消费负载。
       enable-auto-commit: true # 是否启用自动提交消费位移（offset）。如果设置为true，消费者会定期自动提交消费位移。
       auto-commit-interval: 1000ms # 消费者自动提交偏移量的时间间隔
-      properties:
-        spring.json.trusted.packages: "*" # 配置信任的包，以便让反序列化器知道哪些类是安全的可以被反序列化的 eg: 指定包：com.zhengqing.demo；也可以 * 全部信任
-        # 自定义消息拦截器 -- 消费者
-        interceptor.classes: com.zhengqing.demo.config.CustomConsumerInterceptor
+    #      properties:
+    #        # 自定义消费者拦截器
+    #        interceptor.classes: com.zhengqing.demo.config.CustomConsumerInterceptor
     listener:
       # 指定消息监听器容器的类型，决定了消息的处理方式和消费者实例的创建方式
       #   - single：单一模式（默认值）。每个Kafka主题创建一个唯一的消息监听器容器，并使用单个消费者实例来处理该主题的所有分区中的消息。
       #   - batch：批量模式。每个Kafka主题创建一个唯一的消息监听器容器，并使用单个消费者实例将一批消息传递给消息处理方法进行批量处理。此模式有助于提高处理效率。
       type: single
       concurrency: 5 # 消息监听器容器的并发消费者数
+```
 
+#### 3、测试
 
-# 配置日志地址
-logging:
-  config: classpath:logback-spring.xml
+```java
+package com.zhengqing.demo.api;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-# Knife4j接口文档
-knife4j:
-  enable: true
-  basic:
-    enable: false
-    username: admin
-    password: 123456
-  openapi:
-    title: 在线文档
-    description: "API文档"
-    concat: zhengqingya
-    email: zhengqingya@it.com
-    url: http://gitee.com/zhengqingya
-    version: v1.0.0
-    license: MIT
-    group:
-      demo:
-        group-name: demo
-        api-rule: package
-        api-rule-resources:
-          - com.zhengqing.demo
+@Slf4j
+@RestController
+@RequestMapping("/api/test/")
+@RequiredArgsConstructor
+@Api(tags = "测试API")
+public class TestSimpleController {
+
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    public static final String KAFKA_TOPIC_SIMPLE = "simple";
+
+    @PostMapping("simple")
+    @ApiOperation("简单消息")
+    public String simple(@RequestParam String msg) {
+        this.kafkaTemplate.send(KAFKA_TOPIC_SIMPLE, msg);
+        return "SUCCESS";
+    }
+
+    @KafkaListener(topics = KAFKA_TOPIC_SIMPLE)
+    public void listen(String value) {
+        log.info("消费者: " + value);
+    }
+
+}
+```

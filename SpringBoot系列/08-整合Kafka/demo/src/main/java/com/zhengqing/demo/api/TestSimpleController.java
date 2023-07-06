@@ -1,16 +1,12 @@
 package com.zhengqing.demo.api;
 
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.json.JSONUtil;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,17 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/")
+@RequestMapping("/api/test/")
 @RequiredArgsConstructor
-public class TestController {
+@Api(tags = "测试API")
+public class TestSimpleController {
 
-    private final KafkaTemplate kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public static final String KAFKA_TOPIC_SIMPLE = "simple";
 
-    @GetMapping("simple")
+    @PostMapping("simple")
+    @ApiOperation("简单消息")
     public String simple(@RequestParam String msg) {
-        this.kafkaTemplate.send(KAFKA_TOPIC_SIMPLE, JSONUtil.toJsonStr(User.builder().id(IdUtil.fastUUID()).name(msg).build()));
+        this.kafkaTemplate.send(KAFKA_TOPIC_SIMPLE, msg);
         return "SUCCESS";
     }
 
@@ -43,13 +41,4 @@ public class TestController {
         log.info("消费者: " + value);
     }
 
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @SuperBuilder
-    static class User {
-        private String id;
-        private String name;
-    }
 }
