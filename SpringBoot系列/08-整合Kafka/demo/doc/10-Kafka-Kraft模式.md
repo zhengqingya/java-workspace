@@ -19,3 +19,4 @@
 
 见 https://gitee.com/zhengqingya/docker-compose
 
+版本：`3.5.0-cluster-kraft`
