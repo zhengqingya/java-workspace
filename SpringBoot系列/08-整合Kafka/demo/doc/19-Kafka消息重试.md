@@ -92,7 +92,7 @@ public class KafkaRetryConfig {
 }
 ```
 
-> tips: 经个人测试，这个时间间隔感觉不是固定的...
+> tips: 经个人测试，这个时间间隔感觉不是固定的... 可能是和主动pull消息有关吧...
 
 ```shell
 2023-07-07 15:09:48.089  INFO 18576 --- [ntainer#1-0-C-1] c.z.demo.api.TestRetryController         : [消费者] 重试验证：hello 时间：2023-07-07 15:09:48
