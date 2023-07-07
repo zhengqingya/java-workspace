@@ -1,16 +1,47 @@
 server:
-  port: 8081
-  servlet:
-    application-display-name: demo
+  port: 80
 
 spring:
   application:
     name: demo
-  profiles:
-    active: dev
+
+
+# 配置日志地址
+logging:
+  config: classpath:logback-spring.xml
+
+
+# Knife4j接口文档
+knife4j:
+  enable: true
+  basic:
+    enable: false
+    username: admin
+    password: 123456
+  openapi:
+    title: 在线文档
+    description: "API文档"
+    concat: zhengqingya
+    email: zhengqingya@it.com
+    url: http://gitee.com/zhengqingya
+    version: v1.0.0
+    license: MIT
+    group:
+      demo:
+        group-name: demo
+        api-rule: package
+        api-rule-resources:
+          - com.zhengqing.demo
+
 
 # RocketMQ配置
 rocketmq:
-  name-server: 192.168.0.88:9876 # TODO 配置mq服务ip
+  name-server: 127.0.0.1:9876 # 服务地址，多个用逗号分隔
   producer:
-    group: rocketmq-producer-group
+    group: my-group # 生产者组
+    send-message-timeout: 3000 # 发送消息超时时间，默认3000
+    retry-times-when-send-failed: 3 # 发送消息失败重试次数，默认2
+    retry-times-when-send-async-failed: 3 # 异步消息重试次数，默认2
+    max-message-size: 4194304 # 消息最大长度，默认1024 * 1024 * 4 （4M）
+    compress-message-body-threshold: 4096 # 压缩消息阈值 默认4k(1024 * 4)
+    retry-next-server: true  # 是否在内部发送失败时重试另一个broker，默认false
