@@ -71,11 +71,17 @@
         </dependency>
 
         <!-- kafka -->
+        <!-- https://mvnrepository.com/artifact/org.springframework.kafka/spring-kafka -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
+            <version>2.8.8</version>
         </dependency>
 
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.kafka</groupId>-->
+        <!--            <artifactId>spring-kafka</artifactId>-->
+        <!--        </dependency>-->
         <!--        <dependency>-->
         <!--            <groupId>org.apache.kafka</groupId>-->
         <!--            <artifactId>kafka-clients</artifactId>-->
