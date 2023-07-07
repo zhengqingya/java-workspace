@@ -376,9 +376,20 @@ docker exec -it kafka-1 /opt/bitnami/kafka/bin/kafka-console-consumer.sh --boots
 6. 查看消费者消费主题
 
 ```shell
-# tips: 这里docker中暂未看见相关配置文件，后期再测试看看
-docker exec -it kafka-1 /opt/bitnami/kafka/bin/kafka-console-consumer.sh --topic __consumer_offsets --bootstrap-server kafka-1:9092 --consumer.config config/consumer.properties --formatter "kafka.coordinator.group.GroupMetadataManager\$OffsetsMessageForm atter" --from-beginning
+cat> ./consumer.properties <<EOF
+exclude.internal.topics=false
+EOF
+# 将文件拷贝到容器中
+docker cp ./consumer.properties kafka-1:consumer.properties
+
+# 查看__consumer_offsets主题的内容，以及偏移量的相关信息。
+# 这种方式会乱码
+# docker exec -it kafka-1 /opt/bitnami/kafka/bin/kafka-console-consumer.sh --topic __consumer_offsets --bootstrap-server kafka-1:9092 --consumer.config consumer.properties  --from-beginning
+# 格式化一下 -- tips: windows和linux上的格式化类可能不一致，我这里是windows用的"kafka.coordinator.group.GroupMetadataManager$OffsetsMessageFormatter"
+docker exec -it kafka-1 /opt/bitnami/kafka/bin/kafka-console-consumer.sh --topic __consumer_offsets --bootstrap-server kafka-1:9092 --consumer.config consumer.properties --formatter "kafka.coordinator.group.GroupMetadataManager$OffsetsMessageFormatter" --from-beginning
 ```
+
+![](./images/08-Kafka消费者-1688699948700.png)
 
 #### 2、自动提交 offset
 
