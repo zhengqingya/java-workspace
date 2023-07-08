@@ -6,6 +6,7 @@ import com.rabbitmq.client.Channel;
 import com.zhengqing.demo.util.MqUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -19,17 +20,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Api(tags = "其它测试")
 @RestController
-@RequestMapping("/api/test")
+@RequestMapping("/api/mq/other")
+@RequiredArgsConstructor
 public class TestOtherController {
 
-    @Resource
-    private AmqpTemplate rabbitTemplate;
+    private final AmqpTemplate rabbitTemplate;
 
     @ApiOperation("发送延时消息（插件方式）")
     @PostMapping("sendDelayMsg")
@@ -108,8 +108,7 @@ public class TestOtherController {
         }
     }
 
-    @Resource
-    private CachingConnectionFactory connectionFactory;
+    private final CachingConnectionFactory connectionFactory;
 
     @Bean(name = "mqConsumerListenerContainer")
     public SimpleRabbitListenerContainerFactory mqConsumerListenerContainer() {
@@ -123,8 +122,7 @@ public class TestOtherController {
     // ----------------------------------------------------------------------------------
 
 
-//    @Resource
-//    private ConnectionFactory connectionFactory;
+//    private final ConnectionFactory connectionFactory;
 //
 //    @SneakyThrows
 //    @PostMapping("/deleteQueueValue")

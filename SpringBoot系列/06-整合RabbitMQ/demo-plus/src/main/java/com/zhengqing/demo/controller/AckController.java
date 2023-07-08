@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateTime;
 import com.rabbitmq.client.Channel;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
@@ -20,17 +21,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Api(tags = "测试mq-ack")
 @RestController
-@RequestMapping("/mq")
+@RequestMapping("/api/mq")
+@RequiredArgsConstructor
 public class AckController {
 
-    @Resource
-    private RabbitTemplate rabbitTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
     @ApiOperation("手动ACK（全局模式）")
     @PostMapping("ack")

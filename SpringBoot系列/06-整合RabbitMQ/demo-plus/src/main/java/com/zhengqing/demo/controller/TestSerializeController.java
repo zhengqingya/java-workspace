@@ -5,10 +5,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.*;
@@ -17,17 +14,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
 import java.io.Serializable;
 
 @Slf4j
 @Api(tags = "测试序列化")
 @RestController
-@RequestMapping("/api/test/serialize")
+@RequestMapping("/api/mq/serialize")
+@RequiredArgsConstructor
 public class TestSerializeController {
 
-    @Resource
-    private RabbitTemplate rabbitTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
 
     @ApiOperation("发送消息")

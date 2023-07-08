@@ -8,33 +8,23 @@ import com.zhengqing.demo.rabbitmq.topic.TopicMsgProducer;
 import com.zhengqing.demo.rabbitmq.work.WorkMsgProducer;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Api(tags = "测试mq")
 @RestController
-@RequestMapping("/mq")
+@RequestMapping("/api/mq")
+@RequiredArgsConstructor
 public class RabbitController {
 
-    @Autowired
-    private SimpleMsgProducer simpleMsgProducer;
-
-    @Autowired
-    private WorkMsgProducer workMsgProducer;
-
-    @Autowired
-    private FanoutMsgProducer fanoutMsgProducer;
-
-    @Autowired
-    private DirectMsgProducer directMsgProducer;
-
-    @Autowired
-    private TopicMsgProducer topicMsgProducer;
-
-    @Autowired
-    private RpcMsgProducer rpcMsgProducer;
+    private final SimpleMsgProducer simpleMsgProducer;
+    private final WorkMsgProducer workMsgProducer;
+    private final FanoutMsgProducer fanoutMsgProducer;
+    private final DirectMsgProducer directMsgProducer;
+    private final TopicMsgProducer topicMsgProducer;
+    private final RpcMsgProducer rpcMsgProducer;
 
     @ApiOperation("simpleQueue")
     @PostMapping("simpleQueue")
