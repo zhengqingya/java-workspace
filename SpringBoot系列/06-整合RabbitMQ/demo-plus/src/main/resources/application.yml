@@ -71,6 +71,7 @@ spring:
           max-interval: 50000    # 重试最大间隔时间
           initial-interval: 1000 # 重试间隔（单位：毫秒）
           multiplier: 2          # 间隔时间乘子，间隔时间*乘子=下一次的间隔时间，最大不能超过设置的最大间隔时间
+        # default-requeue-rejected: true # 重试次数超过上面的设置之后是否丢弃（false不丢弃时需要写相应代码将该消息加入死信队列）
     
     
     # 动态创建和绑定队列、交换机的配置 示例
