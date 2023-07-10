@@ -30,7 +30,7 @@ import java.util.List;
 @RestController
 @RequestMapping("api/test/")
 @RequiredArgsConstructor
-@Api(tags = "测试API-批量发送（暂无效）")
+@Api(tags = "测试API-批量发送")
 public class TestBatchController {
 
     private final RocketMQTemplate rocketMQTemplate;
@@ -60,10 +60,10 @@ public class TestBatchController {
             consumeMode = ConsumeMode.CONCURRENTLY, // 控制消费模式，你可以选择并发或有序接收消息
             messageModel = MessageModel.CLUSTERING // 控制消息模式，广播模式：所有消费者都能接收到信息，集群模式：无论有多少个消费者，只有一个消费者能够接收到信息，也就是说消息一旦被消费了，其它消费者就不能消费该条消息
     )
-    static class BatchRocketMQListener implements RocketMQListener<String> {
+    static class BatchRocketMQListener implements RocketMQListener<List<String>> {
 
         @Override
-        public void onMessage(String msg) {
+        public void onMessage(List<String> msg) {
             log.info("[消费者] 接收消息：{}", msg);
         }
 
