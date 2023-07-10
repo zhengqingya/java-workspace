@@ -24,6 +24,7 @@ public class RetryController {
     @PostMapping("producer")
     public String producer() {
         String msgContent = "Hello World " + DateTime.now();
+        log.info("{} [生产者] 接收消息: {}", DateTime.now(), msgContent);
         this.rabbitTemplate.convertAndSend("test_exchange", "test_routing_key_retry", msgContent);
         return "SUCCESS";
     }
@@ -39,8 +40,12 @@ public class RetryController {
     )
     public void consumer(String msg) {
         log.info("{} [消费者] 接收消息: {}", DateTime.now(), msg);
-//        int a = 1 / 0;
-        throw new Exception("异常了...");
+        try {
+            int a = 1 / 0;
+        } catch (Exception e) {
+            log.error("[消费者] 异常:{}", e.getMessage());
+            throw e;
+        }
     }
 
 }
