@@ -24,7 +24,7 @@ public class RetryController {
     @PostMapping("producer")
     public String producer() {
         String msgContent = "Hello World " + DateTime.now();
-        log.info("{} [生产者] 接收消息: {}", DateTime.now(), msgContent);
+        log.info("{} [生产者] 发送消息: {}", DateTime.now(), msgContent);
         this.rabbitTemplate.convertAndSend("test_exchange", "test_routing_key_retry", msgContent);
         return "SUCCESS";
     }
