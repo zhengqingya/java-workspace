@@ -1,10 +1,10 @@
-package com.zhengqing.demo.enums;
+package com.zhengqing.demo.dynamic.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * <p> RabbitMQ 队列枚举 </p>
+ * <p> RabbitMQ 交换机枚举 </p>
  *
  * @author zhengqingya
  * @description
@@ -12,16 +12,17 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public enum RabbitQueueEnum {
+public enum RabbitExchangeEnum {
 
     /**
-     * 默认队列
+     * 默认交换机
      */
-    DEFAULT_QUEUE("default_queue");
+    DEFAULT_EXCHANGE("default_exchange");
 
     /**
-     * 队列名称
+     * 交换机名称
      */
     private String name;
 
 }
+

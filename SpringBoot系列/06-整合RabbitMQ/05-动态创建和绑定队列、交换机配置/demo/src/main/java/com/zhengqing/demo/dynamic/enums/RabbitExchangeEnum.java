@@ -1,10 +1,10 @@
-package com.zhengqing.demo.enums;
+package com.zhengqing.demo.dynamic.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * <p> RabbitMQ 延迟交换机枚举 </p>
+ * <p> RabbitMQ 交换机枚举 </p>
  *
  * @author zhengqingya
  * @description
@@ -12,12 +12,12 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public enum RabbitDelayExchangeEnum {
+public enum RabbitExchangeEnum {
 
     /**
      * 默认交换机
      */
-    DEFAULT_DELAY_EXCHANGE("default_delay_exchange");
+    DEFAULT_EXCHANGE("default_exchange");
 
     /**
      * 交换机名称

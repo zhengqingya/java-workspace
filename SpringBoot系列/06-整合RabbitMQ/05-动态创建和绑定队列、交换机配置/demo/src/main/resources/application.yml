@@ -1,0 +1,134 @@
+server:
+  port: 80
+
+
+# 配置日志地址
+logging:
+  config: classpath:logback-spring.xml
+
+
+# Knife4j接口文档
+knife4j:
+  enable: true
+  basic:
+    enable: false
+    username: admin
+    password: 123456
+  openapi:
+    title: 在线文档
+    description: "API文档"
+    concat: zhengqingya
+    email: zhengqingya@it.com
+    url: http://gitee.com/zhengqingya
+    version: v1.0.0
+    license: MIT
+    group:
+      demo:
+        group-name: demo
+        api-rule: package
+        api-rule-resources:
+          - com.zhengqing.demo
+
+
+spring:
+  application:
+    name: demo
+
+  # RabbitMQ配置
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    # 填写自己安装rabbitmq时设置的账号密码，默认账号密码为`guest`
+    username: admin
+    password: admin
+    virtual-host: my_vhost # 填写自己的虚拟机名，对应可查看 `127.0.0.1:15672/#/users` 下Admin中的`Can access virtual hosts`信息
+    # 发送方消息确认（ACK）
+    publisher-confirm-type: correlated # 确认消息已发送到交换机(Exchange) [Producer -> Exchange]
+    publisher-returns: true            # 确认消息已发送到队列(Queue) [Exchange -> Queue]
+    # 消息接收方
+    listener:
+      simple:
+        acknowledge-mode: auto # 表示消息确认方式，其有三种配置方式，分别是none、manual（手动ack）和auto；默认auto
+        concurrency: 5         # 最小的消费者数量
+        max-concurrency: 10    # 最大的消费者数量
+        prefetch: 3            # 指定一个请求能处理多少个消息，如果有事务的话，必须大于等于transaction数量.
+        # 重试机制：
+        #         eg: 最大重试次数为8 & 重试间隔1秒 & 间隔时间乘子2 & 最大间隔时间50秒  -- (最大重试次数包含初次消费)
+        #         初次消費
+        #         第1次：1秒
+        #         第2次：1*2=2秒
+        #         第3次：2*2=4秒
+        #         第4次：4*2=8秒
+        #         第5次：8*2=16秒
+        #         第6次：16*2=32秒
+        #         第7次：32*2=64秒 (由于设置最大间隔时间，因此这里为50秒 )
+        retry:
+          enabled: true          # 是否开启重试
+          max-attempts: 3        # 最大重试次数
+          max-interval: 50000    # 重试最大间隔时间
+          initial-interval: 1000 # 重试间隔（单位：毫秒）
+          multiplier: 2          # 间隔时间乘子，间隔时间*乘子=下一次的间隔时间，最大不能超过设置的最大间隔时间
+
+    
+    
+    # 动态创建和绑定队列、交换机的配置 示例
+    moduleList:
+      # 订单延时队列，到了过期的时间会被转发到订单取消队列
+      - queue:
+          name: test.delay.queue
+          dead-letter-exchange: test.exchange
+          dead-letter-routing-key: test.close.routing.key
+          arguments:
+            # 5秒 （单位：毫秒）  --  tips:mq最大延时4294967295毫秒(即49.7103天)
+            x-message-ttl: 5000
+        exchange:
+          name: test.exchange
+        routing-key: test.create.routing.key
+      # 订单取消队列
+      - queue:
+          name: test.close.queue
+        exchange:
+          name: test.exchange
+        routing-key: test.close.routing.key
+
+      # 测试延时队列
+      - queue:
+          name: demo.test_delay.queue
+        exchange:
+          type: delay # 延时交换机
+          name: demo.delay.exchange
+        routing-key: demo.test_delay.routing.key
+
+      # 测试ack -- 全局模式
+      - queue:
+          name: test_ack_queue
+        exchange:
+          type: direct
+          name: test_exchange
+        routing-key: test_ack_routing_key
+      # 测试ack -- 程序中手动指定ack模式，不受全局模式影响
+      - queue:
+          name: test_ack_manual_queue
+        exchange:
+          type: direct
+          name: test_exchange
+        routing-key: test_ack_manual_routing_key
+
+      # 测试发送方消息确认
+      - queue:
+          name: test_ack_sender_queue
+        exchange:
+          type: direct
+          name: test_exchange
+        routing-key: test_ack_sender_routing_key
+
+      # 测试消息重试机制 & 动态队列
+      - queue:
+          name: test_queue_retry
+        routing-key: test_routing_key_retry
+        exchange:
+          type: direct
+          name: test_exchange
+        producer: retryProducerService
+        consumer: retryConsumerService
+        retry: testRetryListener

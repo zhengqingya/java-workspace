@@ -1,4 +1,4 @@
-package com.zhengqing.demo.enums;
+package com.zhengqing.demo.dynamic.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

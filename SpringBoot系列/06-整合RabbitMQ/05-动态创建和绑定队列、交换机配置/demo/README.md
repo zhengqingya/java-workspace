@@ -1,0 +1,3 @@
+# 动态创建和绑定队列、交换机配置
+
+见 [代码](src/main/java/com/zhengqing/demo/dynamic)

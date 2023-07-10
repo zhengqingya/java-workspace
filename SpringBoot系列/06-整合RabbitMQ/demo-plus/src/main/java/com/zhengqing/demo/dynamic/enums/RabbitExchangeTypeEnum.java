@@ -1,4 +1,4 @@
-package com.zhengqing.demo.enums;
+package com.zhengqing.demo.dynamic.enums;
 
 /**
  * <p> RabbitMQ 交换机类型枚举 </p>
