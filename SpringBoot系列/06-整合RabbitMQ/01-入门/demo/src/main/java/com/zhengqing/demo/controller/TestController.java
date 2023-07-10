@@ -17,19 +17,17 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.Serializable;
 
 @Slf4j
-@Api(tags = "测试mq-序列化")
+@Api(tags = "测试mq")
 @RestController
-@RequestMapping("/api/mq/serialize")
+@RequestMapping("/api/mq")
 @RequiredArgsConstructor
-public class TestSerializeController {
-
+public class TestController {
     private final RabbitTemplate rabbitTemplate;
-
 
     @ApiOperation("发送消息")
     @PostMapping("send")
     public String producer() {
-        this.rabbitTemplate.convertAndSend("test_exchange", "test_serialize_routing_key",
+        this.rabbitTemplate.convertAndSend("test_exchange", "test_routing_key",
                 UserDTO.builder()
                         .userId(IdUtil.getSnowflakeNextId())
                         .username("Hello World " + DateTime.now())
@@ -42,9 +40,9 @@ public class TestSerializeController {
     @RabbitHandler
     @RabbitListener(
             bindings = @QueueBinding(
-                    value = @Queue(value = "test_serialize_queue", durable = "true"),
+                    value = @Queue(value = "test_queue", durable = "true"),
                     exchange = @Exchange(value = "test_exchange", type = "direct", durable = "true"),
-                    key = "test_serialize_routing_key"
+                    key = "test_routing_key"
             )
     )
     public void consumer(UserDTO data) {
