@@ -1,11 +1,14 @@
 package com.zhengqing.demo.config;
 
 import cn.hutool.json.JSONUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.AbstractJackson2MessageConverter;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+
+import java.lang.reflect.Type;
 
 /**
  * <p> 自定义消息转换器 </p>
@@ -14,6 +17,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
  * @description 可参考rabbitmq默认的消息转换器 {@link org.springframework.amqp.support.converter.SimpleMessageConverter}
  * @date 2023/7/3 15:28
  */
+@Slf4j
 public class CustomMessageConverter implements MessageConverter {
 
     @Override
@@ -32,7 +36,11 @@ public class CustomMessageConverter implements MessageConverter {
     public Object fromMessage(Message message) {
         try {
             String msg = new String(message.getBody(), "UTF-8");
-            String targetClassName = message.getMessageProperties().getInferredArgumentType().getTypeName();
+            Type inferredArgumentType = message.getMessageProperties().getInferredArgumentType();
+            if (inferredArgumentType == null) {
+                return msg;
+            }
+            String targetClassName = inferredArgumentType.getTypeName();
             if (String.class.getName().equals(targetClassName)) {
                 return msg;
             } else {
@@ -46,7 +54,7 @@ public class CustomMessageConverter implements MessageConverter {
 //                return new Jackson2JsonMessageConverter().fromMessage(message);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("[RabbitMQ] 消息转换器处理消息异常：", e);
         }
         return null;
     }

@@ -1,6 +1,5 @@
-package com.zhengqing.demo.config;
+package com.zhengqing.demo.dynamic.property;
 
-import com.zhengqing.demo.dynamic.RabbitModule;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -17,11 +16,11 @@ import java.util.List;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "spring.rabbitmq")
-public class RabbitModuleProperty {
+public class RabbitModulePropertys {
 
     /**
      * 动态创建和绑定队列、交换机的配置
      */
-    private List<RabbitModule> moduleList;
+    private List<RabbitModuleProperty> moduleList;
 
 }

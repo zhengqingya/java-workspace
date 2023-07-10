@@ -1,4 +1,4 @@
-package com.zhengqing.demo.dynamic;
+package com.zhengqing.demo.dynamic.property;
 
 import com.zhengqing.demo.enums.RabbitExchangeTypeEnum;
 import lombok.Data;
@@ -14,7 +14,24 @@ import java.util.Map;
  * @date 2022/7/8 10:37
  */
 @Data
-public class RabbitModule {
+public class RabbitModuleProperty {
+
+    /**
+     * 生产者
+     */
+    private String producer;
+    /**
+     * 消费者
+     */
+    private String consumer;
+    /**
+     * 消息重试
+     */
+    private String retry;
+    /**
+     * 自动确认
+     */
+    private Boolean autoAck = true;
 
     /**
      * 交换机信息

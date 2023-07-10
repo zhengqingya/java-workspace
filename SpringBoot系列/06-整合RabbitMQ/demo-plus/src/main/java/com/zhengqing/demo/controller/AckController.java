@@ -51,7 +51,7 @@ public class AckController {
             log.info("{} [消费者] deliveryTag:{} 接收消息: {}", DateTime.now(), deliveryTag, msg);
 //            int num = 1 / 0;
             // 手动确认消息已被消费
-//            channel.basicAck(deliveryTag, false);
+            channel.basicAck(deliveryTag, false);
         } catch (Exception e) {
             // 丢弃消息
 //            channel.basicReject(deliveryTag, false);

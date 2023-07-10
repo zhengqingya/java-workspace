@@ -1,16 +1,15 @@
 package com.zhengqing.demo.config;
 
 import cn.hutool.json.JSONUtil;
-import com.zhengqing.demo.dynamic.RabbitModuleInitializer;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.rabbit.config.AbstractRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.amqp.AbstractRabbitListenerContainerFactoryConfigurer;
+import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.backoff.ExponentialBackOff;
 
 /**
  * <p> RabbitMQ配置类 </p>
@@ -26,11 +25,11 @@ public class RabbitMqConfig {
     /**
      * 动态创建队列、交换机初始化器
      */
-    @Bean
-    @ConditionalOnMissingBean
-    public RabbitModuleInitializer rabbitModuleInitializer(AmqpAdmin amqpAdmin, RabbitModuleProperty rabbitModuleProperty) {
-        return new RabbitModuleInitializer(amqpAdmin, rabbitModuleProperty);
-    }
+//    @Bean
+//    @ConditionalOnMissingBean
+//    public RabbitMqDynamicInitializer rabbitMqDynamicInitializer(ConnectionFactory connectionFactory, AmqpAdmin amqpAdmin, RabbitModulePropertys rabbitModulePropertys, RabbitTemplate rabbitTemplate) {
+//        return new RabbitMqDynamicInitializer(connectionFactory, amqpAdmin, rabbitModulePropertys, rabbitTemplate);
+//    }
 
     /**
      * 生产者配置
@@ -82,9 +81,8 @@ public class RabbitMqConfig {
          * rabbitmq默认的消息转换器 {@link org.springframework.amqp.support.converter.SimpleMessageConverter}
          */
         factory.setMessageConverter(new CustomMessageConverter());
-
-        factory.setRecoveryBackOff(new ExponentialBackOff());
-//        factory.setDefaultRequeueRejected(false); // 设置为false，避免无限重试
+        // json消息转换器
+//        rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
 
         return factory;
     }
@@ -92,6 +90,23 @@ public class RabbitMqConfig {
 //    @Bean
 //    public Jackson2JsonMessageConverter jsonMessageConverter() {
 //        return new Jackson2JsonMessageConverter();
+//    }
+
+    /**
+     * tips: 使用动态队列后好像会失效，因此改用自定义消息重试，再转发队列补偿...
+     * 启动消息重试
+     * 默认配置： {@link AbstractRabbitListenerContainerFactoryConfigurer#configure(AbstractRabbitListenerContainerFactory, ConnectionFactory, RabbitProperties.AmqpContainer)}
+     * MessageRecoverer recoverer = this.messageRecoverer != null ? this.messageRecoverer : new RejectAndDontRequeueRecoverer(); 默认拒绝&不重新排队
+     */
+//    @Bean
+//    public MessageRecoverer republishMessageRecoverer(RabbitTemplate rabbitTemplate) {
+//        /**
+//         return new RejectAndDontRequeueRecoverer(); // 拒绝&不重新排队(默认)
+//         return new MessageBatchRecoverer() {public void recover(List<Message> messages, Throwable cause) {}}; // 用于消息批量处理的恢复器（Recoverer），它可以在消息消费失败时对一个批量的消息进行统一的处理。
+//         return new ImmediateRequeueMessageRecoverer(); // 重新排队 -- 重试之后，返回队列，然后再重试，周而复始直到不抛出异常为止，这样还是会影响后续的消息消费...
+//         return new RepublishMessageRecoverer(rabbitTemplate, RETRY_EXCHANGE, RETRY_FAILURE_KEY); // 重新发布 -- 重试之后，将消息转发到重试失败队列，由重试失败消费者消费...
+//         */
+//        return new RepublishMessageRecoverer(rabbitTemplate, RETRY_EXCHANGE, RETRY_FAILURE_KEY);
 //    }
 
 }
