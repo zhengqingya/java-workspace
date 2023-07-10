@@ -10,6 +10,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.backoff.ExponentialBackOff;
 
 /**
  * <p> RabbitMQ配置类 </p>
@@ -51,7 +52,7 @@ public class RabbitMqConfig {
             log.debug("[确认消息送到交换机(Exchange)回调] 是否成功:[{}] 数据：[{}] 异常：[{}]", ack, JSONUtil.toJsonStr(correlationData), cause);
         });
 
-        // 确认消息送到队列(Queue)回调 -- 只有在出现错误时才回调
+        // 确认消息送到队列(Queue)回调 -- 只有在出现错误时才回调，延时队列也会触发！
         rabbitTemplate.setReturnsCallback(returnedMessage -> {
             // do your business
             log.error("[确认消息送到队列(Queue)回调] 返回信息：[{}]", JSONUtil.toJsonStr(returnedMessage));
@@ -81,6 +82,10 @@ public class RabbitMqConfig {
          * rabbitmq默认的消息转换器 {@link org.springframework.amqp.support.converter.SimpleMessageConverter}
          */
         factory.setMessageConverter(new CustomMessageConverter());
+
+        factory.setRecoveryBackOff(new ExponentialBackOff());
+//        factory.setDefaultRequeueRejected(false); // 设置为false，避免无限重试
+
         return factory;
     }
 
