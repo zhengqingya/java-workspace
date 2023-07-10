@@ -2,17 +2,17 @@ package com.zhengqing.demo.rabbitmq.delay.dlx;
 
 import cn.hutool.core.date.DateTime;
 import com.zhengqing.demo.constant.MqConstant;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class DlxProducer {
 
-    @Autowired
-    private AmqpTemplate rabbitTemplate;
+    private final AmqpTemplate rabbitTemplate;
 
     public void send() {
         String msgContent = "Hello World " + DateTime.now();

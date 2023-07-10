@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Api(tags = "测试mq")
+@Api(tags = "测试mq-7种工作模式")
 @RestController
 @RequestMapping("/api/mq")
 @RequiredArgsConstructor
@@ -26,56 +26,56 @@ public class RabbitController {
     private final TopicMsgProducer topicMsgProducer;
     private final RpcMsgProducer rpcMsgProducer;
 
-    @ApiOperation("simpleQueue")
+    @ApiOperation("简单模式")
     @PostMapping("simpleQueue")
     public String simpleQueue() {
         this.simpleMsgProducer.send();
         return "SUCCESS";
     }
 
-    @ApiOperation("workQueue")
+    @ApiOperation("工作队列模式")
     @PostMapping("workQueue")
     public String workQueue() {
         this.workMsgProducer.send();
         return "SUCCESS";
     }
 
-    @ApiOperation("fanoutExchange")
+    @ApiOperation("发布订阅模式")
     @PostMapping("fanoutExchange")
     public String fanoutExchange() {
         this.fanoutMsgProducer.send();
         return "SUCCESS";
     }
 
-    @ApiOperation("directExchange1")
+    @ApiOperation("路由模式1")
     @PostMapping("directExchange1")
     public String directExchange1() {
         this.directMsgProducer.send1();
         return "SUCCESS";
     }
 
-    @ApiOperation("directExchange2")
+    @ApiOperation("路由模式2")
     @PostMapping("directExchange2")
     public String directExchange2() {
         this.directMsgProducer.send2();
         return "SUCCESS";
     }
 
-    @ApiOperation("topicExchange1")
+    @ApiOperation("主题模式1")
     @PostMapping("topicExchange1")
     public String topicExchange1() {
         this.topicMsgProducer.send1();
         return "SUCCESS";
     }
 
-    @ApiOperation("topicExchange2")
+    @ApiOperation("主题模式2")
     @PostMapping("topicExchange2")
     public String topicExchange2() {
         this.topicMsgProducer.send2();
         return "SUCCESS";
     }
 
-    @ApiOperation("rpcQueue")
+    @ApiOperation("RPC模式")
     @PostMapping("rpcQueue")
     public String rpcQueue() {
         this.rpcMsgProducer.send();

@@ -48,13 +48,13 @@ public class RabbitMqConfig {
         // 确认消息送到交换机(Exchange)回调
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
             // do your business
-            log.debug("\n[确认消息送到交换机(Exchange)回调] 是否成功:[{}] 数据：[{}] 异常：[{}]", ack, JSONUtil.toJsonStr(correlationData), cause);
+            log.debug("[确认消息送到交换机(Exchange)回调] 是否成功:[{}] 数据：[{}] 异常：[{}]", ack, JSONUtil.toJsonStr(correlationData), cause);
         });
 
         // 确认消息送到队列(Queue)回调 -- 只有在出现错误时才回调
         rabbitTemplate.setReturnsCallback(returnedMessage -> {
             // do your business
-            log.error("\n[确认消息送到队列(Queue)回调] 返回信息：[{}]", JSONUtil.toJsonStr(returnedMessage));
+            log.error("[确认消息送到队列(Queue)回调] 返回信息：[{}]", JSONUtil.toJsonStr(returnedMessage));
         });
 
         /**

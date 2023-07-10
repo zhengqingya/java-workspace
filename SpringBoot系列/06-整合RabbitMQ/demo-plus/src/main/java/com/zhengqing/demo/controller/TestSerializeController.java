@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.Serializable;
 
 @Slf4j
-@Api(tags = "测试序列化")
+@Api(tags = "测试mq-序列化")
 @RestController
 @RequestMapping("/api/mq/serialize")
 @RequiredArgsConstructor
