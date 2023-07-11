@@ -7,7 +7,6 @@ import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.RepublishMessageRecoverer;
 import org.springframework.boot.autoconfigure.amqp.AbstractRabbitListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -25,11 +24,11 @@ public class RabbitMqConfig {
     public static final String RETRY_FAILURE_QUEUE = "retry_fail_queue";
 
     /**
-     * 启动消息重试
+     * 修改消息失败策略
      * 默认配置： {@link AbstractRabbitListenerContainerFactoryConfigurer#configure(AbstractRabbitListenerContainerFactory, ConnectionFactory, RabbitProperties.AmqpContainer)}
      * MessageRecoverer recoverer = this.messageRecoverer != null ? this.messageRecoverer : new RejectAndDontRequeueRecoverer(); 默认拒绝&不重新排队
      */
-    @Bean
+//    @Bean
     public MessageRecoverer messageRecoverer(RabbitTemplate rabbitTemplate) {
         /**
          return new RejectAndDontRequeueRecoverer(); // 拒绝&不重新排队(默认)

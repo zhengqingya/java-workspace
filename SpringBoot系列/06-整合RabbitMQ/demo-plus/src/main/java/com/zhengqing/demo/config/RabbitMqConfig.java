@@ -94,7 +94,7 @@ public class RabbitMqConfig {
 
     /**
      * tips: 使用动态队列后好像会失效，因此改用自定义消息重试，再转发队列补偿...
-     * 启动消息重试
+     * 修改消息失败策略
      * 默认配置： {@link AbstractRabbitListenerContainerFactoryConfigurer#configure(AbstractRabbitListenerContainerFactory, ConnectionFactory, RabbitProperties.AmqpContainer)}
      * MessageRecoverer recoverer = this.messageRecoverer != null ? this.messageRecoverer : new RejectAndDontRequeueRecoverer(); 默认拒绝&不重新排队
      */

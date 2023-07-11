@@ -3,7 +3,14 @@
 消费者消费消息的时候，发生异常情况，导致消息未确认， 该消息会被重复消费(默认没有重复次数，即无限循环消费)
 ，但可以通过设置重试次数以及达到重试次数之后的消息处理
 
+实现步骤：
+
+1. 开启重试
+2. 修改消息失败策略为重新发布到新队列 或 转入死信队列 （tips:如果修改了失败策略则死信队列无法生效，即两者并不兼容...）
+
 ### 一、application.yml 配置
+
+> tips: `spring.rabbitmq.listener.simple.retry.enabled`默认false 即一直死循环消费
 
 ```yml
 # RabbitMQ配置
@@ -40,7 +47,7 @@ spring:
           multiplier: 2          # 间隔时间乘子，间隔时间*乘子=下一次的间隔时间，最大不能超过设置的最大间隔时间
 ```
 
-### 二、启动消息重试
+### 二、修改消息失败策略
 
 ```java
 package com.zhengqing.demo.config;
@@ -63,7 +70,7 @@ public class RabbitMqConfig {
     public static final String RETRY_FAILURE_QUEUE = "retry_fail_queue";
 
     /**
-     * 启动消息重试
+     * 修改消息失败策略
      * 默认配置： {@link AbstractRabbitListenerContainerFactoryConfigurer#configure(AbstractRabbitListenerContainerFactory, ConnectionFactory, RabbitProperties.AmqpContainer)}
      * MessageRecoverer recoverer = this.messageRecoverer != null ? this.messageRecoverer : new RejectAndDontRequeueRecoverer(); 默认拒绝&不重新排队
      */
@@ -76,6 +83,48 @@ public class RabbitMqConfig {
          return new RepublishMessageRecoverer(rabbitTemplate, RETRY_EXCHANGE, RETRY_FAILURE_KEY); // 重新发布 -- 重试之后，将消息转发到重试失败队列，由重试失败消费者消费...
          */
         return new RepublishMessageRecoverer(rabbitTemplate, RETRY_EXCHANGE, RETRY_FAILURE_KEY);
+    }
+
+}
+```
+
+消息重试失败重发队列 -- 业务补偿机制
+
+```java
+package com.zhengqing.demo.config;
+
+import cn.hutool.core.date.DateTime;
+import com.rabbitmq.client.Channel;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.annotation.Exchange;
+import org.springframework.amqp.rabbit.annotation.Queue;
+import org.springframework.amqp.rabbit.annotation.QueueBinding;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
+
+@Slf4j
+@Component
+public class RetryFailConsumer {
+
+    @RabbitListener(
+            bindings = @QueueBinding(
+                    value = @Queue(value = RabbitMqConfig.RETRY_FAILURE_QUEUE, durable = "true"),
+                    exchange = @Exchange(value = RabbitMqConfig.RETRY_EXCHANGE, type = "direct", durable = "true"),
+                    key = RabbitMqConfig.RETRY_FAILURE_KEY
+            )
+    )
+    public void retryFailConsumer(Message message, Channel channel) throws Exception {
+        log.info("[消息重试失败] 接收时间: {} 接收消息: {}", DateTime.now(), new String(message.getBody(), StandardCharsets.UTF_8));
+        try {
+            int a = 1 / 0;
+        } catch (Exception e) {
+            log.error("[消息重试失败] 异常:{}", e.getMessage());
+            // 如果这里再抛出异常则继续走消息重试...
+//            throw e;
+        }
     }
 
 }
@@ -205,4 +254,129 @@ org.springframework.amqp.rabbit.support.ListenerExecutionFailedException: Listen
 2023-07-10 11:20:45.853  INFO 55276 --- [ntContainer#1-1] c.z.demo.controller.RetryController      : 2023-07-10 11:20:45 [消费者] 接收消息: Hello World 2023-07-10 11:20:38
 2023-07-10 11:20:45.856  WARN 55276 --- [ntContainer#1-1] o.s.a.r.retry.RepublishMessageRecoverer  : Republishing failed message to exchange 'retry_exchange' with routing key retry_fail_routing_key
 2023-07-10 11:20:45.858  INFO 55276 --- [ntContainer#0-2] c.z.demo.config.RetryFailConsumer        : [消息重试失败] 接收时间: 2023-07-10 11:20:45 接收消息: Hello World 2023-07-10 11:20:38
+```
+
+---
+
+### 五、转入死信队列
+
+tips: 注意和消息失败策略并不兼容
+
+```java
+package com.zhengqing.demo.controller;
+
+import cn.hutool.core.date.DateTime;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.*;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Slf4j
+@Api(tags = "测试mq-消息重试")
+@RestController
+@RequestMapping("/api/mq/retry/dlx")
+@RequiredArgsConstructor
+public class RetryFailToDlxController {
+    private final RabbitTemplate rabbitTemplate;
+
+    @ApiOperation("消息重试失败转死信队列")
+    @PostMapping("producer")
+    public String producer() {
+        String msgContent = "Hello World " + DateTime.now();
+        log.info("{} [生产者] 发送消息: {}", DateTime.now(), msgContent);
+        this.rabbitTemplate.convertAndSend("test_exchange", "test_routing_key_retry_to_dlx", msgContent);
+        return "SUCCESS";
+    }
+
+    /**
+     * 普通队列消费
+     */
+    @SneakyThrows
+    @RabbitHandler
+    @RabbitListener(
+            bindings = @QueueBinding(
+                    value = @Queue(value = "test_queue_retry_to_dlx", durable = "true"
+                            , arguments = {
+                            @Argument(name = "x-dead-letter-exchange", value = "dlx_exchange"),
+                            @Argument(name = "x-message-ttl", value = "1800000", type = "java.lang.Long"),
+                            @Argument(name = "x-dead-letter-routing-key", value = "test_routing_key_dlx")
+                    }
+                    ),
+                    exchange = @Exchange(value = "test_exchange", type = "direct", durable = "true"),
+                    key = "test_routing_key_retry_to_dlx"
+            )
+    )
+    public void consumer(String msg) {
+        log.info("{} [消费者] 接收消息: {}", DateTime.now(), msg);
+        try {
+            int a = 1 / 0;
+        } catch (Exception e) {
+            log.error("[消费者] 异常:{}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * 普通队列消息重试依然失败转入死信队列进行消息补偿机制
+     */
+    @RabbitListener(
+            bindings = {
+                    @QueueBinding(
+                            value = @Queue(name = "test_queue_dlx", durable = "true"),
+                            exchange = @Exchange(value = "dlx_exchange", type = "direct", durable = "true"),
+                            key = "test_routing_key_dlx"
+                    )
+            }
+    )
+    public void dlx(String msg) throws Exception {
+        log.info("[死信队列] 接收消息: {}", msg);
+        // 如果死信队列异常 重试一轮之后完事... 不会无限轮重试
+        try {
+            int a = 1 / 0;
+        } catch (Exception e) {
+            log.error("[死信队列] 异常:{}", e.getMessage());
+            throw e;
+        }
+    }
+
+}
+```
+
+测试日志
+
+```shell
+2023-07-11 10:21:19.035  INFO 52308 --- [p-nio-80-exec-1] c.z.d.c.RetryFailToDlxController         : 2023-07-11 10:21:19 [生产者] 发送消息: Hello World 2023-07-11 10:21:19
+2023-07-11 10:21:19.047  INFO 52308 --- [ntContainer#2-1] c.z.d.c.RetryFailToDlxController         : 2023-07-11 10:21:19 [消费者] 接收消息: Hello World 2023-07-11 10:21:19
+2023-07-11 10:21:19.048 ERROR 52308 --- [ntContainer#2-1] c.z.d.c.RetryFailToDlxController         : [消费者] 异常:/ by zero
+2023-07-11 10:21:20.049  INFO 52308 --- [ntContainer#2-1] c.z.d.c.RetryFailToDlxController         : 2023-07-11 10:21:20 [消费者] 接收消息: Hello World 2023-07-11 10:21:19
+2023-07-11 10:21:20.049 ERROR 52308 --- [ntContainer#2-1] c.z.d.c.RetryFailToDlxController         : [消费者] 异常:/ by zero
+2023-07-11 10:21:22.051  INFO 52308 --- [ntContainer#2-1] c.z.d.c.RetryFailToDlxController         : 2023-07-11 10:21:22 [消费者] 接收消息: Hello World 2023-07-11 10:21:19
+2023-07-11 10:21:22.051 ERROR 52308 --- [ntContainer#2-1] c.z.d.c.RetryFailToDlxController         : [消费者] 异常:/ by zero
+2023-07-11 10:21:26.051  INFO 52308 --- [ntContainer#2-1] c.z.d.c.RetryFailToDlxController         : 2023-07-11 10:21:26 [消费者] 接收消息: Hello World 2023-07-11 10:21:19
+2023-07-11 10:21:26.051 ERROR 52308 --- [ntContainer#2-1] c.z.d.c.RetryFailToDlxController         : [消费者] 异常:/ by zero
+2023-07-11 10:21:26.053  WARN 52308 --- [ntContainer#2-1] o.s.a.r.r.RejectAndDontRequeueRecoverer  : Retries exhausted for message (Body:'Hello World 2023-07-11 10:21:19' MessageProperties [headers={}, contentType=text/plain, contentEncoding=UTF-8, contentLength=0, receivedDeliveryMode=PERSISTENT, priority=0, redelivered=false, receivedExchange=test_exchange, receivedRoutingKey=test_routing_key_retry_to_dlx, deliveryTag=1, consumerTag=amq.ctag-L6XkKHMmMDfo_xczK1hSmg, consumerQueue=test_queue_retry_to_dlx])
+
+org.springframework.amqp.rabbit.support.ListenerExecutionFailedException: Listener method 'public void com.zhengqing.demo.controller.RetryFailToDlxController.consumer(java.lang.String)' threw exception
+	at org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter.invokeHandler(MessagingMessageListenerAdapter.java:228)
+...
+
+2023-07-11 10:21:26.057  INFO 52308 --- [ntContainer#3-1] c.z.d.c.RetryFailToDlxController         : [死信队列] 接收消息: Hello World 2023-07-11 10:21:19
+2023-07-11 10:21:26.057 ERROR 52308 --- [ntContainer#3-1] c.z.d.c.RetryFailToDlxController         : [死信队列] 异常:/ by zero
+2023-07-11 10:21:27.058  INFO 52308 --- [ntContainer#3-1] c.z.d.c.RetryFailToDlxController         : [死信队列] 接收消息: Hello World 2023-07-11 10:21:19
+2023-07-11 10:21:27.058 ERROR 52308 --- [ntContainer#3-1] c.z.d.c.RetryFailToDlxController         : [死信队列] 异常:/ by zero
+2023-07-11 10:21:29.058  INFO 52308 --- [ntContainer#3-1] c.z.d.c.RetryFailToDlxController         : [死信队列] 接收消息: Hello World 2023-07-11 10:21:19
+2023-07-11 10:21:29.058 ERROR 52308 --- [ntContainer#3-1] c.z.d.c.RetryFailToDlxController         : [死信队列] 异常:/ by zero
+2023-07-11 10:21:33.059  INFO 52308 --- [ntContainer#3-1] c.z.d.c.RetryFailToDlxController         : [死信队列] 接收消息: Hello World 2023-07-11 10:21:19
+2023-07-11 10:21:33.059 ERROR 52308 --- [ntContainer#3-1] c.z.d.c.RetryFailToDlxController         : [死信队列] 异常:/ by zero
+2023-07-11 10:21:33.059  WARN 52308 --- [ntContainer#3-1] o.s.a.r.r.RejectAndDontRequeueRecoverer  : Retries exhausted for message (Body:'Hello World 2023-07-11 10:21:19' MessageProperties [headers={x-first-death-exchange=test_exchange, x-death=[{reason=rejected, count=1, exchange=test_exchange, time=Tue Jul 11 10:21:26 CST 2023, routing-keys=[test_routing_key_retry_to_dlx], queue=test_queue_retry_to_dlx}], x-first-death-reason=rejected, x-first-death-queue=test_queue_retry_to_dlx}, contentType=text/plain, contentEncoding=UTF-8, contentLength=0, receivedDeliveryMode=PERSISTENT, priority=0, redelivered=false, receivedExchange=dlx_exchange, receivedRoutingKey=test_routing_key_dlx, deliveryTag=1, consumerTag=amq.ctag-OWW27sAur6jpI_X9W516jQ, consumerQueue=test_queue_dlx])
+
+org.springframework.amqp.rabbit.support.ListenerExecutionFailedException: Listener method 'public void com.zhengqing.demo.controller.RetryFailToDlxController.dlx(java.lang.String) throws java.lang.Exception' threw exception
+	at org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter.invokeHandler(MessagingMessageListenerAdapter.java:228)
+...
 ```
