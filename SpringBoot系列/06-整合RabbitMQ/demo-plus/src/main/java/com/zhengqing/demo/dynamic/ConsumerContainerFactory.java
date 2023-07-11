@@ -16,6 +16,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
@@ -64,15 +65,15 @@ public class ConsumerContainerFactory implements FactoryBean<SimpleMessageListen
      */
     private CustomRetryListener retryListener;
     /**
-     * 最大重试次数
-     */
-    private Integer maxAttempts;
-    /**
      * 是否自动确认
      */
     private Boolean autoAck;
 
     private RabbitTemplate rabbitTemplate;
+    /**
+     * yml配置参数
+     */
+    private RabbitProperties rabbitProperties;
 
     @Override
     public SimpleMessageListenerContainer getObject() throws Exception {
@@ -80,9 +81,10 @@ public class ConsumerContainerFactory implements FactoryBean<SimpleMessageListen
         container.setAmqpAdmin(this.amqpAdmin);
         container.setConnectionFactory(this.connectionFactory);
         container.setQueues(this.queue);
-        container.setPrefetchCount(20);
-        container.setConcurrentConsumers(20);
-        container.setMaxConcurrentConsumers(100);
+        RabbitProperties.SimpleContainer simpleProperties = this.rabbitProperties.getListener().getSimple();
+        container.setPrefetchCount(simpleProperties.getPrefetch());
+        container.setConcurrentConsumers(simpleProperties.getConcurrency());
+        container.setMaxConcurrentConsumers(simpleProperties.getMaxConcurrency());
         container.setDefaultRequeueRejected(Boolean.FALSE);
         container.setAdviceChain(this.createRetry());
         container.setAcknowledgeMode(this.autoAck ? AcknowledgeMode.AUTO : AcknowledgeMode.MANUAL);
@@ -96,6 +98,7 @@ public class ConsumerContainerFactory implements FactoryBean<SimpleMessageListen
      * 配置重试
      */
     private Advice createRetry() {
+        Integer maxAttempts = this.rabbitProperties.getListener().getSimple().getRetry().getMaxAttempts();
         RetryTemplate retryTemplate = new RetryTemplate();
         retryTemplate.registerListener(new RetryListener() {
             @Override
@@ -113,13 +116,13 @@ public class ConsumerContainerFactory implements FactoryBean<SimpleMessageListen
             public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
                 if (Objects.nonNull(ConsumerContainerFactory.this.retryListener)) {
                     ConsumerContainerFactory.this.retryListener.onRetry(context, callback, throwable);
-                    if (ConsumerContainerFactory.this.maxAttempts.equals(context.getRetryCount())) {
+                    if (maxAttempts.equals(context.getRetryCount())) {
                         ConsumerContainerFactory.this.retryListener.lastRetry(context, callback, throwable);
                     }
                 }
             }
         });
-        retryTemplate.setRetryPolicy(new SimpleRetryPolicy(this.maxAttempts));
+        retryTemplate.setRetryPolicy(new SimpleRetryPolicy(maxAttempts));
         retryTemplate.setBackOffPolicy(this.genExponentialBackOffPolicy());
         return RetryInterceptorBuilder.stateless()
                 .retryOperations(retryTemplate)
@@ -132,13 +135,15 @@ public class ConsumerContainerFactory implements FactoryBean<SimpleMessageListen
      * 设置过期时间
      */
     private BackOffPolicy genExponentialBackOffPolicy() {
+        RabbitProperties.ListenerRetry retryProperties = this.rabbitProperties.getListener().getSimple().getRetry();
+
         ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-        // 重试间隔基数(秒)
-        backOffPolicy.setInitialInterval(5000);
-        // 从重试的第一次至最后一次，最大时间间隔(秒)
-        backOffPolicy.setMaxInterval(86400000);
+        // 重试间隔基数(毫秒)
+        backOffPolicy.setInitialInterval(retryProperties.getInitialInterval().getSeconds() * 1000);
+        // 从重试的第一次至最后一次，最大时间间隔(毫秒)
+        backOffPolicy.setMaxInterval(retryProperties.getMaxInterval().getSeconds() * 1000);
         // 重试指数
-        backOffPolicy.setMultiplier(1);
+        backOffPolicy.setMultiplier(retryProperties.getMultiplier());
         return backOffPolicy;
     }
 

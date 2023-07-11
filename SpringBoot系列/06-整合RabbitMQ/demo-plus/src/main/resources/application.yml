@@ -64,7 +64,7 @@ spring:
         #         第7次：32*2=64秒 (由于设置最大间隔时间，因此这里为50秒 )
         retry:
           enabled: true          # 是否开启重试
-          max-attempts: 3        # 最大重试次数
+          max-attempts: 4        # 最大重试次数
           max-interval: 50000    # 重试最大间隔时间
           initial-interval: 1000 # 重试间隔（单位：毫秒）
           multiplier: 2          # 间隔时间乘子，间隔时间*乘子=下一次的间隔时间，最大不能超过设置的最大间隔时间

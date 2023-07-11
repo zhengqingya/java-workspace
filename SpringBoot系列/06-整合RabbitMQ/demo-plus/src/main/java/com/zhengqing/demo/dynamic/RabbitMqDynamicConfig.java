@@ -18,7 +18,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.HashMap;
@@ -51,9 +51,10 @@ public class RabbitMqDynamicConfig implements SmartInitializingSingleton {
      */
     private final RabbitModulePropertys rabbitModulePropertys;
     private final RabbitTemplate rabbitTemplate;
-
-    @Value("${spring.rabbitmq.listener.simple.retry.max-attempts}")
-    private Integer maxAttempts;
+    /**
+     * yml配置参数
+     */
+    private final RabbitProperties rabbitProperties;
 
 //    public RabbitMqDynamicInitializer(ConnectionFactory connectionFactory, AmqpAdmin amqpAdmin, RabbitModulePropertys rabbitModulePropertys) {
 //        this.connectionFactory = connectionFactory;
@@ -245,8 +246,8 @@ public class RabbitMqDynamicConfig implements SmartInitializingSingleton {
                     .retryListener(customRetryListener)
                     .autoAck(rabbitModuleProperty.getAutoAck())
                     .amqpAdmin(this.amqpAdmin)
-                    .maxAttempts(this.maxAttempts)
                     .rabbitTemplate(this.rabbitTemplate)
+                    .rabbitProperties(this.rabbitProperties)
                     .build();
             SimpleMessageListenerContainer container = factory.getObject();
             if (Objects.nonNull(container)) {
