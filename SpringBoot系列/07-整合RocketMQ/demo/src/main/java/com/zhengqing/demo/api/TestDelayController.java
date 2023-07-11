@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("api/test/")
 @RequiredArgsConstructor
-@Api(tags = "测试API-定时/延时消息（暂无效）")
+@Api(tags = "测试API-定时/延时消息")
 public class TestDelayController {
 
     private final RocketMQTemplate rocketMQTemplate;
@@ -53,8 +53,8 @@ public class TestDelayController {
     public String syncSendDeliverTimeMills() {
         String msgContent = DateUtil.now();
         log.info("[生产者] 发送消息：{}", msgContent);
-        // 这里为了方便看到效果，模拟定时3秒后触发
-        long deliverTimeMills = System.currentTimeMillis() + 3000;
+        // 这里为了方便看到效果，模拟定时5秒后触发
+        long deliverTimeMills = System.currentTimeMillis() + 5000;
         this.rocketMQTemplate.syncSendDeliverTimeMills(TOPIC_TAG, msgContent, deliverTimeMills);
         return "OK";
     }
