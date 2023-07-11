@@ -69,13 +69,12 @@ public class RabbitMqConfig {
      */
     @Bean
     public MessageRecoverer messageRecoverer(RabbitTemplate rabbitTemplate) {
-        // 拒绝&不重新排队(默认)
-//        return new RejectAndDontRequeueRecoverer();
-        // 用于消息批量处理的恢复器（Recoverer），它可以在消息消费失败时对一个批量的消息进行统一的处理。
-//        return new MessageBatchRecoverer() {public void recover(List<Message> messages, Throwable cause) {}};
-        // 重新排队 -- 重试之后，返回队列，然后再重试，周而复始直到不抛出异常为止，这样还是会影响后续的消息消费...
-//        return new ImmediateRequeueMessageRecoverer();
-        // 重新发布 -- 重试之后，将消息转发到重试失败队列，由重试失败消费者消费...
+        /**
+         return new RejectAndDontRequeueRecoverer(); // 拒绝&不重新排队(默认)
+         return new MessageBatchRecoverer() {public void recover(List<Message> messages, Throwable cause) {}}; // 用于消息批量处理的恢复器（Recoverer），它可以在消息消费失败时对一个批量的消息进行统一的处理。
+         return new ImmediateRequeueMessageRecoverer(); // 重新排队 -- 重试之后，返回队列，然后再重试，周而复始直到不抛出异常为止，这样还是会影响后续的消息消费...
+         return new RepublishMessageRecoverer(rabbitTemplate, RETRY_EXCHANGE, RETRY_FAILURE_KEY); // 重新发布 -- 重试之后，将消息转发到重试失败队列，由重试失败消费者消费...
+         */
         return new RepublishMessageRecoverer(rabbitTemplate, RETRY_EXCHANGE, RETRY_FAILURE_KEY);
     }
 
@@ -111,6 +110,7 @@ public class RetryController {
     @PostMapping("producer")
     public String producer() {
         String msgContent = "Hello World " + DateTime.now();
+        log.info("{} [生产者] 发送消息: {}", DateTime.now(), msgContent);
         this.rabbitTemplate.convertAndSend("test_exchange", "test_routing_key_retry", msgContent);
         return "SUCCESS";
     }
@@ -126,14 +126,18 @@ public class RetryController {
     )
     public void consumer(String msg) {
         log.info("{} [消费者] 接收消息: {}", DateTime.now(), msg);
-//        int a = 1 / 0;
-        throw new Exception("异常了...");
+        try {
+            int a = 1 / 0;
+        } catch (Exception e) {
+            log.error("[消费者] 异常:{}", e.getMessage());
+            throw e;
+        }
     }
 
 }
 ```
 
-### 四、MessageRecoverer
+### 四、MessageRecoverer 消息失败策略
 
 MessageRecoverer 是一个接口，用于在消息消费失败时执行自定义的恢复逻辑。
 当消费者在处理消息时抛出异常时，消息队列系统会调用 MessageRecoverer 来处理该消息。

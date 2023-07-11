@@ -32,6 +32,13 @@ public class RetryFailConsumer {
     )
     public void retryFailConsumer(Message message, Channel channel) throws Exception {
         log.info("[消息重试失败] 接收时间: {} 接收消息: {}", DateTime.now(), new String(message.getBody(), StandardCharsets.UTF_8));
+        try {
+            int a = 1 / 0;
+        } catch (Exception e) {
+            log.error("[消息重试失败] 异常:{}", e.getMessage());
+            // 如果这里再抛出异常则继续走消息重试...
+//            throw e;
+        }
     }
 
 }
