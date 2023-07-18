@@ -1,6 +1,4 @@
-﻿@[TOC](文章目录)
-
-### 一、前言
+﻿### 一、前言
 
 本文将会基于`springboot 2.4.0`通过`spring-retry`实现`服务重试`
 
@@ -8,9 +6,18 @@
 
 ### 二、编程
 
+- 普通使用方式见[RetryTest.java](src/test/java/com/zhengqing/demo/RetryTest.java)
+- 下面为注解使用方式
+
 #### 1、`pom.xml`中引入依赖
 
-```xml
+```
+<!-- Spring Boot AOP Starter -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
+
 <!-- spring-retry -->
 <!-- https://mvnrepository.com/artifact/org.springframework.retry/spring-retry -->
 <dependency>
@@ -18,16 +25,12 @@
     <artifactId>spring-retry</artifactId>
     <version>1.3.2</version>
 </dependency>
-
-<dependency>
-    <groupId>org.aspectj</groupId>
-    <artifactId>aspectjweaver</artifactId>
-</dependency>
 ```
 
 #### 2、启用重试
 
 ```java
+
 @EnableRetry // 启用重试
 @SpringBootApplication
 public class DemoApplication {
@@ -44,6 +47,7 @@ public class DemoApplication {
 > tips: 简单小示例看看效果~
 
 ```java
+
 @Slf4j
 @RestController
 @RequestMapping("")
@@ -83,13 +87,14 @@ public class RetryController {
 ```
 
 日志如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/944f740f892d438faadee124a8e40caf.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/README-1689662836319.png)
 
 ### 三、注意事项
 
 `@Retryable`基于aop实现，因此需要注意失效场景，例如同一个类中调用方法
 
-如果非要在同一个类中调用，可以通过`BeanPostProcessor在目标对象中注入代理对象` -> 解决Spring AOP不拦截对象内部调用方法问题`^_^`
+如果非要在同一个类中调用，可以通过`BeanPostProcessor在目标对象中注入代理对象` -> 解决Spring
+AOP不拦截对象内部调用方法问题`^_^`
 
 ### 四、本文案例demo源码
 
