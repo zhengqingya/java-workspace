@@ -6,8 +6,8 @@
 ###### 准备集成环境
 
 下载jar依赖：[http://www.zhuozhengsoft.com/dowm/](http://www.zhuozhengsoft.com/dowm/)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715152425822.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020071515250252.png)
+![](./images/20230912141305683.png)
+![](./images/20230912141305726.png)
 
 ### 二、SpringBoot整合PageOffice实现在线编辑Word和Excel
 
@@ -16,7 +16,7 @@
 #### 1、`pom.xml`中新增相关依赖
 
 > 将下载的jar依赖放进项目的lib包下 （ 注：这里也可以自定义存放位置，然后修改本地引入位置`${project.basedir}/lib/pageoffice4.6.0.4.jar`即可 ）
-> ![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715152656429.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+> ![](./images/20230912141305761.png)
 
 
 ```xml
@@ -44,7 +44,7 @@
 ```
 
 本地jar包引入需再新增如下，可参考文末源码demo
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020071515294759.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305812.png)
 
 #### 2、`application.yml`中新增pageoffice配置
 
@@ -68,7 +68,7 @@ pageoffice:
 
 #### 3、`resources/templates`下新增如下3个文件
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715153305864.png)
+![](./images/20230912141305854.png)
 
 ###### ① Excel.html
 
@@ -323,26 +323,26 @@ public class DemoController {
 
 注意将测试word和excel文件(`文件不能为0字节`)放在`项目根目录/pageoffice/doc`目录下，以及新建`lic`文件夹...
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715163408359.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305890.png)
 
 ### 三、测试
 
 访问[http://localhost:8080/](http://localhost:8080/)，点击`打开Word文档`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715150935401.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305923.png)
 第一次使用的时候会提示`安装PageOffice`，直接下一步安装即可~
 
 > 可参考PageOffice客户端安装步骤：[https://www.kancloud.cn/pageoffice_course_group/pageoffice_course/654031](https://www.kancloud.cn/pageoffice_course_group/pageoffice_course/654031)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715150848551.png)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715151233340.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715151243505.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305957.png)
+![](./images/20230912141306002.png)
+![](./images/20230912141306042.png)
 安装完成之后回到页面再次点击`打开Word文档`，这时候需要填写注册信息，序列号在之前下载的包里面可以找到
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715161238202.png)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715161425308.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306080.png)
+![](./images/20230912141306114.png)
 注册成功后，正常打开Word文件，之后就可以进行自己的神操作了...
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020071509410059.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306159.png)
 `打开Excel文档`如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715161527567.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306181.png)
 
 ### 四、Vue页面集成PageOffice
 
@@ -366,7 +366,7 @@ public class DemoController {
 ```
 
 这里页面很简单就2个按钮...
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200715162820214.png)
+![](./images/20230912141306207.png)
 主要通过`openWindowModeless` 使用非模态框的形式打开文件
 
 > 用法可参考：[http://www.zhuozhengsoft.com/help/js3/pobrowser/function/openwindowmodeless.htm](http://www.zhuozhengsoft.com/help/js3/pobrowser/function/openwindowmodeless.htm)

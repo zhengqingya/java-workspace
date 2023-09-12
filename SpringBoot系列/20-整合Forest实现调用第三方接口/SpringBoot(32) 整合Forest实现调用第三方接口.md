@@ -10,7 +10,7 @@
 1. 项目地址：[https://gitee.com/dt_flys/forest](https://gitee.com/dt_flys/forest)
 2. 中文文档：[https://dt_flys.gitee.io/forest/](https://dt_flys.gitee.io/forest/)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200827135141821.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center)
+![](./images/20230912141306298.png)
 
 ### 二、SpringBoot整合Forest实现调用第三方接口
 
@@ -58,7 +58,7 @@ public class DemoApplication {
 }
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200827143630280.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center)
+![](./images/20230912141306320.png)
 
 #### 4、构建请求接口
 
@@ -111,7 +111,7 @@ public class DemoTest {
 }
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200827143857676.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center)
+![](./images/20230912141306341.png)
 
 ---
 

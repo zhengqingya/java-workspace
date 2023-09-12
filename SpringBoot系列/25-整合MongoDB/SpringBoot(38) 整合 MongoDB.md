@@ -15,11 +15,11 @@ docker-compose -f docker-compose-mongodb.yml -p mongodb up -d
 
 访问可视化图形界面：`http://ip地址:1234`
 添加连接，Connection string：`mongodb://admin:123456@ip地址:27017`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210526220726348.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306975.png)
 创建`test-db`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210526221818485.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141307038.png)
 刷新浏览器查看
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210526221911829.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141307077.png)
 
 ### 三、SpringBoot整合MongoDB
 
@@ -106,10 +106,10 @@ class User implements Serializable {
 ```
 
 api： [http://127.0.0.1/doc.html#/home](http://127.0.0.1/doc.html#/home)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210526224906824.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141307129.png)
 
 查看adminMongo
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210526225036595.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141307170.png)
 
 ### 本文案例demo源码
 

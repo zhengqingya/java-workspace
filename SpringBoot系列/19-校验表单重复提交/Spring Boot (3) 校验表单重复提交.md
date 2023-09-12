@@ -155,9 +155,9 @@ public class IndexController extends BaseController {
 这里重复访问此 `index` api请求以模拟提交表单测试
 
 第一次访问 [http://127.0.0.1:8080/index](http://127.0.0.1:8080/index)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2019112716024494.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306232.png)
 多次刷新此请求，则提示`请勿重复提交!`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191127160526441.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306261.png)
 
 ### 四、总结
 

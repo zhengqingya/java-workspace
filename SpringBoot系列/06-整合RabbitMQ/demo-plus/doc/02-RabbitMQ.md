@@ -18,7 +18,7 @@ RabbitMQ的核心概念包括以下几个要素：
 
 ---
 
-![img.png](images/RabbitMQ基础架构.png)
+![](images/RabbitMQ基础架构.png)
 
-![img.png](images/RabbitMQ工作模式.png)
+![](images/RabbitMQ工作模式.png)
 

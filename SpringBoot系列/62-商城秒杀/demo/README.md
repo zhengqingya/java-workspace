@@ -48,7 +48,7 @@ spring:
 
 启动项目，访问 http://127.0.0.1/doc.html#/home
 
-![img.png](images/api-doc.png)
+![](images/api-doc.png)
 
 Controller 见 `com.zhengqing.demo.api.SeckillController.seckill`
 

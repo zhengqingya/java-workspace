@@ -196,8 +196,8 @@ public class IndexController {
 ```
 
 访问接口文档：[http://127.0.0.1:8080/doc.html](http://127.0.0.1:8080/doc.html)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/c6c85ee6d2164a5084abe7738118b2c2.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/7f0d9a56b9d94c8eb3cba1c688778b0d.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141303252.png)
+![](./images/20230912141303298.png)
 
 
 ### 四、本文案例demo源码

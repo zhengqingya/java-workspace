@@ -32,13 +32,13 @@ ex: 用户表根据user_id取模拆分到不同的数据库中
 5. 不分片策略
 
 可查看源码 `org.apache.shardingsphere.core.yaml.config.sharding.YamlShardingStrategyConfiguration`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/004203fb595e40c1a4a3f517fb73d803.png)
+![](./images/20230912141308421.png)
 
 ### 三、程序实现
 
 > 温馨小提示：详情可查看案例demo源码
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/a1186c29b20e4453827b806fda732fa5.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308453.png)
 
 这里先贴出完整的`application.yml`配置，后面实现每一种分片策略时，放开其相应配置即可~
 
@@ -591,7 +591,7 @@ public IPage<User> listPageForHint() {
 ---
 
 运行项目，接口文档：[http://127.0.0.1/doc.html](http://127.0.0.1/doc.html)  提供了几个测试api如下
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20263114c29d4972ba9c157e149594e6.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_14,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308487.png)
 
 ### 本文案例demo源码
 

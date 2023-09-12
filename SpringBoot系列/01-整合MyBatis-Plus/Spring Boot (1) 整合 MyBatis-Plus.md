@@ -1,7 +1,7 @@
 ﻿### 一、前言
 
 本文小编将基于 `SpringBoot` 整合 `MyBatis-Plus` ， **MyBatis-Plus** 是一个 MyBatis 的增强工具，在 MyBatis 的基础上做增强并且不改变原本功能 ~ 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191010205616360.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141302461.png)
 
 ### 二、SpringBoot整合MyBatis-Plus
 
@@ -236,7 +236,7 @@ mybatis-plus:
 ### 三、模拟业务代码  - 对用户信息表做CRUD
 
 #### 1、数据库新建`t_sys_user`用户表
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191010212303579.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303106.png)
 
 #### 2、编写实体类
 
@@ -361,7 +361,7 @@ public class ApplicationTests {
 ### 五、原生MyBatis方式
 
 这个案例就放文末demo源码吧，不多说，也就是自己写sql语句处理对应业务
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191010220246497.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303145.png)
 
 ### 六、总结
 
@@ -374,7 +374,7 @@ public class ApplicationTests {
 > [https://mp.baomidou.com/guide/crud-interface.html#mapper-crud-%E6%8E%A5%E5%8F%A3](https://mp.baomidou.com/guide/crud-interface.html#mapper-crud-%E6%8E%A5%E5%8F%A3)
 
 **整体项目结构**：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191010221926156.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303177.png)
 
 ---
 

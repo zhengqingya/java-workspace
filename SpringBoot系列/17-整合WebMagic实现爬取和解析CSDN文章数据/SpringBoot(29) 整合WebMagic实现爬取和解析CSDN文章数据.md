@@ -3,7 +3,7 @@
 1. `WebMagic`：一款简单灵活的爬虫框架，基于它我们可以非常容易的编写一个爬虫。
 2. 官网文档地址：[http://webmagic.io/docs/zh/](http://webmagic.io/docs/zh/)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702103750586.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305532.png)
 
 > 下面小编将通过爬取+解析自己的csdn文章数据来演示一个简单的爬虫案例demo
 
@@ -199,7 +199,7 @@ public class SamplePageProcessor implements PageProcessor {
 
 ① 启动类开启定时任务
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020070210523416.png)
+![](./images/20230912141305604.png)
 
 ② 编写定时任务
 
@@ -234,7 +234,7 @@ public class AppScheduledJobs {
 ### 三、运行项目测试
 
 可以看到我们解析获取到的文章标题，文章内容，文章发布时间等一系列信息...
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702105452361.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305639.png)
 
 ---
 

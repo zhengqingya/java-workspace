@@ -31,7 +31,7 @@ docker-compose -f docker-compose-canal.yml -p canal up -d
 ```
 
 相关配置文件
-![在这里插入图片描述](https://img-blog.csdnimg.cn/1ca6dafb23fc44dcadc68ddba25050dd.png)
+![](./images/20230912141308645.png)
 
 
 ###### docker-compose-canal.yml
@@ -95,7 +95,7 @@ services:
 访问地址：`http://ip地址:8089`
 默认登录账号密码：`admin/123456`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/60947615cd744a5eb3f29e4c6e7b8737.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308679.png)
 
 ### 三、`canal-admin`可视化管理
 
@@ -199,17 +199,17 @@ public interface MqConstant {
 #### 4、测试
 
 先启动项目让程序自动建立所需mq中的交换机和队列
-![在这里插入图片描述](https://img-blog.csdnimg.cn/39b965fd44a24ae4b415d7bdb467df11.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308701.png)
 再修改canal监听的表数据
-![在这里插入图片描述](https://img-blog.csdnimg.cn/9a16248114814e63a9039e721a36b585.png)
+![](./images/20230912141308722.png)
 查看程序监听的mq消息数据如下，拿到数据就可以进行数据解析处理了...
-![在这里插入图片描述](https://img-blog.csdnimg.cn/8212f62cb7f54ab7b50067f45ea1ad05.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308776.png)
 
 ### 五、canal-spring-boot-starter
 
 > tips: 可参考 [https://github.com/NormanGyllenhaal/canal-client](https://github.com/NormanGyllenhaal/canal-client)
 > 此方式需将`canal.properties`配置文件中的`canal.serverMode`属性值修改为`tcp`
-> ![在这里插入图片描述](https://img-blog.csdnimg.cn/c96d0a73dfbc4f40b30f394b324c954e.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+> ![](./images/20230912141308800.png)
 
 
 #### 1、`pom.xml`中引入依赖
@@ -303,7 +303,7 @@ public class User implements Serializable {
 ```
 
 经测试发现这个jar存在一些bug，ex：针对表字段，数据原本为空，修改为有值的时候，如果java这边用非String字段类型去接收会报错！
-![在这里插入图片描述](https://img-blog.csdnimg.cn/c32fedd8d5054a69a98ddc35c92de54c.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308833.png)
 
 
 ### 本文案例demo源码

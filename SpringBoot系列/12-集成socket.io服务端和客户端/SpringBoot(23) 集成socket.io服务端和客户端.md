@@ -15,7 +15,7 @@
 3. 适合进行服务端和客户端双向数据通信
 
 w3cschool上对socket.io的描述如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200207230000333.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304751.png)
 
 ##### 本文将实现
 
@@ -330,7 +330,7 @@ public class SocketIOClientLaunch {
 ### 四、运行测试
 
 当客户端上线后，会通过自定义事件`push_data_event`每隔3秒向服务端发送消息，日志如下
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020020723242873.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304785.png)
 
 而服务端中跑了一个广播消息(自定义事件`myBroadcast`) 每隔3秒也会返回给客户端
 
@@ -341,7 +341,7 @@ socketIOServer.getBroadcastOperations().sendEvent("myBroadcast", "广播消息 "
 ```
 
 日志如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020020723293335.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304841.png)
 
 编写服务端主动发送消息给客户端接口
 
@@ -365,7 +365,7 @@ public class SocketIOController {
 ```
 
 调用接口测试发送helloworld...
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200207233147559.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304882.png)
 
 ### 五、总结
 

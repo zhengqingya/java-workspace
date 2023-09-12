@@ -14,10 +14,10 @@ docker-compose -f docker-compose-xxl-job.yml -p xxl-job up -d
 访问地址：`http://ip地址:9003`
 默认登录账号密码：`admin/123456`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210525161749718.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306796.png)
 
 注：此容器方式部署，需要将`执行器管理`中的`机器地址`修改为宿主机ip，不能使用`127.0.0.1`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210525162019390.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306829.png)
 
 
 ### 三、SpringBoot整合XXL-JOB
@@ -356,12 +356,12 @@ public class SampleXxlJob {
 #### 5、任务调度中心 - 任务执行
 
 小编这里直接使用默认示例执行一次
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2021052516211874.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306867.png)
 查看调度日志
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210525162445909.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306898.png)
 
 查看执行日志
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210525162419154.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306936.png)
 
 ### 本文案例demo源码
 

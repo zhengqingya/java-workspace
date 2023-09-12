@@ -18,7 +18,7 @@
 >
 可查看 [https://www.processon.com/view/link/616970e01e085306d74115c2](https://www.processon.com/view/link/616970e01e085306d74115c2)
 
-![img.png](images/rabbitmq-delay-00.png)
+![](images/rabbitmq-delay-00.png)
 
 #### 区别
 
@@ -226,7 +226,7 @@ rabbitmq-plugins list
 
 安装成功之后，交换机类型会多一个`x-delayed-message`
 
-![img_1.png](images/rabbitmq-delay-01.png)
+![](images/rabbitmq-delay-01.png)
 
 ###### 编写代码
 
@@ -323,9 +323,9 @@ public class DelayController {
 启动项目，调用api进行测试即可 `^_^`
 
 [http://127.0.0.1/doc.html#/home](http://127.0.0.1/doc.html#/home)
-![img_2.png](images/rabbitmq-delay-02.png)
-![img_3.png](images/rabbitmq-delay-03.png)
-![img_4.png](images/rabbitmq-delay-04.png)
+![](images/rabbitmq-delay-02.png)
+![](images/rabbitmq-delay-03.png)
+![](images/rabbitmq-delay-04.png)
 
 ### 本文案例demo源码
 

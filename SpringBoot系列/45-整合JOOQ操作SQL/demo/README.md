@@ -22,7 +22,7 @@ CREATE TABLE `t_user`
 
 ### 代码生成
 
-![img.png](jooq-codegen.png)
+![](jooq-codegen.png)
 
 ### 请求测试
 

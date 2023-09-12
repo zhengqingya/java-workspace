@@ -22,7 +22,7 @@ docker-compose -f docker-compose-elk.yml -p elk up -d
 ```
 
 运行成功后，可通过Portainer查看容器
-![在这里插入图片描述](https://img-blog.csdnimg.cn/7a0ef4d399a6477d8bd589e5ce157066.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141307223.png)
 
 ### 三、SpringBoot项目配置logstash推送日志
 
@@ -83,7 +83,7 @@ public class AppScheduledJobs {
 ```
 
 配置好之后，运行程序
-![在这里插入图片描述](https://img-blog.csdnimg.cn/068bcfaa5d01422a9dc88bb2a044960a.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141307271.png)
 
 ### 四、Kibana配置日志查看
 
@@ -91,16 +91,16 @@ public class AppScheduledJobs {
 
 > [http://127.0.0.1:5601/app/management/kibana/indexPatterns](http://127.0.0.1:5601/app/management/kibana/indexPatterns)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/e9e8503373814fb08e65139a12095a0d.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/4477545aa99444a9a9fd805b7678e267.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/5fc2c0500fb847eebef86e57d05304c7.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/c39a9363686d4688b8504af178bb1314.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141307326.png)
+![](./images/20230912141307365.png)
+![](./images/20230912141307413.png)
+![](./images/20230912141307441.png)
 #### 2、查看日志
 
 > [http://127.0.0.1:5601/app/discover](http://127.0.0.1:5601/app/discover)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/0dcd3b482aaa4d25914f3fe059d0c94c.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/e5620e589adc48e6acd7927ead1f4dcf.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141307483.png)
+![](./images/20230912141307517.png)
 
 ### 五、本文案例demo源码
 

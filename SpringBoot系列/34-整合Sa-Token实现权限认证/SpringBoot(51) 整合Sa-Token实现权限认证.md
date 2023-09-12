@@ -256,7 +256,7 @@ public class TestController {
 ```
 
 接口文档 [http://127.0.0.1/doc.html](http://127.0.0.1/doc.html)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/62f92861aef147bfac0b55f1266e0778.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308588.png)
 
 其它的自己看着sa-token官方文档玩吧， 比较简单，就不多展示了`^_^`
 

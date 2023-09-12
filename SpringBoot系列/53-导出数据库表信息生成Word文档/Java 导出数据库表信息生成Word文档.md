@@ -3,7 +3,7 @@
 最近看见朋友写了一个导出数据库生成word文档的业务，感觉很有意思，研究了一下，这里也拿出来与大家分享一波~
 
 先来看生成word文档效果吧
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191108171829750.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141311022.png)
 
 下面我们也来一起简单的实现吧
 
@@ -250,11 +250,11 @@ public class Constants {
 
 小编在demo中提供了一个`get`请求的接口`http://localhost:8080/api/tableToWord` 
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191108173805241.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141311074.png)
 
 接下来我们就可以去返回的地址中查看生成文件了
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191108173926425.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191108174004553.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141311095.png)
+![](./images/20230912141311131.png)
 
 ### 案例demo源码
 

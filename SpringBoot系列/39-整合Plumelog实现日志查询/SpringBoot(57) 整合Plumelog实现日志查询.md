@@ -163,7 +163,7 @@ plumelog:
 
 访问plumelog的ui界面查看日志
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/d9bcc4cebb5b45889ea4b40eb3099380.png)
+![](./images/20230912141309354.png)
 
 ### 四、本文案例demo源码
 

@@ -4,14 +4,14 @@
 
 SpringBoot整合RabbitMQ可参考：[https://zhengqing.blog.csdn.net/article/details/103785041](https://zhengqing.blog.csdn.net/article/details/103785041)
 本文将基于`springboot2.4.0`来简单编写`rabbitmq`的7种工作模式demo `^_^`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/d7a207155bca47b7b70414ac0e50b926.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303729.png)
 
 ### 二、RabbitMQ 7种工作模式
 
 > 可参考：[https://www.rabbitmq.com/getstarted.html](https://www.rabbitmq.com/getstarted.html)
 
 工程如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/401b05ec3e8f481ba11a6d1539e84f10.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303792.png)
 
 MQ全局常用变量
 
@@ -54,7 +54,7 @@ public interface MqConstant {
 
 #### 1、简单模式
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/f60337447f9f4247866a4e63ec9546b5.png)
+![](./images/20230912141303822.png)
 
 ```java
 @Configuration
@@ -101,7 +101,7 @@ public class SimpleMsgConsumer {
 
 #### 2、工作队列模式
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/b8e5ac4e58604baf94821c35f0ee41b9.png)
+![](./images/20230912141303856.png)
 
 ```java
 @Configuration
@@ -153,7 +153,7 @@ public class WorkMsgConsumer {
 
 #### 3、发布订阅模式
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/16cc36b2597b4230a4423dac0bbef3d5.png)
+![](./images/20230912141303891.png)
 
 
 ```java
@@ -234,7 +234,7 @@ public class FanoutMsgConsumer {
 
 #### 4、路由模式
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/838d9d95bd574e8eb438612b80bce8ea.png)
+![](./images/20230912141303930.png)
 
 
 ```java
@@ -337,7 +337,7 @@ public class DirectMsgConsumer {
 
 #### 5、主题模式(通配符模式)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/738f943fb3f84b1a93efb3be717b10c1.png)
+![](./images/20230912141303977.png)
 
 
 ```java
@@ -426,7 +426,7 @@ public class TopicMsgConsumer {
 
 #### 6、RPC模式
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/1dfb278fd58c44d8a4bcaf64e1e41cf7.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304014.png)
 
 
 ```java
@@ -477,7 +477,7 @@ public class RpcMsgConsumer {
 
 > 自己看官方文档吧...
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/8221a1765e9b4191886bca2bcd9f4f87.png)
+![](./images/20230912141304043.png)
 
 ### 三、测试api
 
@@ -567,10 +567,10 @@ public class RabbitController {
 ```
 
 接口文档： [http://127.0.0.1/doc.html](http://127.0.0.1/doc.html)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/4539169e2df846539a46df933e96e0ce.png)
+![](./images/20230912141304117.png)
 RabbitMQ
-![在这里插入图片描述](https://img-blog.csdnimg.cn/22e296e04614409b9791868c00281c88.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/6bd3e093d1ec4774b9e603331f770b74.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304160.png)
+![](./images/20230912141304200.png)
 
 
 ### 四、本文案例demo源码

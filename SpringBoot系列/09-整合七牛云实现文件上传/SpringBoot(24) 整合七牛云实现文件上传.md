@@ -10,15 +10,15 @@
 
 > 温馨小提示：没有账号的可以先注册一个使用~
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200304152337354.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304517.png)
 
 #### 2、在对象储存中创建一个空间，然后拿到`存储空间名称`、`存储区域`、`访问域名`
 
 > 温馨小提示：这里只是为了体验七牛云的文件上传功能，在访问控制处可暂时选择公开，后面是可以修改权限的，不用担心~
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200304152731242.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304566.png)
 新建成功之后，七牛云给了一个测试域名可供使用一个月
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200304153329386.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304604.png)
 
 ### 三、SpringBoot集成七牛云
 

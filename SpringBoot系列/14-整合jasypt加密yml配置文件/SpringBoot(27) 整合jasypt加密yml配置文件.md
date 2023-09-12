@@ -3,7 +3,7 @@
 #### 1、问题
 
 通常项目配置文件中的账号信息如下，都是直接暴露出来的，如果源码不小心泄露将会引起一系列安全问题...
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200425153614404.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305119.png)
 
 #### 2、解决
 
@@ -47,7 +47,7 @@ public class JasyptTest {
 }
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200425154716944.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305150.png)
 
 #### 4、修改yml配置文件账号信息为加密方式
 
@@ -95,13 +95,13 @@ jasypt:
     password: zhengqing    # TODO 加密密钥
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200425160246810.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305212.png)
 
 #### 2、将`加密密钥`作为`启动运行参数`
 
 以上我们的密钥也是保存在配置文件中的，一旦密钥泄露，信息被解密，安全隐患依然存在！
 因此我们可以通过将密钥设置为程序启动时的参数来避免！！！
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200425162345414.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305246.png)
 
 
 ```java
@@ -109,7 +109,7 @@ java -Djasypt.encryptor.password=zhengqing -jar app.jar
 ```
 
 idea中如下配置运行：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020042516180075.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305297.png)
 
 
 #### 3、自定义加密规则...

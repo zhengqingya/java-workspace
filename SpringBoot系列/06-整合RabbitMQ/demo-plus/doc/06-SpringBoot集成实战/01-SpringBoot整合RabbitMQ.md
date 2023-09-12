@@ -11,7 +11,7 @@ Docker部署则执行如下命令即可
 docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 -v `pwd`/rabbitmq/data:/var/lib/rabbitmq --hostname my-rabbit --restart=always -e RABBITMQ_DEFAULT_VHOST=my_vhost -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=admin rabbitmq:3-management
 ```
 
-![img.png](images/rabbitmq-springboot-01.png)
+![](images/rabbitmq-springboot-01.png)
 > 温馨小提示：本文只是简单的通过`rabbitmq`去`发送消息`和`接收消息`，适用于新手简单入门了解~
 
 ### 二、SpringBoot 整合 RabbitMQ
@@ -136,7 +136,7 @@ public class RabbitController {
 
 #### 7、运行项目，访问 [http://127.0.0.1:8080/sendMsg](http://127.0.0.1:8080/sendMsg)
 
-![img_1.png](images/rabbitmq-springboot-02.png)
+![](images/rabbitmq-springboot-02.png)
 
 ### 本文案例demo源码
 

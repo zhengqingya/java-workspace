@@ -10,15 +10,15 @@
 
 `登录QQ邮箱`[https://mail.qq.com](https://mail.qq.com) -> `设置` -> `账号`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200919112203805.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center)
+![](./images/20230912141306555.png)
 
 滑到下面有个`POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV服务`，然后开启`POP3/SMTP服务`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200919105620459.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center)
+![](./images/20230912141306584.png)
 然后点击`生成授权码`
 
 > 注：这个授权码是之后需要配置的一项，先复制出来保存着~
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200919105811405.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center)
+![](./images/20230912141306621.png)
 
 #### 2、`pom.xml`中引入所需依赖
 
@@ -164,7 +164,7 @@ public class TestController {
 浏览器请求测试api接口发送邮件
 [http://127.0.0.1/api/test/sendEmailTest](http://127.0.0.1/api/test/sendEmailTest)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200919110531131.png#pic_center)
+![](./images/20230912141306656.png)
 
 ---
 

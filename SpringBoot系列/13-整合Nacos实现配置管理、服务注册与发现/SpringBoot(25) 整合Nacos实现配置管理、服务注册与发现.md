@@ -95,12 +95,12 @@ public class HelloController {
 
 ###### ③nacos服务端新增配置
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200330213802649.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200330214021535.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304920.png)
+![](./images/20230912141304960.png)
 
 ###### ④ 启动项目，修改配置，刷新页面
 启动项目访问[http://127.0.0.1:8080/hello](http://127.0.0.1:8080/hello)，修改nacos服务端配置参数，然后刷新页面，测试是否动态加载配置~
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200330214256512.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304991.png)
 
 #### 4、服务注册
 
@@ -141,7 +141,7 @@ public class RegisterNacos {
 ```
 
 ###### ③查看服务
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200330215513579.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305038.png)
 
 #### 5、服务发现
 
@@ -170,7 +170,7 @@ public class DiscoveryController {
 
 访问[http://127.0.0.1:8080/discovery/getInstance?serviceName=nacos-demo](http://127.0.0.1:8080/discovery/getInstance?serviceName=nacos-demo)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200330215921262.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305079.png)
 
 
 ---

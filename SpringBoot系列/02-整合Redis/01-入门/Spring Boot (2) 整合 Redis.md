@@ -106,7 +106,7 @@ public class IndexController extends BaseController {
 }
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191211182124504.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303214.png)
 
 ### 本文案例demo源码
 

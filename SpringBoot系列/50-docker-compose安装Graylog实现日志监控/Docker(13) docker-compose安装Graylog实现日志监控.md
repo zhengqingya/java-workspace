@@ -7,7 +7,7 @@
 
 一个比`ELK`轻的分布式日志管理平台...
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721223036396.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309410.png)
 
 
 ### 二、`docker-compose`安装`Graylog`
@@ -26,21 +26,21 @@ docker-compose -f docker-compose-graylog.yml -p graylog_demo up -d
 ```
 
 等待运行完成...
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721224826691.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309455.png)
 
 ### 三、Graylog配置
 
 访问地址：[`http://127.0.0.1:9001`](http://127.0.0.1:9001)
 默认登录账号密码：`admin/admin`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721225349475.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309490.png)
 ① `System` -> `Inputs`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721225524732.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309551.png)
 ② 选择`GELF UDP`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020072122572258.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309586.png)
 ③ `Launch new input`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721225912896.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309620.png)
 ④ 如下图完成配置
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721230106144.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309654.png)
 
 ### 四、SpringBoot - Logback日志案例demo
 
@@ -60,7 +60,7 @@ docker-compose -f docker-compose-graylog.yml -p graylog_demo up -d
 
 #### 2、`logback.xml`日志文件中新增如下配置
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721230452788.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309682.png)
 
 ```xml
 <appender name="GELF" class="de.siegmar.logbackgelf.GelfUdpAppender">
@@ -98,13 +98,13 @@ public class AppScheduledJobs {
 
 #### 4、启动项目
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721230930803.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309772.png)
 
 ### 五、Graylog中查看日志输出
 
 [http://127.0.0.1:9001/search](http://127.0.0.1:9001/search)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200721231055288.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309828.png)
 
 ### 六、Docker容器日志测试
 
@@ -158,7 +158,7 @@ services:
 ```
 
 运行后回到graylog中查看相应日志信息
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200722130408239.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309884.png)
 
 
 ### 七、问题

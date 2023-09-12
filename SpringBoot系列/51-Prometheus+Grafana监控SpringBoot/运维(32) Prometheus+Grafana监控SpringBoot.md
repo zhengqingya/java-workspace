@@ -56,11 +56,11 @@ public class MetricsConfig {
 ```
 
 启动应用，访问 [http://127.0.0.1:9200/actuator/prometheus](http://127.0.0.1:9200/actuator/prometheus)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/c9ceb1278ce743f980c04e85b2ff2344.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141309932.png)
 
 ### 三、部署Prometheus+Grafana
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/db65ec8e55d747a29b9763e4d7c4044a.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310014.png)
 
 ```shell
 # 准备
@@ -80,10 +80,10 @@ docker-compose -f docker-compose-prometheus.yml -p prometheus up -d
 2. prometheus访问地址: `ip地址:9090`
 3. exporter访问地址: `ip地址:9100/metrics`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/8d4ada76671440139993d172158e79d7.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310051.png)
 
 注意`prometheus.yml`配置需和`springboot`应用对应
-![在这里插入图片描述](https://img-blog.csdnimg.cn/7b08f9b94eb34e93beb3a92a30c2019d.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310079.png)
 
 
 ### 四、监控SpringBoot
@@ -91,9 +91,9 @@ docker-compose -f docker-compose-prometheus.yml -p prometheus up -d
 #### 1、新增Prometheus数据源
 
 `Configuration` -> `Data sources` -> `Add data source` -> `Prometheus`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/78b899ecc47c47ac9041b6cbc2b39acb.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/db919f1efe9f4bbf9488f41d4b113307.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/38b4c638296f45c796b367af200ba9b3.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310134.png)
+![](./images/20230912141310179.png)
+![](./images/20230912141310212.png)
 
 #### 2、导入Dashboard
 
@@ -101,15 +101,15 @@ docker-compose -f docker-compose-prometheus.yml -p prometheus up -d
 
 > grafana面板资源 [https://grafana.com/grafana/dashboards/4701](https://grafana.com/grafana/dashboards/4701)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/053ec6365411408b8eb791aa3079b087.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/f1655c9f36e44114ba9fc3b484672305.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2bdecb737d06465388819daa7d472b43.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310245.png)
+![](./images/20230912141310282.png)
+![](./images/20230912141310326.png)
 
 ### 五、邮件告警
 
 #### 1、配置`grafana.ini`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/8022ff90bd4944cca15fa5b7908a5806.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310418.png)
 
 ```
 #################################### SMTP / Emailing ##########################
@@ -140,14 +140,14 @@ from_name = Grafana
 ```
 
 #### 2、`Alerting` -> `Notification channels`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/b45390050e654dadb339838fc7c19959.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/d4e81c9d6f1e4455a6605605e70fd901.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310464.png)
+![](./images/20230912141310534.png)
 测试发送通知
-![在这里插入图片描述](https://img-blog.csdnimg.cn/28cf53f71dc548ee970e3e811abe5285.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310573.png)
 
 #### 3、`Add panel`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/7bdb2fadb48243f9b7a5cfe2f310b208.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310644.png)
 仿造`Heap used`配置一个
 
 > tips: `Metrics browser`中不支持`模板变量` ( ex: `$application` )
@@ -156,13 +156,13 @@ from_name = Grafana
 sum(jvm_memory_used_bytes{application="demo", instance="192.168.101.88:9200", area="heap"})*100/sum(jvm_memory_max_bytes{application="demo",instance="192.168.101.88:9200", area="heap"})
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/33bfeae5c7124d09afd4f610b6afb7f5.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/35fc6382c36c4be8afd85af06aa1d7c6.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310682.png)
+![](./images/20230912141310748.png)
 Apply
-![在这里插入图片描述](https://img-blog.csdnimg.cn/bb78b80be37547c9991023f56943666a.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310793.png)
 超标告警通知
-![在这里插入图片描述](https://img-blog.csdnimg.cn/ae60b042770f41cbb19dc20fabf83932.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/8b1a153484f64b538cc4e989c5e353a8.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141310871.png)
+![](./images/20230912141310975.png)
 
 ### 六、本文案例demo源码
 

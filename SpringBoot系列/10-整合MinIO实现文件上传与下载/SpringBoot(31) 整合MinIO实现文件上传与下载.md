@@ -22,7 +22,7 @@ docker-compose -f docker-compose-minio.yml -p minio up -d
 访问地址：[`http://127.0.0.1:9001/minio`](http://127.0.0.1:9001/minio)
 登录账号密码：`root/password`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200817012304733.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70#pic_center)
+![](./images/20230912141304646.png)
 
 
 ### 三、SpringBoot整合MinIO实现文件上传与下载

@@ -45,7 +45,7 @@ spring:
 #          driver-class-name: com.mysql.jdbc.Driver
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/bb54a1109780446d8f9353760cc88ee3.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308509.png)
 
 #### 3、sharding-jdbc集成动态数据源配置类
 
@@ -128,7 +128,7 @@ public class DataSourceConfig {
 | @DS("dsName") | dsName可以为组名也可以为具体某个库的名称 |
 
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/dbd12ea4b00e4f9c96cfe5e54a72b15e.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308534.png)
 
 
 ### 三、本文案例demo源码

@@ -17,14 +17,14 @@
 
 1. 服务端所需jar包： `dist/server-xxx`
 2. 客服端所需jar包： `dist/client/java`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206145211644.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141308882.png)
 
 #### 2、`pom.xml`中引入相关依赖
 
 由于这里是maven项目，其中一部分jar包可通过maven仓库直接引入，而其余的则通过外部jar包引入方式使用即可~
 
 如下5个需作为外部jar包在pom.xml中引入
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206183009910.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141308924.png)
 
 ```xml
 <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
@@ -84,7 +84,7 @@
 
 ### 三、开发服务端
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206151657988.png)
+![](./images/20230912141308958.png)
 
 #### 1、与客服端的所有数据交互事件（实现`ServerEventListener`类）
 
@@ -359,11 +359,11 @@ public class ChatServerRunner implements CommandLineRunner {
 ```
 
 如果服务端与客户端不在同一个项目 ，服务端可直接通过如下方式启动即可~
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206153338589.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141308991.png)
 
 ### 四、开发客户端
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206153524946.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309026.png)
 
 #### 1、客户端与IM服务端连接事件
 
@@ -582,25 +582,25 @@ public class ChatController {
 ```
 
 启动项目，访问：[http://127.0.0.1:8080/swagger-ui.html](http://127.0.0.1:8080/swagger-ui.html)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206154603131.png)
+![](./images/20230912141309066.png)
 
 ###### 1、 `loginConnect`接口：任意输入一个账号密码登录连接IM服务端
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206155043155.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309125.png)
 控制台日志如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206155331349.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309163.png)
 
 ###### 2、 `sendMsg`接口：给指定用户发送消息，这里由于只有一个客户端，上一步登录了一个`admin`账号，因此小编给`admin`账号(也就是自己) 发送消息
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206155506118.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309205.png)
 控制台日志如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020020615583363.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309237.png)
 
 ### 六、总结
 
 关于集成可参考MobileIMSDK给出的文档一步一步实现，其中给出了通过Java GUI编程实现的一个小demo，我们可以先将其运行起来，先体验一下功能，代码量也不是太多，我们可以通过debug方式查看执行流程，清楚执行流程之后我们就可以将demo中的代码移植到我们自己的项目中加以修改运用于自己的业务中，切勿拿起就跑，否则一旦运气不好，将浪费更多的时间去集成，这样很不好！
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206160813755.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200206160846850.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141309292.png)
+![](./images/20230912141309326.png)
 
 案例demo中相关代码注释都有，这里就简单说下整个流程吧：
 

@@ -51,7 +51,7 @@ public class TestController {
 
 [http://127.0.0.1/doc.html](http://127.0.0.1/doc.html)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/11df3753df2d46f09cba558561561c6a.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308618.png)
 
 
 ### 三、本文案例demo源码

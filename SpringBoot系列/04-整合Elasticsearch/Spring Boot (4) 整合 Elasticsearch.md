@@ -51,7 +51,7 @@ org.springframework.beans.factory.BeanCreationException: Error creating bean wit
 System.setProperty("es.set.netty.runtime.available.processors","false");
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191227143159574.png)
+![](./images/20230912141303506.png)
 
 注：虽然上面的方式能解决错误，服务可以正常启动，但是启动测试类时还是会报错哦！！！
 
@@ -101,7 +101,7 @@ failed to load elasticsearch nodes : org.elasticsearch.client.transport.NoNodeAv
 ```
 
 ① 尝试修改es服务端配置文件 `network.host: 127.0.0.1`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191227162021116.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303543.png)
 ② `cluster-name`集群名是否一致
 
 
@@ -177,7 +177,7 @@ public class ESTest {
 
 运行后，在 [http://127.0.0.1:5601/app/kibana#/dev_tools](http://127.0.0.1:5601/app/kibana#/dev_tools) 中执行命令 `GET zq_test/_mapping/user` 查看类型映射
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2019122717041770.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303597.png)
 
 #### 2、简单的增删改查
 

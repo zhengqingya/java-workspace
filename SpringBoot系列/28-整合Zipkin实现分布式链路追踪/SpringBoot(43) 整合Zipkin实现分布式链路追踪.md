@@ -21,9 +21,9 @@ docker-compose -f docker-compose-zipkin.yml -p zipkin up -d
 ```
 
 启动成功如下
-![在这里插入图片描述](https://img-blog.csdnimg.cn/aa245415dee04647a80b6fd0ebac37d1.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141307894.png)
 访问地址 [`http://ip地址:9411/zipkin`](http://127.0.0.1:9411/zipkin)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/41f440840bd64633a3920e33c5e461a8.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141307929.png)
 
 #### docker-compose-zipkin.yml
 
@@ -179,8 +179,8 @@ public class TestController {
 
 > 注：这里只是简单的一个测试api效果，可以集成到实际springcloud微服务项目中查看更多。
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/ba7e9836acd04f419f19921398920b1f.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/0dfa458ffecf4e95ab64648f56b995ae.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141307972.png)
+![](./images/20230912141308009.png)
 
 ### 四、本文案例demo源码
 

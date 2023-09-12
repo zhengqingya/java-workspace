@@ -129,11 +129,11 @@ justauth:
 
 1. 申请地址：[https://github.com/settings/developers](https://github.com/settings/developers)
 2. 点击`New OAuth App`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702090432881.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702090543945.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305333.png)
+![](./images/20230912141305357.png)
 3. 申请之后点击应用我们就可以拿到自己所需的了
-  ![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702090847450.png)
-  ![在这里插入图片描述](https://img-blog.csdnimg.cn/20200702091005237.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+  ![](./images/20230912141305383.png)
+  ![](./images/20230912141305412.png)
 
 #### 3、编写第三方登录Controller类
 
@@ -200,11 +200,11 @@ public class OauthController {
 ### 三、测试登录
 
 运行项目后访问： [http://127.0.0.1/demo/oauth](http://127.0.0.1/demo/oauth)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200701104506663.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305463.png)
 举例点击github登录会跳转进入授权页面
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200701104656163.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305483.png)
 授权成功后就会跳转到我们在`application.yml`中配置的回调地址
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200701104931383.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141305505.png)
 
 ---
 

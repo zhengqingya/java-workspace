@@ -6,7 +6,7 @@
 
 [http://www.kdniao.com](http://www.kdniao.com)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/24bf9d6db33a4f8ba6bdfae4a04e1736.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308287.png)
 
 ### 二、快递物流查询
 
@@ -540,7 +540,7 @@ public class TestController {
 ```
 
 接口文档 [http://127.0.0.1/doc.html](http://127.0.0.1/doc.html)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/63646c6b4e5f42a8a75c26bba29b85fc.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308319.png)
 
 ### 三、本文demo源码
 

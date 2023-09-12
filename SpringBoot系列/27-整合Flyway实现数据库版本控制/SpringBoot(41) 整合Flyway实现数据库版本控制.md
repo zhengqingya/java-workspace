@@ -65,7 +65,7 @@ spring:
 > 对应`application.yml`中`spring.flyway.locations`配置项
 
 sql脚本文件命名格式可参考：[https://flywaydb.org/documentation/concepts/migrations.html#sql-based-migrations](https://flywaydb.org/documentation/concepts/migrations.html#sql-based-migrations)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/246db519743d41058c7d791b841b6350.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141307574.png)
 示例：`V0.0.1__db.sql`
 
 ```sql
@@ -92,12 +92,12 @@ values (1, 'admin', '管理员'),
 > 注：
 > 1. 如果没有demo数据库，需要自己创建一下再启动项目
 > 2. 如果当前连接数据库下存在其它数据表，会出现生成的记录如下，这时候需要删除该表中这一条初始数据，然后再重启项目才会正常执行`V0.0.1__db.sql`脚本；如果当前数据库是空的，则不会出现此问题
-> ![在这里插入图片描述](https://img-blog.csdnimg.cn/02cf9abb5e6647df9aa5f8008b22d74e.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+> ![](./images/20230912141307603.png)
 
 idea控制台日志如下
-![在这里插入图片描述](https://img-blog.csdnimg.cn/49722cc790e64a478409b8036dc81304.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141307679.png)
 数据库生成如下
-![在这里插入图片描述](https://img-blog.csdnimg.cn/4c93bb83a660476c8b86edad76b7570a.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141307736.png)
 
 第二次版本升级脚本`V0.0.2__db.sql`
 
@@ -109,7 +109,7 @@ values (3, '03', '3号人机'),
 ```
 
 启动项目，数据库生成如下
-![在这里插入图片描述](https://img-blog.csdnimg.cn/97bfe19e83db45cabfd5aee710dd1f59.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141307814.png)
 
 其它复杂操作请自行查看官网`^_^`
 

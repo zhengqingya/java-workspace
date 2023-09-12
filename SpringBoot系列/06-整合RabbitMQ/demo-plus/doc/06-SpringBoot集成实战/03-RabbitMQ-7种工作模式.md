@@ -4,14 +4,14 @@
 
 SpringBoot整合RabbitMQ可参考：[https://zhengqing.blog.csdn.net/article/details/103785041](https://zhengqing.blog.csdn.net/article/details/103785041)
 本文将基于`springboot2.4.0`来简单编写`rabbitmq`的7种工作模式demo `^_^`
-![img.png](images/RabbitMQ工作模式.jpg)
+![](images/RabbitMQ工作模式.jpg)
 
 ### 二、RabbitMQ 7种工作模式
 
 > 可参考：[https://www.rabbitmq.com/getstarted.html](https://www.rabbitmq.com/getstarted.html)
 
 工程如下：
-![img.png](images/rabbitmq-mode-00.png)
+![](images/rabbitmq-mode-00.png)
 
 MQ全局常用变量
 
@@ -54,7 +54,7 @@ public interface MqConstant {
 
 #### 1、简单模式
 
-![img_1.png](images/rabbitmq-mode-01.png)
+![](images/rabbitmq-mode-01.png)
 
 ```java
 
@@ -104,7 +104,7 @@ public class SimpleMsgConsumer {
 
 #### 2、工作队列模式
 
-![img_2.png](images/rabbitmq-mode-02.png)
+![](images/rabbitmq-mode-02.png)
 
 ```java
 
@@ -159,7 +159,7 @@ public class WorkMsgConsumer {
 
 #### 3、发布订阅模式
 
-![img_3.png](images/rabbitmq-mode-03.png)
+![](images/rabbitmq-mode-03.png)
 
 ```java
 
@@ -242,7 +242,7 @@ public class FanoutMsgConsumer {
 
 #### 4、路由模式
 
-![img_4.png](images/rabbitmq-mode-04.png)
+![](images/rabbitmq-mode-04.png)
 
 ```java
 
@@ -347,7 +347,7 @@ public class DirectMsgConsumer {
 
 #### 5、主题模式(通配符模式)
 
-![img_5.png](images/rabbitmq-mode-05.png)
+![](images/rabbitmq-mode-05.png)
 
 ```java
 
@@ -438,7 +438,7 @@ public class TopicMsgConsumer {
 
 #### 6、RPC模式
 
-![img_6.png](images/rabbitmq-mode-06.png)
+![](images/rabbitmq-mode-06.png)
 
 ```java
 
@@ -491,7 +491,7 @@ public class RpcMsgConsumer {
 
 > 自己看官方文档吧...
 
-![img_7.png](images/rabbitmq-mode-07.png)
+![](images/rabbitmq-mode-07.png)
 
 ### 三、测试api
 
@@ -582,10 +582,10 @@ public class RabbitController {
 ```
 
 接口文档： [http://127.0.0.1/doc.html](http://127.0.0.1/doc.html)
-![img_8.png](images/rabbitmq-mode-08.png)
+![](images/rabbitmq-mode-08.png)
 RabbitMQ
-![img_9.png](images/rabbitmq-mode-09.png)
-![img_10.png](images/rabbitmq-mode-10.png)
+![](images/rabbitmq-mode-09.png)
+![](images/rabbitmq-mode-10.png)
 
 ### 四、本文案例demo源码
 

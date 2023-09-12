@@ -157,8 +157,8 @@ public class ScheduleConfigDynamic implements SchedulingConfigurer {
 现在我们可以启动项目，修改数据库配置信息查看定时任务效果哦~
 
 如下配置是每秒执行一次：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191104185840778.png)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191104185726992.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141304681.png)
+![](./images/20230912141304716.png)
 
 ###### 案例源码
 

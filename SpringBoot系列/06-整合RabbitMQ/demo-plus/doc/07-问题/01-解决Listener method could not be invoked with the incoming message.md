@@ -72,7 +72,7 @@ Caused by: org.springframework.messaging.converter.MessageConversionException: C
 
 生产者发送消息和消费者接收消息的实体类没有对应
 
-![img.png](images/mq-problem-1-01.png)
+![](images/mq-problem-1-01.png)
 
 ### 解决
 
@@ -80,7 +80,7 @@ Caused by: org.springframework.messaging.converter.MessageConversionException: C
 
 让生产者和消费者的实体类对应
 
-![img_1.png](images/mq-problem-1-02.png)
+![](images/mq-problem-1-02.png)
 
 #### 全局处理
 
@@ -93,8 +93,8 @@ public MessageConverter jsonMessageConverter() {
 }
 ```
 
-![img_2.png](images/mq-problem-1-03.png)
+![](images/mq-problem-1-03.png)
 
 这个时候不实现`Serializable`序列化也是可以正常收发消息的
 
-![img_3.png](images/mq-problem-1-04.png)
+![](images/mq-problem-1-04.png)

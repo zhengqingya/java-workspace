@@ -2,7 +2,7 @@
 
 本文将基于`springboot2.4.0`实现自定义注解`RequestPostSingleParam`接收post请求单个参数值
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210113170547329.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306695.png)
 
 
 
@@ -180,8 +180,8 @@ public class TestController {
 [http://127.0.0.1/doc.html](http://127.0.0.1/doc.html)
 
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210113170935207.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210113171002369.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912141306731.png)
+![](./images/20230912141306759.png)
 
 ### 六、本文案例demo
 

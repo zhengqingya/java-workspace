@@ -90,7 +90,7 @@ CREATE TABLE `t_user1`  (
 SET FOREIGN_KEY_CHECKS = 1;
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/01e2f64b421244cd81fdef9e5fade2d9.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141308361.png)
 
 ### 三、整合
 

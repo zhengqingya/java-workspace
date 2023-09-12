@@ -8,7 +8,7 @@ Druid是Java语言中最好的数据库连接池，能够提供强大的监控�
 
 
 ###### 本文将基于	` springboot 2.1.8.RELEASE ` + ` mybatis-plus 2.2.0 ` 来整合  `Druid` 连接池
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191220100925759.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303334.png)
 
 ### 二、springboot 整合 druid 入门
 
@@ -196,9 +196,9 @@ public class DruidConfig {
 
 #### 4、访问 [http://127.0.0.1:8080/druid/index.html](http://127.0.0.1:8080/druid/index.html) 查看监控信息
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191220115832968.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191220115914119.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191220115939843.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912141303379.png)
+![](./images/20230912141303429.png)
+![](./images/20230912141303466.png)
 
 
 

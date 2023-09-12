@@ -17,7 +17,7 @@
 
 > 可查看 [https://www.processon.com/view/link/616970e01e085306d74115c2](https://www.processon.com/view/link/616970e01e085306d74115c2)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/830a6c8e8eca4368a3dfba4770e49f7a.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141304232.png)
 
 #### 区别
 1. 方式1： 对队列中的消息设置过期时间，如果先设置1条消息过期时间为30分钟，再设置1条消息过期时间为10分钟，此时需要前1条消息消费完之后，才会消费第2条消息，队列先进先出。
@@ -216,7 +216,7 @@ rabbitmq-plugins list
 
 安装成功之后，交换机类型会多一个`x-delayed-message`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/d6744d45d1bf4dc999d076b336d733f1.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141304273.png)
 
 ###### 编写代码
 
@@ -309,9 +309,9 @@ public class DelayController {
 启动项目，调用api进行测试即可 `^_^`
 
 [http://127.0.0.1/doc.html#/home](http://127.0.0.1/doc.html#/home)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/a24667be68a04850a7425ed6b2423e05.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/cbe5577ea5e743d79ce463b830cf0012.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/3471f0404dc74cefa290996a5a0c663e.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912141304309.png)
+![](./images/20230912141304337.png)
+![](./images/20230912141304405.png)
 
 ### 本文案例demo源码
 
