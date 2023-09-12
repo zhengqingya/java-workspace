@@ -121,7 +121,7 @@ http://127.0.0.1:10010/oauth/authorize?client_id=zq_app_id&response_type=code&sc
 
 auth暴露接口
 
-![auth暴露接口.png](images/auth暴露接口.png)
+![](images/auth暴露接口.png)
 
 | 端点                  | 备注                                                         |
 | :-------------------- | :----------------------------------------------------------- |
@@ -134,4 +134,4 @@ auth暴露接口
 
 `/oauth/token` 端点除了颁发令牌，也可刷新令牌
 
-![auth刷新令牌png](images/auth刷新令牌.png)
+![](images/auth刷新令牌.png)

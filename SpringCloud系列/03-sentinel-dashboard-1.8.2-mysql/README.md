@@ -27,9 +27,9 @@ docker-compose -f docker-compose-sentinel-mysql.yml -p sentinel up -d
 ### 三、访问测试
 
 访问 [http://127.0.0.1:8858/#/dashboard](http://127.0.0.1:8858/#/dashboard)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/7874ae846cf244d58e79b971ea530075.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/c3407fc23c9b454fa72f13552f4b0835.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/4431c1af97c740448e4e55f5e94c0976.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144038985.png)
+![](./images/20230912144039197.png)
+![](./images/20230912144039293.png)
 
 如果sentinel日志报错如下
 
@@ -39,14 +39,14 @@ docker-compose -f docker-compose-sentinel-mysql.yml -p sentinel up -d
 
 解决：让sentinel所在机器能够访问sentinel客户端ip和端口，即上面日志中的`192.168.101.88:8719`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/4adbd00e87e645aa90fc9ed19299afb5.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144039723.png)
 
 ### 四、sentinel-dashboard源码修改
 
 sentinel源码下载  [https://github.com/alibaba/Sentinel](https://github.com/alibaba/Sentinel)
 进入`sentinel-dashboard`模块
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/dfa343b07fad47f9860b73fab941699a.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144039824.png)
 
 #### 1、新增如下依赖
 
@@ -503,7 +503,7 @@ spring:
 
 ### 五、自制sentinel-docker镜像
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/a0c322baea994128993ae287bd6860ea.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144039905.png)
 
 Dockerfile
 

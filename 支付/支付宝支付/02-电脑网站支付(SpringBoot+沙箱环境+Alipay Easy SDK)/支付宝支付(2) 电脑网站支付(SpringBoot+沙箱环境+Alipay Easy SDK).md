@@ -19,7 +19,7 @@
 
 > 可参考：[https://github.com/alipay/alipay-easysdk/tree/master/java](https://github.com/alipay/alipay-easysdk/tree/master/java)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210712164821551.png)
+![](./images/20230912144048009.png)
 
 
 #### 1、`pom.xml`中新增依赖
@@ -278,9 +278,9 @@ error.html
 调用支付接口 [http://127.0.0.1:8080/alipay](http://127.0.0.1:8080/alipay)
 
 > 温馨小提示：如果出现提示`支付存在钓鱼风险！` ，解决：换个浏览器清除所有缓存再次尝试即可！
-> ![在这里插入图片描述](https://img-blog.csdnimg.cn/20210710154005866.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+> ![](./images/20230912144048081.png)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210712164148567.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912144048103.png)
 
 支付成功后，会回调我们配置的`return_url`地址，然后处理自己的业务即可...
 

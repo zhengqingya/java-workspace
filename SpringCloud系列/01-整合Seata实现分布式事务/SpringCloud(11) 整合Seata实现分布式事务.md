@@ -31,7 +31,7 @@ docker-compose -f docker-compose-seata.yml -p seata up -d
 
 #### 相关配置文件
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/d903c47906ad43f2b65bd36b58f72f1b.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144035585.png)
 
 ##### docker-compose-seata.yml
 
@@ -392,7 +392,7 @@ fi
 sh nacos-config.sh -h 127.0.0.1 -p 8848 -g SEATA_GROUP -t test -u nacos -w nacos
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/26d13169e2214763bd9aa813ecfbe408.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144035661.png)
 
 
 ##### 配置 - - seata数据库
@@ -500,7 +500,7 @@ CREATE TABLE `undo_log`
 
 修改配置后，运行seata，查看nacos注册信息
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/c578c5b68f8f492d9cc95bb79e054ff0.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144035779.png)
 
 
 ### 三、SpringCloud集成seata
@@ -518,7 +518,7 @@ CREATE TABLE `undo_log`
 
 #### 2、seata配置
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/79f2955f5c044279adac3924fc7cadd0.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144035868.png)
 
 > tips: 这里只贴出其中一个user服务的配置
 
@@ -565,13 +565,13 @@ seata:
 
 在主调用方加上注解`@GlobalTransactional` 即可
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/58d734432b5c42968a99e72a1419a01b.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144036019.png)
 
 可访问接口文档 [http://127.0.0.1:10010/doc.html](http://127.0.0.1:10010/doc.html) 调用测试seata分布式事务
 
 > tips: 小编在测试的时候，发现事务回滚有所延时，即需要等一会儿，因程序异常导致的脏数据才会回滚~
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/e05d527cfc49440687d1da4a31a7a0dd.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144037597.png)
 
 ### 本文案例demo源码
 

@@ -20,7 +20,7 @@
 ### 二、 Spring Security 简单整合 JWT 
 
 有关`JWT`不了解的可以看下官网文档：[https://jwt.io/introduction/](https://jwt.io/introduction/)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191023150704966.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144041096.png)
 #### 1、引入jwt依赖
 
 ```xml
@@ -107,7 +107,7 @@ public class AdminAuthenticationProvider implements AuthenticationProvider {
 ```
 
 前端页面保存的jwt令牌格式如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191023154109943.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144041241.png)
 
 #### 3、Security访问鉴权中认证用户信息
 

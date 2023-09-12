@@ -26,7 +26,7 @@ OAuth 是一个开放标准，允许用户授权第三方应用访问他们在�
 
 ### 五、四种授权模式
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/d444ce23bca04ec08d7668ef9df6ac20.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144041350.png)
 
 
 #### 1. 授权码模式（authorization code）
@@ -62,7 +62,7 @@ OAuth 是一个开放标准，允许用户授权第三方应用访问他们在�
 > `^_^`建议跟着这个大佬的OAuth2系列学习下`^_^`
 
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/b5008ecd11d44287878b789424cd2b31.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_16,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912144041465.png)
 
 | 项目        | 端口 | 备注       |
 | :---------- | :--- | :--------- |

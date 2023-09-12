@@ -5,7 +5,7 @@ AviatorScript 是一门`高性能`、`轻量级`寄宿于 `JVM` 之上的`脚本
 1. GitHub地址：[https://github.com/killme2008/aviator](https://github.com/killme2008/aviator)
 2. AviatorScript 文档： [https://www.yuque.com/boyan-avfmj/aviatorscript](https://www.yuque.com/boyan-avfmj/aviatorscript)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020081015172334.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912144041547.png)
 
 ### 二、SpringBoot整合Aviator入门
 
@@ -41,7 +41,7 @@ public class TestAviator {
 ```
 
 运行效果：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2020081016131877.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912144041631.png)
 
 
 ---

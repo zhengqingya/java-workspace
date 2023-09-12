@@ -20,7 +20,7 @@ SpringBoot集成Spring Security入门体验（一）
 4. maven项目
 
 数据库用户信息表`t_sys_user`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2019101411584872.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040462.png)
 
 > 案例中关于对该`t_sys_user`用户表相关的增删改查代码就不贴出来了，如有需要可参考文末提供的案例demo源码
 
@@ -483,23 +483,23 @@ public class IndexController {
 
 ###### 1. 输入错误用户名提示该用户不存在
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191014114234985.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040533.png)
 
 ###### 2. 输入错误密码提示密码错误
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2019101411434370.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040568.png)
 
 ###### 3. 输入正确用户名和账号，提示登陆成功，然后跳转到首页
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191014114511693.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/201910141148453.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040594.png)
+![](./images/20230912144040642.png)
 
 登陆成功后即可正常访问其他接口，如果是未登录情况下将访问不了
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191014115144294.png)
+![](./images/20230912144040664.png)
 
 > 温馨小提示：这里在未登录时或访问未授权的接口时，后端暂时没有做处理，相关案例将会放在后面的权限控制案例教程中讲解
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191014115227573.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040712.png)
 
 ### 六、总结
 
@@ -509,7 +509,7 @@ public class IndexController {
 4. 然后就是在认证处理中实现自己的相应业务逻辑等
 
 ###### Security相关代码结构：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191014123748216.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040735.png)
 
 ### 本文案例源码
 

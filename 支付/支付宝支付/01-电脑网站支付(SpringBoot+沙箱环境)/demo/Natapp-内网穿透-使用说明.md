@@ -10,4 +10,4 @@ chmod a+x natapp
 ./natapp -authtoken=xxx
 ```
 
-![natapp-run](./natapp-run.png)
+![](./natapp-run.png)

@@ -3,7 +3,7 @@
 ### 一、问题
 
 在`Log4j2.x<=2.14.1`版本，攻击者可通过构造恶意请求，触发远程代码执行漏洞
-![在这里插入图片描述](https://img-blog.csdnimg.cn/ee402a177b454758b320089bba8cbb49.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912143930540.png)
 
 
 ### 二、Log4j远程代码执行漏洞复现
@@ -20,7 +20,7 @@
 java -jar JNDIExploit-1.2-SNAPSHOT.jar -i ip
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/af5625f570ef4c8992ca3308b998dca5.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912143931159.png)
 
 #### 2、远程执行程序 -- AppRun
 
@@ -43,7 +43,7 @@ javac AppRun.java
 ```
 
 将编译好的`AppRun.class`放入nginx服务器根目录下
-![在这里插入图片描述](https://img-blog.csdnimg.cn/d379bd41c12540ff9892fdfcd21a0db3.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912143931268.png)
 
 #### 4、编写一个RMI服务端
 
@@ -92,7 +92,7 @@ public class Log4j {
 ```
 
 运行`Log4j`，即可查看效果
-![在这里插入图片描述](https://img-blog.csdnimg.cn/5682d8772a1f48a3a38dc3b0b9bf1404.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA6YOR5riF,size_20,color_FFFFFF,t_70,g_se,x_16)
+![](./images/20230912143931368.png)
 
 ### 三、解决
 

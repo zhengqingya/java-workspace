@@ -16,7 +16,7 @@
     [https://blog.csdn.net/qq_38225558/article/details/102542072](https://blog.csdn.net/qq_38225558/article/details/102542072)
 
 ### 二、数据库建表
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191019134920939.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040776.png)
 
 ###### 表关系简介：
 
@@ -27,7 +27,7 @@
 > **温馨小提示**：这里逻辑根据个人业务来定义，小编这里讲解案例只给用户对应的角色分配访问权限，像其它的 直接给用户分配权限等等可以自己实现
 
 ###### 表模拟数据如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191019135157316.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040816.png)
 ### 三、Spring Security 动态权限控制
 
 #### 1、未登录访问权限控制
@@ -213,7 +213,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 ```
 
 这里再说下自定义`SecurityUser `是因为Spring Security自带的 `UserDetails` （存储当前用户基本信息） 有时候可能不满足我们的需求，因此我们可以自己定义一个来扩展我们的需求
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191019143056308.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040849.png)
 `getAuthorities()`方法：即授予当前用户角色权限信息
 
 ```java
@@ -587,19 +587,19 @@ public class IndexController {
 ### 五、运行访问测试效果
 
 ###### 1、未登录时
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191019150826114.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040878.png)
 ###### 2、登录过后如果有权限则正常访问
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191019150955857.png)
+![](./images/20230912144040916.png)
 ###### 3、登录过后，没有权限
 这里我们可以修改数据库角色权限关联表`t_sys_role_permission`来进行测试哦 ~
 
 `Security 动态url权限也就是依赖这张表来判断的，只要修改这张表分配角色对应url权限资源，用户访问url时就会动态的去判断，无需做其他处理，如果是将权限信息放在了缓存中，修改表数据时及时更新缓存即可！`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191019151136607.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040946.png)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191019151310449.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040976.png)
 
 ###### 4、登录过后，访问数据库中没有配置的url 并且 在Security中没有忽略拦截的url时
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191019151850555.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144041004.png)
 ### 六、总结
 
 1. 自定义未登录权限处理器`AdminAuthenticationEntryPoint` - 自定义未登录时访问无权限url响应内容
@@ -610,7 +610,7 @@ public class IndexController {
 6. 在`Security核心配置类`中配置以上处理器和过滤器
 
 ###### Security动态权限相关代码：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191019152550802.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144041042.png)
 
 #### 本文案例demo源码
 

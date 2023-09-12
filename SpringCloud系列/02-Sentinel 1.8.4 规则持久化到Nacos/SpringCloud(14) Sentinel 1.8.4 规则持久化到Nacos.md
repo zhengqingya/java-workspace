@@ -5,17 +5,17 @@
 > [在生产环境中使用 Sentinel](https://github.com/alibaba/Sentinel/wiki/%E5%9C%A8%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E4%B8%AD%E4%BD%BF%E7%94%A8-Sentinel)
 > 参考 [https://blog.csdn.net/liuerchong/article/details/123718092](https://blog.csdn.net/liuerchong/article/details/123718092)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/38d2d804fb7947c9a81835d37a2ec96f.png)
+![](./images/20230912144037816.png)
 
 下面使用`Push模式`：配置中心控制台/Sentinel 控制台 → 配置中心 → Sentinel 数据源 → Sentinel
-![在这里插入图片描述](https://img-blog.csdnimg.cn/a7db683545ea4780a30ec904dbb7f9cf.png)
+![](./images/20230912144037886.png)
 
 ### 二、快速体验
 
 #### 1、部署sentinel
 
 小编已经基于Sentinel 1.8.4版本构建好一个docker镜像，修改下相应nacos配置信息即可运行体验一下
-![在这里插入图片描述](https://img-blog.csdnimg.cn/757c8c3fb0d94f279a3e459e04dec181.png)
+![](./images/20230912144037922.png)
 
 ```shell
 # 环境准备
@@ -109,8 +109,8 @@ spring:
 #### 3、sentinel控制台操作测试
 
 ex: 在sentinel控制台中添加流控规则会自动在nacos中创建相应配置文件`xxx-sentinel-flow-rules`和`xxx-sentinel-flow-rules-sentinel-dashboard`，用于规则持久化存储数据，sentinel重启或我们的应用app重启，配置都会一直在！
-![在这里插入图片描述](https://img-blog.csdnimg.cn/5a8b4831fe0b424494cd299b7736c511.png)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/199ce367a5f74e85b47a2e15c7436b82.png)
+![](./images/20230912144038071.png)
+![](./images/20230912144038248.png)
 
 ### 三、sentinel-dashboard源码修改
 
@@ -283,7 +283,7 @@ public final class NacosConfigUtil {
 
 > tips: 其它规则持久化参考本文案例源码
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/27d2e97bc8884702a2bc6061df1009f5.png)
+![](./images/20230912144038324.png)
 
 ###### 新增FlowRuleNacosProvider 
 
@@ -576,7 +576,7 @@ public class FlowControllerV1 {
 
 [https://gitee.com/zhengqingya/java-workspace](https://gitee.com/zhengqingya/java-workspace)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/1a3c418319db4fd282da500f03c3f6d2.png)
+![](./images/20230912144038597.png)
 
 
 --- 

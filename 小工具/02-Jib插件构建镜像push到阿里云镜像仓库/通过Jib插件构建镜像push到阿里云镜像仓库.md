@@ -6,7 +6,7 @@
 
 > 下面贴出一张从网上看到的Jib描述~
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191125191932487.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144042483.png)
 
 ### 二、利用Jib插件构建镜像push到阿里云镜像仓库
 
@@ -15,11 +15,11 @@
 1. 阿里云镜像仓库地址：[https://cr.console.aliyun.com/repository](https://cr.console.aliyun.com/repository)
 2. Docker Hub地址：[https://www.docker.com/](https://www.docker.com/)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191125200211972.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144042571.png)
 
 创建成功后，我们可以在基本信息中获取到我们所需要的镜像地址，然后通过Jib去构建push了
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191125200435945.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144042639.png)
 
 
 > 温馨小提示： 小编这里只是简单的演示一下如何集成到`maven项目`中
@@ -67,14 +67,14 @@
 ###### 3、上传镜像
 
 项目根目录下执行命令 `mvn compile jib:build` 或者 通过idea的maven插件工具双击直接运行
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191125194219553.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144042758.png)
 
 上传成功如下：
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191125194525988.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144042843.png)
 
 ###### 4、到阿里云镜像仓库中查看上传信息
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191125194602244.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144042931.png)
 
 ### 三、docker拉取镜像运行
 
@@ -88,13 +88,13 @@ docker run -d -p 8101:8080 --name aliyun-docker-test registry.cn-hangzhou.aliyun
 docker run -d --name docker-test -p 3001:8080 docker.io/zhengqing/镜像名xx:v1
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191125195650951.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144043015.png)
 
 ###### 运行成功后，浏览器测试访问
 
 [http://zhengqingya.com:8101/](http://zhengqingya.com:8101/)
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20191125200848929.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly96aGVuZ3FpbmcuYmxvZy5jc2RuLm5ldA==,size_16,color_FFFFFF,t_70)
+![](./images/20230912144043326.png)
 
 
 ### 四、总结

@@ -16,7 +16,7 @@ nacos中增加Spring Cloud Gateway的版本条件匹配蓝绿发布策略配置
 | Group | discovery-guide-group |
 | 配置格式 | XML |
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210124164346785.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912144003470.png)
 
 ##### 规则策略配置
 
@@ -47,10 +47,10 @@ nacos中增加Spring Cloud Gateway的版本条件匹配蓝绿发布策略配置
 
 测试：
 打开`Postman`，导入Postman的测试脚本`postman.json`（位于根目录下）
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210124164545978.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912144003886.png)
 在Postman中执行目录结构下`〔Nepxion〕`->`〔Discovery指南网关接口〕`->`〔Gateway网关调用示例〕`，调用地址为[http://localhost:5001/discovery-guide-service-a/invoke/gateway](http://localhost:5001/discovery-guide-service-a/invoke/gateway)，相关的Header值已经预设，供开发者修改。执行通过Spring Cloud Gateway网关发起的调用，结果如下:
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2021012416484825.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20210124164924957.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912144004151.png)
+![](./images/20230912144004638.png)
 ##### 规则策略解释
 
 > 温馨小提示：为准确体现相关变量（例如上文中的 a ）支持`Header`/`Parameter`/`Cookie`

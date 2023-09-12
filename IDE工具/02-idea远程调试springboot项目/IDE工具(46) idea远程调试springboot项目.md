@@ -21,23 +21,23 @@ java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -jar /tm
 
 ###### ① 选择`Remote`
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200406155350535.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912143932592.png)
 
 ###### ② 填写项目所运行的远程主机`Host`和端口`Port`，其它参数默认即可~
 
 注：这里端口是远程项目运行时所配置的address中的端口哦！！！
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200406155552761.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912143932669.png)
 
 ###### ③ 启动本地调试
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200406155846278.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912143932767.png)
 
 ###### ④ 本地debug测试
 
 在本地打个断点，然后访问远程api接口 ex: [zhengqingya.com:8080/hello](http://zhengqingya.com:8080/hello) ，可以看到本地idea中打的断点生效 ~
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20200406160234980.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912143932923.png)
 
 
 ---

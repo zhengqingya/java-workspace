@@ -39,12 +39,12 @@ public class IndexController {
 #### 3、运行项目访问 [http://127.0.0.1:8080/index](http://127.0.0.1:8080/index)
 
 **温馨小提示**：在不进行任何配置的情况下，Spring Security 给出的默认用户名为`user` 密码则是项目在启动运行时随机生成的一串字符串，会打印在控制台，如下图： 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190930103118486.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040279.png)
 当我们访问index首页的时候，系统会默认跳转到login页面进行登录认证
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/2019093010331765.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM4MjI1NTU4,size_16,color_FFFFFF,t_70)
+![](./images/20230912144040340.png)
 认证成功之后才会跳转到我们的index页面
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190930104045151.png)
+![](./images/20230912144040398.png)
 
 ### 三、Spring Security用户密码配置
 
