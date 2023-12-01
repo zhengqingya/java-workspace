@@ -1,13 +1,18 @@
 server:
-  port: 80
+  port: 81
 
 spring:
   application:
     name: demo
 
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER # 解决springboot高版本Knife4j报错问题
+
   # 配置数据源
+  #  -- DROP DATABASE flowable; CREATE DATABASE flowable;
   datasource:
-    url: jdbc:mysql://127.0.0.1:3308/flowable?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false&nullCatalogMeansCurrent=true # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+    url: jdbc:mysql://127.0.0.1:3306/flowable?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false&nullCatalogMeansCurrent=true # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -47,13 +52,43 @@ mybatis-plus:
     # 解决oracle更新数据为null时无法转换报错，mysql不会出现此情况
     jdbc-type-for-null: 'null'
 
+# Knife4j接口文档
+knife4j:
+  enable: true
+  basic:
+    enable: false
+    username: admin
+    password: 123456
+  openapi:
+    title: 在线文档
+    description: "API文档"
+    concat: zhengqingya
+    email: zhengqingya@it.com
+    url: http://gitee.com/zhengqingya
+    version: v1.0.0
+    license: MIT
+    group:
+      demo:
+        group-name: demo
+        api-rule: package
+        api-rule-resources:
+          - com.zhengqing.demo
+
 
 # 配置日志地址
 logging:
   config: classpath:logback-spring.xml
 
+
+# Flowable 工作流配置
 flowable:
-  # 关闭定时任务JOB
-  async-executor-activate: false
   # 将databaseSchemaUpdate设置为true。当Flowable发现库与数据库表结构不一致时，会自动将数据库表结构升级至新版本。
+  # 1. false: 默认值，Flowable 启动时，对比数据库表中保存的版本，如果不匹配将抛出异常 ，可通过 https://github.com/flowable/flowable-sql 初始化
+  # 2. true: 启动时会对数据库中所有表进行更新操作，如果表存在，不做处理，反之，自动创建表
+  # 3. create-drop: 启动时自动创建表，关闭时自动删除表
+  # 4. drop-create: 启动时，删除旧表，再创建新表
   database-schema-update: true
+  async-executor-activate: false # 关闭定时任务JOB
+  db-history-used: true # flowable6 默认 true 生成信息表，无需手动设置
+  check-process-definitions: false # 设置为 false，禁用 /resources/processes 自动部署 BPMN XML 流程
+  history-level: full # full：保存历史数据的最高级别，可保存全部流程相关细节，包括流程流转各节点参数
