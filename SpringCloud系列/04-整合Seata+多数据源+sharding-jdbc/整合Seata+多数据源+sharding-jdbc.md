@@ -191,16 +191,16 @@ seata:
   enabled: true
   # Seata 应用编号，默认为 ${spring.application.name}
   application-id: ${spring.application.name}
-  # Seata 事务组编号，用于 TC 集群名
-  tx-service-group: test-tx-group
   # 是否开启数据源代理
   enable-auto-data-source-proxy: false
   data-source-proxy-mode: AT
+  # Seata 事务组编号，用于 TC 集群名
+  tx-service-group: test-tx-group
   # 服务配置项
   service:
-    # 虚拟组和分组的映射
+    # 事务组和cluster的映射关系
     vgroup-mapping:
-      test-tx-group: default
+      test-tx-group: default  # 值需与seata服务端中nacos配置的`cluster`值保持一致
     # 分组和 Seata 服务的映射
     grouplist:
       default: 127.0.0.1:8091
