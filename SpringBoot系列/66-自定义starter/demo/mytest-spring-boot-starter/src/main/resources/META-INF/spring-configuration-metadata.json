@@ -1,0 +1,24 @@
+{
+  "groups": [
+    {
+      "name": "base",
+      "type": "com.zhengqing.mytest.config.BaseProperty",
+      "sourceType": "com.zhengqing.mytest.config.BaseProperty"
+    }
+  ],
+  "properties": [
+    {
+      "name": "base.ip",
+      "type": "java.lang.String",
+      "description": "ip地址",
+      "sourceType": "com.zhengqing.mytest.config.BaseProperty"
+    },
+    {
+      "name": "base.name",
+      "type": "java.lang.String",
+      "description": "名称",
+      "sourceType": "com.zhengqing.mytest.config.BaseProperty"
+    }
+  ],
+  "hints": []
+}

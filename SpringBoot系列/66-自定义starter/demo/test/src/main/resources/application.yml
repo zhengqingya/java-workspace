@@ -1,0 +1,11 @@
+server:
+  port: 83
+
+spring:
+  application:
+    name: test
+
+base:
+  enable: true
+  ip: localhost
+  name: zhengqingya
