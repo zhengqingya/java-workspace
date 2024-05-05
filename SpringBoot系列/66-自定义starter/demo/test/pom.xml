@@ -39,6 +39,8 @@
             <groupId>com.zhenging</groupId>
             <artifactId>mytest-spring-boot-starter</artifactId>
             <version>${revision}</version>
+            <!--            <scope>system</scope>-->
+            <!--            <systemPath>${pom.basedir}/../mytest-spring-boot-starter/target/mytest-spring-boot-starter.jar</systemPath>-->
         </dependency>
 
     </dependencies>
