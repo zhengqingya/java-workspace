@@ -10,6 +10,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -20,11 +21,16 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.CreateIndexResponse;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -59,6 +65,57 @@ public class App {
         );
     }
 
+    public static class IndexTest {
+        // 查看 http://localhost:9200/user/_mapping
+        final String MAPPING_TEMPLATE = "{\n" +
+                "    \"mappings\": {\n" +
+                "        \"properties\": {\n" +
+                "            \"content\": {\n" +
+                "                \"type\": \"text\",\n" +
+                "                \"fields\": {\n" +
+                "                    \"keyword\": {\n" +
+                "                        \"type\": \"keyword\",\n" +
+                "                        \"ignore_above\": 256\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            },\n" +
+                "            \"title\": {\n" +
+                "                \"type\": \"text\",\n" +
+                "                \"fields\": {\n" +
+                "                    \"keyword\": {\n" +
+                "                        \"type\": \"keyword\",\n" +
+                "                        \"ignore_above\": 256\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}";
+
+        @Test
+        public void create() throws Exception {
+            CreateIndexResponse createIndexResponse = getClient().indices().create(
+                    new CreateIndexRequest("user3")
+                            .source(MAPPING_TEMPLATE, XContentType.JSON),
+                    RequestOptions.DEFAULT
+            );
+            System.out.println(createIndexResponse.isAcknowledged());
+        }
+
+        @Test
+        public void update() throws Exception {
+            GetIndexResponse getIndexResponse = getClient().indices().get(new GetIndexRequest("user2"), RequestOptions.DEFAULT);
+            System.out.println(getIndexResponse.getAliases());
+            System.out.println(getIndexResponse.getMappings());
+            System.out.println(getIndexResponse.getSettings());
+        }
+
+        @Test
+        public void delete() throws Exception {
+            AcknowledgedResponse acknowledgedResponse = getClient().indices().delete(new DeleteIndexRequest("user2"), RequestOptions.DEFAULT);
+            System.out.println(acknowledgedResponse.isAcknowledged());
+        }
+    }
 
     public static class DocumentTest {
         @Test

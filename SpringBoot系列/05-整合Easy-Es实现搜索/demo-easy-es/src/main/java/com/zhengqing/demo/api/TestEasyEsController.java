@@ -10,6 +10,7 @@ import com.zhengqing.demo.model.Document;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,13 @@ import java.util.List;
 @Api(tags = "easy-es")
 public class TestEasyEsController {
     private final DocumentMapper documentMapper;
+
+    @GetMapping("getIndex")
+    public Object getIndex() {
+        GetIndexResponse index = documentMapper.getIndex();
+        // debug模式查看
+        return JSONUtil.toJsonStr(index);
+    }
 
     @PostMapping("insert")
     public void insert(@RequestBody Document document) {

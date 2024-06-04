@@ -35,6 +35,7 @@ public class Document {
     /**
      * 文档标题
      */
+    @IndexField(fieldType = FieldType.KEYWORD)
     @ApiModelProperty(value = "文档标题", example = "zhengqingya")
     private String title;
     /**
