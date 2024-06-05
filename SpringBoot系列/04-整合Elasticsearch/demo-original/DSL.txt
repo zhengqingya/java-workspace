@@ -1,0 +1,55 @@
+GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+# 删除索引
+delete user
+
+# 查看索引
+get user
+
+# 查询数据
+get user/_search
+
+# 创建索引 -- 不支持修改已创建的索引
+put user
+{
+  "mappings": {
+    "properties": {
+      "age": {
+        "type": "long"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "content": {
+        "type": "text",
+        "analyzer": "ik_smart",
+        "search_analyzer": "ik_smart"
+      },
+      "explain": {
+        "type": "text",
+        "fields": {
+          "explain-alias": {
+            "type": "keyword"
+          }
+        }
+      },
+      "sex": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+
+
+
+# 测试分词效果 -- ik_smart、ik_max_word
+GET /_analyze
+{
+  "text": ["程序员郑清学es"],
+  "analyzer": "ik_smart"
+}

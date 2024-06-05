@@ -32,11 +32,11 @@ import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.Test;
@@ -66,30 +66,34 @@ public class App {
     }
 
     public static class IndexTest {
-        // 查看 http://localhost:9200/user/_mapping
+        // 查看 http://localhost:9200/user
         final String MAPPING_TEMPLATE = "{\n" +
-                "    \"mappings\": {\n" +
-                "        \"properties\": {\n" +
-                "            \"content\": {\n" +
-                "                \"type\": \"text\",\n" +
-                "                \"fields\": {\n" +
-                "                    \"keyword\": {\n" +
-                "                        \"type\": \"keyword\",\n" +
-                "                        \"ignore_above\": 256\n" +
-                "                    }\n" +
-                "                }\n" +
-                "            },\n" +
-                "            \"title\": {\n" +
-                "                \"type\": \"text\",\n" +
-                "                \"fields\": {\n" +
-                "                    \"keyword\": {\n" +
-                "                        \"type\": \"keyword\",\n" +
-                "                        \"ignore_above\": 256\n" +
-                "                    }\n" +
-                "                }\n" +
-                "            }\n" +
+                "  \"mappings\": {\n" +
+                "    \"properties\": {\n" +
+                "      \"age\": {\n" +
+                "        \"type\": \"long\"\n" +
+                "      },\n" +
+                "      \"name\": {\n" +
+                "        \"type\": \"keyword\"\n" +
+                "      },\n" +
+                "      \"content\": {\n" +
+                "        \"type\": \"text\",\n" +
+                "        \"analyzer\": \"ik_smart\",\n" +
+                "        \"search_analyzer\": \"ik_smart\"\n" +
+                "      },\n" +
+                "      \"explain\": {\n" +
+                "        \"type\": \"text\",\n" +
+                "        \"fields\": {\n" +
+                "          \"explain-alias\": {\n" +
+                "            \"type\": \"keyword\"\n" +
+                "          }\n" +
                 "        }\n" +
+                "      },\n" +
+                "      \"sex\": {\n" +
+                "        \"type\": \"keyword\"\n" +
+                "      }\n" +
                 "    }\n" +
+                "  }\n" +
                 "}";
 
         @Test
@@ -174,10 +178,15 @@ public class App {
                 request.add(
                         new IndexRequest().index("user").id(String.valueOf(i + 1))
                                 .source(
-                                        JSONUtil.toJsonStr(User.builder().name(DateUtil.now())
-                                                .age(RandomUtil.randomInt(100))
-                                                .sex(RandomUtil.randomString("男女", 1))
-                                                .build()),
+                                        JSONUtil.toJsonStr(
+                                                User.builder()
+                                                        .name(RandomUtil.randomString("张三李四", 2))
+                                                        .age(RandomUtil.randomInt(10))
+                                                        .sex(RandomUtil.randomString("男女", 1))
+                                                        .content(DateUtil.now() + RandomUtil.randomString("你一定要努力学习，加油！", 5))
+                                                        .explain(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！", 5))
+                                                        .build()
+                                        ),
                                         XContentType.JSON
                                 )
                 );
@@ -222,36 +231,62 @@ public class App {
 //            );
 
             // 组合查询
-//            BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
-//                    // must -- and
-//                    .must(QueryBuilders.matchQuery("age", "68"))
-//                    // mustNot -- 排除 !=
-//                    .mustNot(QueryBuilders.matchQuery("name", "xxx"))
-//                    // should -- or
-//                    .should(QueryBuilders.matchQuery("sex", "男"));
-//            sourceBuilder.query(boolQueryBuilder);
+            BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+                    // filter 过滤 不会计算分值，性能比must高；must会计算分值
+//                    .filter(QueryBuilders.termQuery("age", 2)) // termQuery 精准匹配
+                    /**
+                     * termQuery 精准匹配 text字段类型 时 需要加上`.别名字段`才能查询出 （tips：同时需要建立索引时对该字段通过fields进行多字段配置）
+                     * 同字段多type配置
+                     * PUT my-index-000001
+                     * {
+                     *   "mappings": {
+                     *     "properties": {
+                     *       "explain": {
+                     *         "type": "text",
+                     *         "fields": {
+                     *           "explain-alias": {
+                     *             "type":  "keyword"
+                     *           }
+                     *         }
+                     *       }
+                     *     }
+                     *   }
+                     * }
+                     */
+//                    .filter(QueryBuilders.termQuery("explain.explain-alias", "的斗年仔斗"))
+//                    .filter(QueryBuilders.matchQuery("explain", "斗年"))
+//                    .filter(QueryBuilders.matchQuery("content", "学习")) // 模糊查询（text字段类型才行） -- 分词后倒排索引查询结果更多
+                    .filter(QueryBuilders.matchPhraseQuery("content", "2024-06-05 23:42:05努定！一力")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
+//                    .must(QueryBuilders.matchQuery("age", "68")) // must -- and
+//                    .mustNot(QueryBuilders.matchQuery("name", "xxx"))  // mustNot -- 排除 !=
+//                    .should(QueryBuilders.matchQuery("sex", "男"))  // should -- or
+                    ;
+            sourceBuilder.query(boolQueryBuilder);
 
-            // 排序 -- 升序
-            sourceBuilder.sort("age", SortOrder.ASC);
-
-            // 分页查询
-            sourceBuilder.from(0).size(3);
 
             // 高亮查询
-            sourceBuilder.query(QueryBuilders.matchQuery("name", "2024"));
-            // 构建高亮字段
-            HighlightBuilder highlightBuilder = new HighlightBuilder()
-                    .preTags("<em color='red'>")//设置标签前缀
-                    .postTags("</em>")//设置标签后缀
-                    .field("name");//设置高亮字段
-            // 设置高亮构建对象
-            sourceBuilder.highlighter(highlightBuilder);
+//            sourceBuilder.query(QueryBuilders.matchQuery("name", "努力"));
+//            // 构建高亮字段
+//            HighlightBuilder highlightBuilder = new HighlightBuilder()
+//                    .preTags("<em color='red'>")//设置标签前缀
+//                    .postTags("</em>")//设置标签后缀
+//                    .field("name");//设置高亮字段
+//            // 设置高亮构建对象
+//            sourceBuilder.highlighter(highlightBuilder);
 
             // 最大值查询
 //            sourceBuilder.aggregation(AggregationBuilders.max("maxAge").field("age"));
 
             // 分组 -- Aggregations 中 docCount 记录了分组后的数量
 //            sourceBuilder.aggregation(AggregationBuilders.terms("age_groupby").field("age"));
+
+            // 排序 -- 升序
+            sourceBuilder.sort("age", SortOrder.ASC);
+
+            // 分页查询
+            sourceBuilder.from(0).size(3);
+//            sourceBuilder.from(10000).size(3); // 默认限制最大10000，超出报错： from + size must be less than or equal to: [10000] but was [10003].
+//            sourceBuilder.trackTotalHits(true).from(10000).size(3); // 网上说 trackTotalHits 设置true 可解决限制，但这里无效
 
             // -----------------------------------------------
 
