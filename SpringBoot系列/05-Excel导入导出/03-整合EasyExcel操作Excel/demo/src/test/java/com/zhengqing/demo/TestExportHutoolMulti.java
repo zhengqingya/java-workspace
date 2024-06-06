@@ -1,5 +1,6 @@
 package com.zhengqing.demo;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.util.NumberUtil;
@@ -27,74 +28,58 @@ import java.util.concurrent.TimeUnit;
  * @date 2024/6/6 1:15
  */
 @Slf4j
-public class TestExportHutool {
+public class TestExportHutoolMulti {
 
     private long ID = 0; // 记录总数
-    private int SUM = 40_0000; // 总数据量
+    private int SUM = 10_0000; // 总数据量
     private int ONE_DB_PAGE_SIZE = 1_0000; // 一次查库数量
     private int PAGE_NUM = 1; // 第几页
     private int TOTAL_PAGES = NumberUtil.ceilDiv(SUM, ONE_DB_PAGE_SIZE); // 总页数
     private int FILE_DATA_NUM = 10_0000; // 单文件数据量
-    private int SHEET_DATA_NUM = 10_0000; // 单sheet存储数据量
+    private int SHEET_DATA_NUM = 1_0000; // 单sheet存储数据量
+    private int SHEET_NUM = 3; // sheet个数
 
     @Test
     public void test_multi() throws Exception {
         StopWatch stopWatch = new StopWatch("excel导出-多文件");
 
-        // 定义参数
-        int fileNum = NumberUtil.ceilDiv(SUM, FILE_DATA_NUM); // 文件数
-        int fileSheetNum = FILE_DATA_NUM / SHEET_DATA_NUM; // 每个文件的sheet数
-        for (int fileIndex = 1; fileIndex <= fileNum; fileIndex++) {
-            stopWatch.start(StrUtil.format("第{}次", fileIndex));
-
-            log.info("excel-拆分文件 总文件数：{}  处理第{}个文件 ", fileNum, fileIndex);
+        int fileIndex = 0; // 文件数
+//        int fileSheetNum = 0; // 每个文件的sheet数
+        boolean isGo = true;
+        while (isGo) {
+            fileIndex++;
+            stopWatch.start(StrUtil.format("第{}个文件", fileIndex));
+            log.info("excel-拆分文件 生成第{}个文件 start", fileIndex);
             BigExcelWriter writer = ExcelUtil.getBigWriter();
-            for (int fileSheetIndex = 1; fileSheetIndex <= fileSheetNum; fileSheetIndex++) {
-                log.info("excel-拆分文件 总文件数：{}  处理第{}个文件 处理第{}个sheet", fileNum, fileIndex, fileSheetIndex);
-                if (fileSheetIndex == 1) {
+
+            for (int sheetIndex = 1; sheetIndex <= SHEET_NUM; sheetIndex++) {
+                List<Map<String, Object>> dataList = getDataList(); // 拿到数据 TODO
+                if (CollUtil.isEmpty(dataList)) {
+                    isGo = false;
+                    log.info("【FINISH】excel写入数据 总文件数：{} 总数据量：{}", fileIndex, ID);
+                    break;
+                }
+                if (sheetIndex == 1) {
                     writer.renameSheet("第1个sheet");
                 } else {
-                    writer.setSheet(StrUtil.format("第{}个sheet", fileSheetIndex));
+                    writer.setSheet(StrUtil.format("第{}个sheet", sheetIndex));
                 }
-                writeData(writer);
+                log.info("excel-拆分文件 生成第{}个文件 处理第{}个sheet 本次写入数据量：{}", fileIndex, sheetIndex, dataList.size());
+                writeData(writer, dataList); // 写入数据
             }
+
             FileOutputStream fos = new FileOutputStream(StrUtil.format("D:/test-{}.xlsx", fileIndex));
             writer.flush(fos);
             writer.close();
 
+            log.info("excel-拆分文件 生成第{}个文件 end", fileIndex);
             stopWatch.stop();
         }
-        log.info(stopWatch.prettyPrint(TimeUnit.MILLISECONDS));
-    }
-
-    @Test
-    public void test_one() throws Exception {
-        StopWatch stopWatch = new StopWatch("excel导出-单文件");
-        //        ExcelWriter writer = ExcelUtil.getBigWriter("D:/test.xlsx", "第一个sheet"); // 得是空文件内容才可以写入
-//        ExcelWriter writer = ExcelUtil.getWriterWithSheet("第一个sheet");
-        BigExcelWriter writer = ExcelUtil.getBigWriter();
-        writer.renameSheet("第1个sheet");
-
-        while (PAGE_NUM <= TOTAL_PAGES) {
-            log.info("第{}页", PAGE_NUM);
-            stopWatch.start(StrUtil.format("第{}次", PAGE_NUM));
-            if (PAGE_NUM > 1) {
-                writer.setSheet(StrUtil.format("第{}个sheet", PAGE_NUM));
-            }
-            writeData(writer);
-            PAGE_NUM++;
-            stopWatch.stop();
-        }
-
-        FileOutputStream fos = new FileOutputStream("D:/test.xlsx");
-        writer.flush(fos);
-        fos.close();
-        writer.close();  // 关闭writer，释放内存
 
         log.info(stopWatch.prettyPrint(TimeUnit.MILLISECONDS));
     }
 
-    private void writeData(ExcelWriter writer) {
+    private void writeData(ExcelWriter writer, List<Map<String, Object>> dataList) {
         for (int columnIndex = 0; columnIndex < 2; columnIndex++) {
             writer.setColumnWidth(columnIndex, 30);
         }
@@ -103,19 +88,29 @@ public class TestExportHutool {
         writer.addHeaderAlias("name", "名称");
         writer.addHeaderAlias("time", "时间");
 
-        // 数据 -- 查db逻辑
+        writer.write(dataList);
+        //        writer.write(rowList, true); // 一次性写出内容，使用默认样式
+        //        writer.setOnlyAlias(true); //只导出设置别名的字段
+    }
+
+    private List<Map<String, Object>> getDataList() {
+        // 模拟数据 -- 查db逻辑
+        if (ID >= SUM) {
+            return Lists.newArrayList();
+        }
         List<Map<String, Object>> rowList = Lists.newArrayList();
         for (int i = 0; i < ONE_DB_PAGE_SIZE; i++) {
             ID++;
+            if (ID > SUM) {
+                break;
+            }
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", ID);
             map.put("name", RandomUtil.randomString("张三李四王五", 3));
             map.put("time", DateUtil.now());
             rowList.add(map);
         }
-        writer.write(rowList);
-        //        writer.write(rowList, true); // 一次性写出内容，使用默认样式
-        //        writer.setOnlyAlias(true); //只导出设置别名的字段
+        return rowList;
     }
 
 }
