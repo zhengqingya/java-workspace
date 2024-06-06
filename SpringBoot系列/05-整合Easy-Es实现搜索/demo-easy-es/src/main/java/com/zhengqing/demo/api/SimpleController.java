@@ -1,20 +1,16 @@
 package com.zhengqing.demo.api;
 
 import cn.easyes.core.biz.EsPageInfo;
-import cn.easyes.core.biz.SAPageInfo;
 import cn.easyes.core.conditions.LambdaEsQueryWrapper;
 import cn.easyes.core.conditions.LambdaEsUpdateWrapper;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
-import com.google.common.collect.Lists;
 import com.zhengqing.demo.mapper.DocumentMapper;
 import com.zhengqing.demo.model.Document;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -33,7 +29,7 @@ public class SimpleController {
     @GetMapping("search")
     public Object search(@RequestParam String title) {
         EsPageInfo<Document> page = this.documentMapper.pageQuery(
-                new LambdaEsQueryWrapper<Document>().like(Document::getTitle, title),1,5
+                new LambdaEsQueryWrapper<Document>().like(Document::getTitle, title), 1, 5
         );
         log.info(JSONUtil.toJsonStr(page.getList()));
         return page;

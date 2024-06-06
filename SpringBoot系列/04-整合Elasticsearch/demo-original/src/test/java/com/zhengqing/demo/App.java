@@ -43,6 +43,7 @@ import org.junit.Test;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.logging.LoggingSystem;
 
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -175,11 +176,13 @@ public class App {
         public void add() throws Exception {
             BulkRequest request = new BulkRequest();
             for (int i = 0; i < 10; i++) {
+                String id = String.valueOf(i + 1);
                 request.add(
-                        new IndexRequest().index("user").id(String.valueOf(i + 1))
+                        new IndexRequest().index("user").id(id)
                                 .source(
                                         JSONUtil.toJsonStr(
                                                 User.builder()
+                                                        .id(Long.valueOf(id))
                                                         .name(RandomUtil.randomString("张三李四", 2))
                                                         .age(RandomUtil.randomInt(10))
                                                         .sex(RandomUtil.randomString("男女", 1))
@@ -256,7 +259,8 @@ public class App {
 //                    .filter(QueryBuilders.termQuery("explain.explain-alias", "的斗年仔斗"))
 //                    .filter(QueryBuilders.matchQuery("explain", "斗年"))
 //                    .filter(QueryBuilders.matchQuery("content", "学习")) // 模糊查询（text字段类型才行） -- 分词后倒排索引查询结果更多
-                    .filter(QueryBuilders.matchPhraseQuery("content", "2024-06-05 23:42:05努定！一力")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
+//                    .filter(QueryBuilders.matchPhraseQuery("content", "2024-06-05 23:42:05努定！一力")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
+                    .filter(like("content", "学习 42加学习")) // 模糊分词查询
 //                    .must(QueryBuilders.matchQuery("age", "68")) // must -- and
 //                    .mustNot(QueryBuilders.matchQuery("name", "xxx"))  // mustNot -- 排除 !=
 //                    .should(QueryBuilders.matchQuery("sex", "男"))  // should -- or
@@ -285,8 +289,10 @@ public class App {
 
             // 分页查询
             sourceBuilder.from(0).size(3);
-//            sourceBuilder.from(10000).size(3); // 默认限制最大10000，超出报错： from + size must be less than or equal to: [10000] but was [10003].
-//            sourceBuilder.trackTotalHits(true).from(10000).size(3); // 网上说 trackTotalHits 设置true 可解决限制，但这里无效
+            // 默认限制最大10000，超出报错： from + size must be less than or equal to: [10000] but was [10003].
+            // trackTotalHits 用于精确统计总数，即获取真实总数量  -- 当超出10000数据量时，`hits.total.value`将不会增长，固定为 10000
+//            sourceBuilder.trackTotalHits(true).from(10000).size(3);
+
 
             // -----------------------------------------------
 
@@ -302,7 +308,7 @@ public class App {
 
             System.out.println("hits========>>");
             for (SearchHit hit : hits) {
-                //输出每条查询的结果信息
+                // 输出每条查询的结果信息
                 System.out.println(hit.getSourceAsString());
 
                 // 打印高亮结果
@@ -313,6 +319,83 @@ public class App {
             }
             System.out.println("<<========");
         }
+
+        /**
+         * 分词 或 模糊匹配 boolQuery
+         *
+         * @param fieldName 字段名
+         * @param value     查询值
+         * @return 组合查询
+         * @author zhengqingya
+         * @date 2024/6/6 21:15
+         */
+        private BoolQueryBuilder like(String fieldName, Object value) {
+            BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+            // 中文分词匹配
+            boolQueryBuilder.should(QueryBuilders.matchQuery(fieldName, value));
+            // 英文模糊匹配
+            boolQueryBuilder.should(QueryBuilders.wildcardQuery(fieldName, "*" + value + "*"));
+            return boolQueryBuilder;
+        }
+
+        @Test // 第1页
+        public void test_search_after_01() throws Exception {
+            SearchRequest request = new SearchRequest().indices("user");
+
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder
+//                    .query(QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("name", "张张")))
+                    .sort("id", SortOrder.ASC)
+                    .from(0).size(3).trackTotalHits(true);
+
+            request.source(sourceBuilder);
+            SearchResponse response = getClient().search(request, RequestOptions.DEFAULT);
+            SearchHits hits = response.getHits();
+            for (SearchHit hit : hits) {
+                System.out.println(hit.getSourceAsString());
+            }
+
+            if (hits.getHits().length == 0) {
+                return;
+            }
+            // 拿到最后一条数据的排序值
+            Object[] sortValues = hits.getAt(hits.getHits().length - 1).getSortValues();
+            System.out.println("最后一条数据排序值：" + Arrays.toString(sortValues)); // new Object[]{3}
+
+            // 下一页 设置上一页拿到的排序值
+            request.source().searchAfter(sortValues);
+            response = getClient().search(request, RequestOptions.DEFAULT);
+            for (SearchHit hit : response.getHits()) {
+                System.out.println("下一页：" + hit.getSourceAsString());
+            }
+        }
+
+        @Test // 第2页
+        public void test_search_after_02() throws Exception {
+            SearchRequest request = new SearchRequest().indices("user");
+
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder
+//                    .query(QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("name", "张张")))
+                    .sort("id", SortOrder.ASC)
+                    .from(0) // 有searchAfter 时 from值只能为0
+                    .size(3).trackTotalHits(true)
+                    .searchAfter(new Object[]{3}); // 第一页数据中拿到的最后一条数据的排序值 -- hits.getAt(hits.getHits().length - 1).getSortValues();
+
+            request.source(sourceBuilder);
+            SearchResponse response = getClient().search(request, RequestOptions.DEFAULT);
+            SearchHits hits = response.getHits();
+            System.out.println("took:" + response.getTook());
+            System.out.println("timeout:" + response.isTimedOut());
+            System.out.println("total:" + hits.getTotalHits());
+            System.out.println("MaxScore:" + hits.getMaxScore());
+            System.out.println("Aggregations:" + JSONUtil.toJsonStr(response.getAggregations()));
+            for (SearchHit hit : hits) {
+                System.out.println(hit.getSourceAsString());
+            }
+        }
+
+
     }
 
 
