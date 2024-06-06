@@ -44,7 +44,6 @@ public class TestExportHutoolMulti {
         StopWatch stopWatch = new StopWatch("excel导出-多文件");
 
         int fileIndex = 0; // 文件数
-//        int fileSheetNum = 0; // 每个文件的sheet数
         boolean isGo = true;
         while (isGo) {
             fileIndex++;
