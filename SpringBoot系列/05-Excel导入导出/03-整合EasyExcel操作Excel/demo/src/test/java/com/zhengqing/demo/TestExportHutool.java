@@ -30,33 +30,25 @@ import java.util.concurrent.TimeUnit;
 public class TestExportHutool {
 
     private long ID = 0;
-    private int SUM = 100_0000;
+    private int SUM = 10_0000;
     private int ONE_NUM = 1_0000;
-    long COUNT = NumberUtil.ceilDiv(SUM, ONE_NUM);
+    private long COUNT = NumberUtil.ceilDiv(SUM, ONE_NUM);
+    private int PAGE_NUM = 1;
 
     @Test
     public void test_01() throws Exception {
         StopWatch stopWatch = new StopWatch("excel导出");
-        stopWatch.start("第1次");
-
         //        ExcelWriter writer = ExcelUtil.getBigWriter("D:/test.xlsx", "第一个sheet"); // 得是空文件内容才可以写入
 //        ExcelWriter writer = ExcelUtil.getWriterWithSheet("第一个sheet");
         BigExcelWriter writer = ExcelUtil.getBigWriter();
+        writer.renameSheet("第1个sheet");
 
-        for (int i = 0; i < COUNT; i++) {
-            for (int columnIndex = 0; columnIndex < 2; i++) {
-                writer.setColumnWidth(columnIndex, 35);
-            }
-            writer.renameSheet("第1个sheet");
-
-            writer.addHeaderAlias("id", "ID");
-            writer.addHeaderAlias("name", "名称");
-            writer.addHeaderAlias("time", "时间");
-
-            if (i > 0) {
-                writer.setSheet(StrUtil.format("第{}个sheet", i + 2));
-            }
+        while (PAGE_NUM <= COUNT) {
+            log.info("第{}页", PAGE_NUM);
+            stopWatch.start(StrUtil.format("第{}次", PAGE_NUM));
             writeData(writer);
+            PAGE_NUM++;
+            stopWatch.stop();
         }
 
         FileOutputStream fos = new FileOutputStream("D:/test.xlsx");
@@ -64,11 +56,22 @@ public class TestExportHutool {
         fos.close();
         writer.close();  // 关闭writer，释放内存
 
-        stopWatch.stop();
+
         log.info(stopWatch.prettyPrint(TimeUnit.MILLISECONDS));
     }
 
     private void writeData(ExcelWriter writer) {
+        for (int columnIndex = 0; columnIndex < 2; columnIndex++) {
+            writer.setColumnWidth(columnIndex, 30);
+        }
+
+        writer.addHeaderAlias("id", "ID");
+        writer.addHeaderAlias("name", "名称");
+        writer.addHeaderAlias("time", "时间");
+
+        writer.setSheet(StrUtil.format("第{}个sheet", PAGE_NUM));
+
+        // 数据 -- 查db逻辑
         List<Map<String, Object>> rowList = Lists.newArrayList();
         for (int i = 0; i < ONE_NUM; i++) {
             ID++;
