@@ -98,6 +98,12 @@ public class App {
                 "}";
 
         @Test
+        public void exists() throws Exception {
+            boolean isExist = getClient().indices().exists(new GetIndexRequest("user2"), RequestOptions.DEFAULT);
+            System.out.println(isExist);
+        }
+
+        @Test
         public void create() throws Exception {
             CreateIndexResponse createIndexResponse = getClient().indices().create(
                     new CreateIndexRequest("user3")
@@ -108,7 +114,7 @@ public class App {
         }
 
         @Test
-        public void update() throws Exception {
+        public void get() throws Exception {
             GetIndexResponse getIndexResponse = getClient().indices().get(new GetIndexRequest("user2"), RequestOptions.DEFAULT);
             System.out.println(getIndexResponse.getAliases());
             System.out.println(getIndexResponse.getMappings());
@@ -183,11 +189,11 @@ public class App {
                                         JSONUtil.toJsonStr(
                                                 User.builder()
                                                         .id(Long.valueOf(id))
-                                                        .name(RandomUtil.randomString("张三李四", 2))
+                                                        .name(RandomUtil.randomString("张三李四知之愈明，则行之愈笃;行之愈笃，则知之益明。！0123456789", 8))
                                                         .age(RandomUtil.randomInt(10))
                                                         .sex(RandomUtil.randomString("男女", 1))
                                                         .content(DateUtil.now() + RandomUtil.randomString("你一定要努力学习，加油！", 5))
-                                                        .explain(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！", 5))
+                                                        .explain(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10))
                                                         .build()
                                         ),
                                         XContentType.JSON
@@ -235,6 +241,12 @@ public class App {
 
             // 组合查询
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+                    /**
+                     * must——所有的语句都 必须（must） 匹配，与 AND 等价。
+                     * must_not——所有的语句都 不能（must not） 匹配，与 NOT 等价。
+                     * should——至少有一个语句要匹配，与 OR 等价。
+                     * filter——必须匹配，运行在非评分&过滤模式。
+                     */
                     // filter 过滤 不会计算分值，性能比must高；must会计算分值
 //                    .filter(QueryBuilders.termQuery("age", 2)) // termQuery 精准匹配
                     /**
@@ -258,9 +270,11 @@ public class App {
                      */
 //                    .filter(QueryBuilders.termQuery("explain.explain-alias", "的斗年仔斗"))
 //                    .filter(QueryBuilders.matchQuery("explain", "斗年"))
-//                    .filter(QueryBuilders.matchQuery("content", "学习")) // 模糊查询（text字段类型才行） -- 分词后倒排索引查询结果更多
-//                    .filter(QueryBuilders.matchPhraseQuery("content", "2024-06-05 23:42:05努定！一力")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
-                    .filter(like("content", "学习 42加学习")) // 模糊分词查询
+//                    .must(QueryBuilders.matchQuery("content", "努力")) // 模糊查询（text字段类型才行） -- 分词后倒排索引查询结果更多
+                    .must(QueryBuilders.matchPhraseQuery("content", "你努")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
+//                    .must(like("content", "你努力")) // 模糊分词查询 -- text字段
+//                    .must(QueryBuilders.wildcardQuery("name", "*三三*")) // 模糊查询，类似mysql like -- 需keyword字段类型
+//                    .must(QueryBuilders.matchPhraseQuery("name", "三三"))
 //                    .must(QueryBuilders.matchQuery("age", "68")) // must -- and
 //                    .mustNot(QueryBuilders.matchQuery("name", "xxx"))  // mustNot -- 排除 !=
 //                    .should(QueryBuilders.matchQuery("sex", "男"))  // should -- or
@@ -285,10 +299,10 @@ public class App {
 //            sourceBuilder.aggregation(AggregationBuilders.terms("age_groupby").field("age"));
 
             // 排序 -- 升序
-            sourceBuilder.sort("age", SortOrder.ASC);
+//            sourceBuilder.sort("age", SortOrder.DESC);
 
             // 分页查询
-            sourceBuilder.from(0).size(3);
+            sourceBuilder.from(0).size(10);
             // 默认限制最大10000，超出报错： from + size must be less than or equal to: [10000] but was [10003].
             // trackTotalHits 用于精确统计总数，即获取真实总数量  -- 当超出10000数据量时，`hits.total.value`将不会增长，固定为 10000
 //            sourceBuilder.trackTotalHits(true).from(10000).size(3);
@@ -331,8 +345,8 @@ public class App {
          */
         private BoolQueryBuilder like(String fieldName, Object value) {
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-            // 中文分词匹配
-            boolQueryBuilder.should(QueryBuilders.matchQuery(fieldName, value));
+            // 中文匹配
+            boolQueryBuilder.should(QueryBuilders.matchPhraseQuery(fieldName, value));
             // 英文模糊匹配
             boolQueryBuilder.should(QueryBuilders.wildcardQuery(fieldName, "*" + value + "*"));
             return boolQueryBuilder;
