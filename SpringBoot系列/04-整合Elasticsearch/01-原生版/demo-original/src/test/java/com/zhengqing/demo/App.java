@@ -68,34 +68,7 @@ public class App {
 
     public static class IndexTest {
         // 查看 http://localhost:9200/user
-        final String MAPPING_TEMPLATE = "{\n" +
-                "  \"mappings\": {\n" +
-                "    \"properties\": {\n" +
-                "      \"age\": {\n" +
-                "        \"type\": \"long\"\n" +
-                "      },\n" +
-                "      \"name\": {\n" +
-                "        \"type\": \"keyword\"\n" +
-                "      },\n" +
-                "      \"content\": {\n" +
-                "        \"type\": \"text\",\n" +
-                "        \"analyzer\": \"ik_smart\",\n" +
-                "        \"search_analyzer\": \"ik_smart\"\n" +
-                "      },\n" +
-                "      \"explain\": {\n" +
-                "        \"type\": \"text\",\n" +
-                "        \"fields\": {\n" +
-                "          \"explain-alias\": {\n" +
-                "            \"type\": \"keyword\"\n" +
-                "          }\n" +
-                "        }\n" +
-                "      },\n" +
-                "      \"sex\": {\n" +
-                "        \"type\": \"keyword\"\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}";
+        final String MAPPING_TEMPLATE = "{\"mappings\":{\"properties\":{\"age\":{\"type\":\"long\"},\"name\":{\"type\":\"keyword\"},\"content\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\"},\"explain\":{\"type\":\"text\",\"fields\":{\"explain-alias\":{\"type\":\"keyword\"}}},\"sex\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"}}}}";
 
         @Test
         public void exists() throws Exception {
@@ -194,6 +167,7 @@ public class App {
                                                         .sex(RandomUtil.randomString("男女", 1))
                                                         .content(DateUtil.now() + RandomUtil.randomString("你一定要努力学习，加油！", 5))
                                                         .explain(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10))
+                                                        .desc(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10))
                                                         .build()
                                         ),
                                         XContentType.JSON
@@ -271,7 +245,7 @@ public class App {
 //                    .filter(QueryBuilders.termQuery("explain.explain-alias", "的斗年仔斗"))
 //                    .filter(QueryBuilders.matchQuery("explain", "斗年"))
 //                    .must(QueryBuilders.matchQuery("content", "努力")) // 模糊查询（text字段类型才行） -- 分词后倒排索引查询结果更多
-                    .must(QueryBuilders.matchPhraseQuery("content", "你努")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
+                    .filter(QueryBuilders.matchPhraseQuery("desc", "力")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
 //                    .must(like("content", "你努力")) // 模糊分词查询 -- text字段
 //                    .must(QueryBuilders.wildcardQuery("name", "*三三*")) // 模糊查询，类似mysql like -- 需keyword字段类型
 //                    .must(QueryBuilders.matchPhraseQuery("name", "三三"))

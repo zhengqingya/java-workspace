@@ -24,5 +24,6 @@ public class User {
     private String sex;
     private String content;
     private String explain;
+    private String desc;
 
 }
