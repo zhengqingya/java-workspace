@@ -245,8 +245,8 @@ public class App {
 //                    .filter(QueryBuilders.termQuery("explain.explain-alias", "的斗年仔斗"))
 //                    .filter(QueryBuilders.matchQuery("explain", "斗年"))
 //                    .must(QueryBuilders.matchQuery("content", "努力")) // 模糊查询（text字段类型才行） -- 分词后倒排索引查询结果更多
-                    .filter(QueryBuilders.matchPhraseQuery("desc", "力")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
-//                    .must(like("content", "你努力")) // 模糊分词查询 -- text字段
+//                    .filter(QueryBuilders.matchPhraseQuery("desc", "12")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
+                    .must(like("desc", "学习")) // 模糊分词查询 -- text字段
 //                    .must(QueryBuilders.wildcardQuery("name", "*三三*")) // 模糊查询，类似mysql like -- 需keyword字段类型
 //                    .must(QueryBuilders.matchPhraseQuery("name", "三三"))
 //                    .must(QueryBuilders.matchQuery("age", "68")) // must -- and
@@ -319,11 +319,21 @@ public class App {
          */
         private BoolQueryBuilder like(String fieldName, Object value) {
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-            // 中文匹配
-            boolQueryBuilder.should(QueryBuilders.matchPhraseQuery(fieldName, value));
-            // 英文模糊匹配
-            boolQueryBuilder.should(QueryBuilders.wildcardQuery(fieldName, "*" + value + "*"));
+            if (isAllChinese(String.valueOf(value))) {
+                boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(fieldName, value));
+            } else {
+                // 中文匹配
+                boolQueryBuilder.should(QueryBuilders.matchPhraseQuery(fieldName, value));
+                // 英文模糊匹配
+                boolQueryBuilder.should(QueryBuilders.wildcardQuery(fieldName, "*" + value + "*"));
+            }
             return boolQueryBuilder;
+        }
+
+        // 判断字符串是否为全中文
+        private boolean isAllChinese(String str) {
+            String regex = "[\\u4e00-\\u9fa5]+";
+            return str.matches(regex);
         }
 
         @Test // 第1页
