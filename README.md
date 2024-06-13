@@ -14,7 +14,7 @@
 - [02-整合Redis](./SpringBoot系列/02-整合Redis)
 - [03-整合Druid连接池](./SpringBoot系列/03-整合Druid连接池)
 - [04-整合Elasticsearch](./SpringBoot系列/04-整合Elasticsearch)
-- [05-整合Easy-Es实现搜索](./SpringBoot系列/05-整合Easy-Es实现搜索)
+- [05-Excel导入导出](./SpringBoot系列/05-Excel导入导出)
 - [06-整合RabbitMQ](./SpringBoot系列/06-整合RabbitMQ)
 - [07-整合RocketMQ](./SpringBoot系列/07-整合RocketMQ)
 - [08-整合Kafka](./SpringBoot系列/08-整合Kafka)
@@ -30,7 +30,6 @@
 - [18-整合PageOffice实现在线编辑Word和Excel](./SpringBoot系列/18-整合PageOffice实现在线编辑Word和Excel)
 - [19-校验表单重复提交](./SpringBoot系列/19-校验表单重复提交)
 - [20-整合Forest实现调用第三方接口](./SpringBoot系列/20-整合Forest实现调用第三方接口)
-- [21-整合JXLS实现Excel导入导出](./SpringBoot系列/21-整合JXLS实现Excel导入导出)
 - [22-发送邮件](./SpringBoot系列/22-发送邮件)
 - [23-自定义注解实现post请求接收单个参数值](./SpringBoot系列/23-自定义注解实现post请求接收单个参数值)
 - [24-整合XXL-JOB](./SpringBoot系列/24-整合XXL-JOB)
@@ -61,11 +60,9 @@
 - [49-整合Easy-Trans搞定数据翻译](./SpringBoot系列/49-整合Easy-Trans搞定数据翻译)
 - [50-docker-compose安装Graylog实现日志监控](./SpringBoot系列/50-docker-compose安装Graylog实现日志监控)
 - [51-Prometheus+Grafana监控SpringBoot](./SpringBoot系列/51-Prometheus+Grafana监控SpringBoot)
-- [52-POI导出Excel](./SpringBoot系列/52-POI导出Excel)
 - [53-导出数据库表信息生成Word文档](./SpringBoot系列/53-导出数据库表信息生成Word文档)
 - [54-整合LiteFlow规则引擎](./SpringBoot系列/54-整合LiteFlow规则引擎)
 - [55-undertow替换默认tomcat容器](./SpringBoot系列/55-undertow替换默认tomcat容器)
-- [56-整合EasyExcel操作Excel](./SpringBoot系列/56-整合EasyExcel操作Excel)
 - [57-metadata-extractor读取图片信息](./SpringBoot系列/57-metadata-extractor读取图片信息)
 - [58-整合FastDFS](./SpringBoot系列/58-整合FastDFS)
 - [59-整合Flowable工作流](./SpringBoot系列/59-整合Flowable工作流)
@@ -73,6 +70,9 @@
 - [61-整合asyncTool京东多线程编排工具](./SpringBoot系列/61-整合asyncTool京东多线程编排工具)
 - [62-商城秒杀](./SpringBoot系列/62-商城秒杀)
 - [63-整合Knife4j接口文档](./SpringBoot系列/63-整合Knife4j接口文档)
+- [64-整合Guava-Retry实现重试](./SpringBoot系列/64-整合Guava-Retry实现重试)
+- [65-整合Pulsar](./SpringBoot系列/65-整合Pulsar)
+- [66-自定义starter](./SpringBoot系列/66-自定义starter)
 
 #### SpringCloud系列
 

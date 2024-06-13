@@ -1,0 +1,96 @@
+GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+
+
+# 查看索引
+get user
+
+get user/_search
+
+# 查询数据
+get user/_doc/1
+
+# 修改doc
+POST /user/_update/1
+{
+  "doc": {
+    "desc": "你努力xx学习"
+  }
+}
+
+
+GET /user/_search
+{
+  "query": {
+    "wildcard": {
+      "name": "*三三*"
+    }
+  },
+  "explain": true
+}
+
+
+# explain 分析评分计算
+GET user/_search
+{
+    "query": {
+        "bool": {
+            "must": [
+                { "match_phrase": { "desc": "努力"} }
+            ]
+        }
+    },
+  "explain": true
+}
+
+
+
+# 删除索引
+delete user
+
+# 创建索引 -- 不支持修改已创建的索引
+put user
+{
+  "mappings": {
+    "properties": {
+      "age": {
+        "type": "long"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "content": {
+        "type": "text",
+        "analyzer": "ik_max_word"
+      },
+      "explain": {
+        "type": "text",
+        "fields": {
+          "explain-alias": {
+            "type": "keyword"
+          }
+        }
+      },
+      "sex": {
+        "type": "keyword"
+      },
+      "desc": {
+        "type": "text"
+      }
+    }
+  }
+}
+
+
+
+# 测试分词效果 -- ik_smart、ik_max_word
+GET /_analyze
+{
+  "text": ["程序员郑清学es"],
+  "analyzer": "ik_smart"
+}
