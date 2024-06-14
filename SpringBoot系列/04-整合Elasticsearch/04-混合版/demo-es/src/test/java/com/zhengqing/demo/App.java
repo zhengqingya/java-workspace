@@ -5,6 +5,10 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
 import com.zhengqing.demo.model.bo.User;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -55,6 +59,8 @@ import java.util.Map;
  */
 @Slf4j
 public class App {
+    
+    private static final String ES_INDEX = "user1";
 
     private static RestHighLevelClient getClient() {
         LoggingSystem.get(LoggingSystem.class.getClassLoader()).setLogLevel("root", LogLevel.INFO);
@@ -72,14 +78,14 @@ public class App {
 
         @Test
         public void exists() throws Exception {
-            boolean isExist = getClient().indices().exists(new GetIndexRequest("user2"), RequestOptions.DEFAULT);
+            boolean isExist = getClient().indices().exists(new GetIndexRequest(ES_INDEX), RequestOptions.DEFAULT);
             System.out.println(isExist);
         }
 
         @Test
         public void create() throws Exception {
             CreateIndexResponse createIndexResponse = getClient().indices().create(
-                    new CreateIndexRequest("user3")
+                    new CreateIndexRequest(ES_INDEX)
                             .source(MAPPING_TEMPLATE, XContentType.JSON),
                     RequestOptions.DEFAULT
             );
@@ -88,7 +94,7 @@ public class App {
 
         @Test
         public void get() throws Exception {
-            GetIndexResponse getIndexResponse = getClient().indices().get(new GetIndexRequest("user2"), RequestOptions.DEFAULT);
+            GetIndexResponse getIndexResponse = getClient().indices().get(new GetIndexRequest(ES_INDEX), RequestOptions.DEFAULT);
             System.out.println(getIndexResponse.getAliases());
             System.out.println(getIndexResponse.getMappings());
             System.out.println(getIndexResponse.getSettings());
@@ -96,7 +102,7 @@ public class App {
 
         @Test
         public void delete() throws Exception {
-            AcknowledgedResponse acknowledgedResponse = getClient().indices().delete(new DeleteIndexRequest("user2"), RequestOptions.DEFAULT);
+            AcknowledgedResponse acknowledgedResponse = getClient().indices().delete(new DeleteIndexRequest(ES_INDEX), RequestOptions.DEFAULT);
             System.out.println(acknowledgedResponse.isAcknowledged());
         }
     }
@@ -106,7 +112,7 @@ public class App {
         public void create() throws Exception {
             RestHighLevelClient client = getClient();
             IndexRequest request = new IndexRequest();
-            request.index("user") // 索引
+            request.index(ES_INDEX) // 索引
                     .id("1002") // 如果不设置值的情况下，es会默认生成一个_id值
             ;
             request.source(JSONUtil.toJsonStr(
@@ -122,7 +128,7 @@ public class App {
         @Test
         public void update() throws Exception {
             UpdateRequest request = new UpdateRequest();
-            request.index("user").id("1");
+            request.index(ES_INDEX).id("1");
             request.doc(JSONUtil.toJsonStr(
                     User.builder()
                             .name(DateUtil.now())
@@ -136,14 +142,14 @@ public class App {
 
         @Test
         public void get() throws Exception {
-            GetRequest request = new GetRequest().index("user").id("1");
+            GetRequest request = new GetRequest().index(ES_INDEX).id("1");
             GetResponse response = getClient().get(request, RequestOptions.DEFAULT);
             System.out.println(response);
         }
 
         @Test
         public void delete() throws Exception {
-            DeleteRequest request = new DeleteRequest().index("user").id("1");
+            DeleteRequest request = new DeleteRequest().index(ES_INDEX).id("1");
             DeleteResponse response = getClient().delete(request, RequestOptions.DEFAULT);
             System.out.println(response);
         }
@@ -157,7 +163,7 @@ public class App {
             for (int i = 0; i < 10; i++) {
                 String id = String.valueOf(i + 1);
                 request.add(
-                        new IndexRequest().index("user").id(id)
+                        new IndexRequest().index(ES_INDEX).id(id)
                                 .source(
                                         JSONUtil.toJsonStr(
                                                 User.builder()
@@ -182,7 +188,7 @@ public class App {
         public void delete() throws Exception {
             BulkRequest request = new BulkRequest();
             for (int i = 0; i < 10; i++) {
-                request.add(new DeleteRequest().index("user").id(String.valueOf(i + 1)));
+                request.add(new DeleteRequest().index(ES_INDEX).id(String.valueOf(i + 1)));
             }
             BulkResponse responses = getClient().bulk(request, RequestOptions.DEFAULT);
             System.out.println(responses);
@@ -193,7 +199,7 @@ public class App {
         @Test // 条件查询
         public void test() throws Exception {
             // 创建搜索请求对象
-            SearchRequest request = new SearchRequest().indices("user");
+            SearchRequest request = new SearchRequest().indices(ES_INDEX);
             // 构建查询的请求体
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
@@ -338,7 +344,7 @@ public class App {
 
         @Test // 第1页
         public void test_search_after_01() throws Exception {
-            SearchRequest request = new SearchRequest().indices("user");
+            SearchRequest request = new SearchRequest().indices(ES_INDEX);
 
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
             sourceBuilder
@@ -370,7 +376,7 @@ public class App {
 
         @Test // 第2页
         public void test_search_after_02() throws Exception {
-            SearchRequest request = new SearchRequest().indices("user");
+            SearchRequest request = new SearchRequest().indices(ES_INDEX);
 
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
             sourceBuilder
@@ -396,5 +402,21 @@ public class App {
 
     }
 
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class User {
+
+        private Long id;
+        private String name;
+        private Integer age;
+        private String sex;
+        private String content;
+        private String explain;
+        private String desc;
+
+    }
 
 }
