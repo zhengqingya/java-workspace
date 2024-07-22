@@ -4,7 +4,6 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
-import com.zhengqing.demo.model.bo.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -59,7 +58,7 @@ import java.util.Map;
  */
 @Slf4j
 public class App {
-    
+
     private static final String ES_INDEX = "user1";
 
     private static RestHighLevelClient getClient() {
