@@ -86,6 +86,25 @@ put user
   }
 }
 
+# 在现有索引上新增一个字段并设置默认值
+PUT user/_mapping
+{
+  "properties": {
+    "tenantId": {
+      "type": "keyword"
+    }
+  }
+}
+
+POST user/_update_by_query
+{
+  "script": {
+    "source": "if(ctx._source.tenantId == null) ctx._source.tenantId = 'zq888';"
+  },
+  "query": {
+    "match_all": {}
+  }
+}
 
 
 # 测试分词效果 -- ik_smart、ik_max_word
