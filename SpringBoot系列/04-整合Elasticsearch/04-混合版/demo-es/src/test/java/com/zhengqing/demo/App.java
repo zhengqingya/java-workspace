@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +25,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
@@ -37,6 +39,7 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -46,6 +49,7 @@ import org.junit.Test;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.logging.LoggingSystem;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -134,6 +138,8 @@ public class App {
                             .age(58)
                             .build()
             ), XContentType.JSON);
+            // 设置刷新策略 -- 立即刷新
+            request.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
             UpdateResponse response = getClient().update(request, RequestOptions.DEFAULT);
             System.out.println(response);
         }
@@ -149,8 +155,23 @@ public class App {
         @Test
         public void delete() throws Exception {
             DeleteRequest request = new DeleteRequest().index(ES_INDEX).id("1");
+            // 设置刷新策略 -- 立即刷新
+            request.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
             DeleteResponse response = getClient().delete(request, RequestOptions.DEFAULT);
             System.out.println(response);
+        }
+
+        @Test
+        public void submitDeleteByQueryTask() throws Exception {
+            DeleteByQueryRequest request = new DeleteByQueryRequest(ES_INDEX);
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            boolQuery
+//                    .filter(QueryBuilders.termQuery("id", 1))
+                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1,2,3,7,9)))
+                    .filter(QueryBuilders.termQuery("tenantId", 1));
+            request.setQuery(boolQuery);
+            // 提交异步删除任务
+            getClient().submitDeleteByQueryTask(request, RequestOptions.DEFAULT);
         }
     }
 
@@ -257,6 +278,7 @@ public class App {
 //                    .must(QueryBuilders.matchQuery("age", "68")) // must -- and
 //                    .mustNot(QueryBuilders.matchQuery("name", "xxx"))  // mustNot -- 排除 !=
 //                    .should(QueryBuilders.matchQuery("sex", "男"))  // should -- or
+//                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1,2,3,7,9))) // termsQuery -- in
                     ;
             sourceBuilder.query(boolQueryBuilder);
 
