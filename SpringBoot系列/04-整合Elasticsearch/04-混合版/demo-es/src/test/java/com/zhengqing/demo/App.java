@@ -49,7 +49,6 @@ import org.junit.Test;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.logging.LoggingSystem;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -63,7 +62,7 @@ import java.util.Map;
 @Slf4j
 public class App {
 
-    private static final String ES_INDEX = "user1";
+    private static final String ES_INDEX = "user";
 
     private static RestHighLevelClient getClient() {
         LoggingSystem.get(LoggingSystem.class.getClassLoader()).setLogLevel("root", LogLevel.INFO);
@@ -75,7 +74,7 @@ public class App {
         );
     }
 
-    public static class IndexTest {
+    public static class test_index {
         // 查看 http://localhost:9200/user
         final String MAPPING_TEMPLATE = "{\"mappings\":{\"properties\":{\"age\":{\"type\":\"long\"},\"name\":{\"type\":\"keyword\"},\"content\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\"},\"explain\":{\"type\":\"text\",\"fields\":{\"explain-alias\":{\"type\":\"keyword\"}}},\"sex\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"}}}}";
 
@@ -110,7 +109,7 @@ public class App {
         }
     }
 
-    public static class DocumentTest {
+    public static class test_document {
         @Test
         public void create() throws Exception {
             RestHighLevelClient client = getClient();
@@ -176,11 +175,11 @@ public class App {
     }
 
 
-    public static class BatchTest {
+    public static class test_batch {
         @Test
         public void add() throws Exception {
             BulkRequest request = new BulkRequest();
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 100; i++) {
                 String id = String.valueOf(i + 1);
                 request.add(
                         new IndexRequest().index(ES_INDEX).id(id)
@@ -215,7 +214,7 @@ public class App {
         }
     }
 
-    public static class AdvancedTest {
+    public static class test_advanced {
         @Test // 条件查询
         public void test() throws Exception {
             // 创建搜索请求对象
