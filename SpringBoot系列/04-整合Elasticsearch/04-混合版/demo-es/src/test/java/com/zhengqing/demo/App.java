@@ -1,5 +1,6 @@
 package com.zhengqing.demo;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -14,6 +15,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -23,8 +25,10 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -36,10 +40,13 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -49,7 +56,10 @@ import org.junit.Test;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.logging.LoggingSystem;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -166,7 +176,7 @@ public class App {
             BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
             boolQuery
 //                    .filter(QueryBuilders.termQuery("id", 1))
-                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1,2,3,7,9)))
+                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1, 2, 3, 7, 9)))
                     .filter(QueryBuilders.termQuery("tenantId", 1));
             request.setQuery(boolQuery);
             // 提交异步删除任务
@@ -419,6 +429,56 @@ public class App {
             }
         }
 
+        @Test
+        public void test_scroll() throws Exception {
+            Scroll scroll = new Scroll(TimeValue.timeValueMinutes(5L));
+            SearchRequest request = new SearchRequest().indices(ES_INDEX).scroll(scroll);
+
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder
+//                    .query(QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("name", "张张")))
+                    .sort("id", SortOrder.ASC)
+                    .size(3).trackTotalHits(true);
+
+            request.source(sourceBuilder);
+            SearchResponse response = getClient().search(request, RequestOptions.DEFAULT);
+            SearchHits hits = response.getHits();
+            System.out.println("took:" + response.getTook());
+            System.out.println("timeout:" + response.isTimedOut());
+            System.out.println("total:" + hits.getTotalHits());
+            System.out.println("MaxScore:" + hits.getMaxScore());
+            System.out.println("Aggregations:" + JSONUtil.toJsonStr(response.getAggregations()));
+            for (SearchHit hit : hits) {
+                System.out.println(hit.getSourceAsString());
+            }
+
+            List<String> scrollIdList = Lists.newArrayList();
+
+            // 下一页
+            String scrollId = response.getScrollId();
+            int sum = 1;
+            while (CollUtil.isNotEmpty(hits)) {
+                sum++;
+                if (sum > 3) {
+                    break;
+                }
+                SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+                scrollRequest.scroll(scroll);
+                response = getClient().scroll(scrollRequest, RequestOptions.DEFAULT);
+                scrollId = response.getScrollId();
+                hits = response.getHits();
+                System.out.println("scrollId:" + scrollId);
+                for (SearchHit hit : hits) {
+                    System.out.println("下一页：" + hit.getSourceAsString());
+                }
+                scrollIdList.add(scrollId);
+            }
+
+            // 清除 Scroll 上下文
+            ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+            clearScrollRequest.setScrollIds(scrollIdList);
+            getClient().clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+        }
 
     }
 
