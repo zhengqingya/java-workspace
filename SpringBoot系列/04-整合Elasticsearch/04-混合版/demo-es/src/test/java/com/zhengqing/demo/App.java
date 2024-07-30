@@ -15,7 +15,6 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -43,7 +42,6 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.Scroll;
@@ -57,7 +55,6 @@ import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.logging.LoggingSystem;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -76,12 +73,9 @@ public class App {
 
     private static RestHighLevelClient getClient() {
         LoggingSystem.get(LoggingSystem.class.getClassLoader()).setLogLevel("root", LogLevel.INFO);
-        return new RestHighLevelClient(
-                RestClient.builder(new HttpHost("localhost", 9200, "http"))
-                        .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(new BasicCredentialsProvider() {{
-                            setCredentials(AuthScope.ANY, new UsernamePasswordCredentials("elastic", "123456"));
-                        }}))
-        );
+        return new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200, "http")).setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(new BasicCredentialsProvider() {{
+            setCredentials(AuthScope.ANY, new UsernamePasswordCredentials("elastic", "123456"));
+        }})));
     }
 
     public static class test_index {
@@ -96,11 +90,7 @@ public class App {
 
         @Test
         public void create() throws Exception {
-            CreateIndexResponse createIndexResponse = getClient().indices().create(
-                    new CreateIndexRequest(ES_INDEX)
-                            .source(MAPPING_TEMPLATE, XContentType.JSON),
-                    RequestOptions.DEFAULT
-            );
+            CreateIndexResponse createIndexResponse = getClient().indices().create(new CreateIndexRequest(ES_INDEX).source(MAPPING_TEMPLATE, XContentType.JSON), RequestOptions.DEFAULT);
             System.out.println(createIndexResponse.isAcknowledged());
         }
 
@@ -127,12 +117,7 @@ public class App {
             request.index(ES_INDEX) // 索引
                     .id("1002") // 如果不设置值的情况下，es会默认生成一个_id值
             ;
-            request.source(JSONUtil.toJsonStr(
-                    User.builder().name(DateUtil.now())
-                            .age(RandomUtil.randomInt(100))
-                            .sex(RandomUtil.randomString("男女", 1))
-                            .build()
-            ), XContentType.JSON);
+            request.source(JSONUtil.toJsonStr(User.builder().name(DateUtil.now()).age(RandomUtil.randomInt(100)).sex(RandomUtil.randomString("男女", 1)).build()), XContentType.JSON);
             IndexResponse response = client.index(request, RequestOptions.DEFAULT);
             System.out.println(JSONUtil.toJsonStr(response));
         }
@@ -141,12 +126,7 @@ public class App {
         public void update() throws Exception {
             UpdateRequest request = new UpdateRequest();
             request.index(ES_INDEX).id("1");
-            request.doc(JSONUtil.toJsonStr(
-                    User.builder()
-                            .name(DateUtil.now())
-                            .age(58)
-                            .build()
-            ), XContentType.JSON);
+            request.doc(JSONUtil.toJsonStr(User.builder().name(DateUtil.now()).age(58).build()), XContentType.JSON);
             // 设置刷新策略 -- 立即刷新
             request.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
             UpdateResponse response = getClient().update(request, RequestOptions.DEFAULT);
@@ -176,8 +156,7 @@ public class App {
             BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
             boolQuery
 //                    .filter(QueryBuilders.termQuery("id", 1))
-                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1, 2, 3, 7, 9)))
-                    .filter(QueryBuilders.termQuery("tenantId", 1));
+                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1, 2, 3, 7, 9))).filter(QueryBuilders.termQuery("tenantId", 1));
             request.setQuery(boolQuery);
             // 提交异步删除任务
             getClient().submitDeleteByQueryTask(request, RequestOptions.DEFAULT);
@@ -191,23 +170,7 @@ public class App {
             BulkRequest request = new BulkRequest();
             for (int i = 0; i < 100; i++) {
                 String id = String.valueOf(i + 1);
-                request.add(
-                        new IndexRequest().index(ES_INDEX).id(id)
-                                .source(
-                                        JSONUtil.toJsonStr(
-                                                User.builder()
-                                                        .id(Long.valueOf(id))
-                                                        .name(RandomUtil.randomString("张三李四知之愈明，则行之愈笃;行之愈笃，则知之益明。！0123456789", 8))
-                                                        .age(RandomUtil.randomInt(10))
-                                                        .sex(RandomUtil.randomString("男女", 1))
-                                                        .content(DateUtil.now() + RandomUtil.randomString("你一定要努力学习，加油！", 5))
-                                                        .explain(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10))
-                                                        .desc(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10))
-                                                        .build()
-                                        ),
-                                        XContentType.JSON
-                                )
-                );
+                request.add(new IndexRequest().index(ES_INDEX).id(id).source(JSONUtil.toJsonStr(User.builder().id(Long.valueOf(id)).name(RandomUtil.randomString("张三李四知之愈明，则行之愈笃;行之愈笃，则知之益明。！0123456789", 8)).age(RandomUtil.randomInt(10)).sex(RandomUtil.randomString("男女", 1)).content(DateUtil.now() + RandomUtil.randomString("你一定要努力学习，加油！", 5)).explain(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10)).desc(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10)).build()), XContentType.JSON));
             }
             BulkResponse response = getClient().bulk(request, RequestOptions.DEFAULT);
             System.out.println(JSONUtil.toJsonStr(response));
@@ -372,15 +335,37 @@ public class App {
             return str.matches(regex);
         }
 
-        @Test // 第1页
+        @Test
+        public void test_from_size() throws Exception {
+            SearchRequest request = new SearchRequest().indices(ES_INDEX);
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder
+//                    .query(QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("name", "张张")))
+                    .sort("id", SortOrder.ASC)
+                    .from(50)
+                    .size(3).trackTotalHits(true);
+
+            request.source(sourceBuilder);
+            SearchResponse response = getClient().search(request, RequestOptions.DEFAULT);
+            SearchHits hits = response.getHits();
+            System.out.println("took:" + response.getTook());
+            System.out.println("timeout:" + response.isTimedOut());
+            System.out.println("total:" + hits.getTotalHits());
+            System.out.println("MaxScore:" + hits.getMaxScore());
+            System.out.println("Aggregations:" + JSONUtil.toJsonStr(response.getAggregations()));
+            for (SearchHit hit : hits) {
+                System.out.println(hit.getSourceAsString());
+            }
+        }
+
+        @Test
         public void test_search_after_01() throws Exception {
             SearchRequest request = new SearchRequest().indices(ES_INDEX);
 
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
             sourceBuilder
 //                    .query(QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("name", "张张")))
-                    .sort("id", SortOrder.ASC)
-                    .from(0).size(3).trackTotalHits(true);
+                    .sort("id", SortOrder.ASC).from(0).size(3).trackTotalHits(true);
 
             request.source(sourceBuilder);
             SearchResponse response = getClient().search(request, RequestOptions.DEFAULT);
@@ -404,17 +389,15 @@ public class App {
             }
         }
 
-        @Test // 第2页
+        @Test // 根据上一页排序值直接查询下一页数据
         public void test_search_after_02() throws Exception {
             SearchRequest request = new SearchRequest().indices(ES_INDEX);
 
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
             sourceBuilder
 //                    .query(QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("name", "张张")))
-                    .sort("id", SortOrder.ASC)
-                    .from(0) // 有searchAfter 时 from值只能为0
-                    .size(3).trackTotalHits(true)
-                    .searchAfter(new Object[]{3}); // 第一页数据中拿到的最后一条数据的排序值 -- hits.getAt(hits.getHits().length - 1).getSortValues();
+                    .sort("id", SortOrder.ASC).from(0) // 有searchAfter 时 from值只能为0
+                    .size(3).trackTotalHits(true).searchAfter(new Object[]{3}); // 第一页数据中拿到的最后一条数据的排序值 -- hits.getAt(hits.getHits().length - 1).getSortValues();
 
             request.source(sourceBuilder);
             SearchResponse response = getClient().search(request, RequestOptions.DEFAULT);
@@ -431,14 +414,14 @@ public class App {
 
         @Test
         public void test_scroll() throws Exception {
+            // 保持5分钟
             Scroll scroll = new Scroll(TimeValue.timeValueMinutes(5L));
             SearchRequest request = new SearchRequest().indices(ES_INDEX).scroll(scroll);
 
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
             sourceBuilder
 //                    .query(QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("name", "张张")))
-                    .sort("id", SortOrder.ASC)
-                    .size(3).trackTotalHits(true);
+                    .sort("id", SortOrder.ASC).size(3).trackTotalHits(true);
 
             request.source(sourceBuilder);
             SearchResponse response = getClient().search(request, RequestOptions.DEFAULT);
@@ -475,6 +458,10 @@ public class App {
             }
 
             // 清除 Scroll 上下文
+            clearScrollId(scrollIdList);
+        }
+
+        private void clearScrollId(List<String> scrollIdList) throws IOException {
             ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
             clearScrollRequest.setScrollIds(scrollIdList);
             getClient().clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
