@@ -15,6 +15,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -130,6 +131,7 @@ public class App {
 
         @Test
         public void update() throws Exception {
+            // tips:id值不存在的情况下去更新数据会报错...
             UpdateRequest request = new UpdateRequest();
             request.index(ES_INDEX).id("1");
             request.doc(JSONUtil.toJsonStr(User.builder().name(DateUtil.now()).age(58).build()), XContentType.JSON);
@@ -139,6 +141,17 @@ public class App {
             System.out.println(response);
         }
 
+        @Test
+        public void test_add_or_update() throws Exception {
+            // id值存在的时候更新，否则新增
+            IndexResponse indexResponse = getClient().index(
+                    new IndexRequest(ES_INDEX)
+                            .id("111")
+                            .opType(DocWriteRequest.OpType.INDEX)
+                            .source(JSONUtil.toJsonStr(User.builder().name("AAA1").build()), XContentType.JSON),
+                    RequestOptions.DEFAULT);
+            System.out.println(indexResponse);
+        }
 
         @Test
         public void get() throws Exception {
@@ -241,6 +254,7 @@ public class App {
             long updated = response.getUpdated();
             System.out.printf("处理了%d条记录，其中更新了%d条记录。%n", processed, updated);
         }
+
     }
 
     public static class test_advanced {
