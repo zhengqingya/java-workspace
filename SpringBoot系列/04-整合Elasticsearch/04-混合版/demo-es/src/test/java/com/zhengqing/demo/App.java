@@ -185,6 +185,26 @@ public class App {
             BulkResponse responses = getClient().bulk(request, RequestOptions.DEFAULT);
             System.out.println(responses);
         }
+
+        @Test
+        public void update() throws Exception {
+            // 批量更新单个字段值
+            BulkRequest request = new BulkRequest();
+            for (int i = 0; i < 2; i++) {
+                request.add(new UpdateRequest()
+                        .index(ES_INDEX)
+                        .id(String.valueOf(i + 1))
+                        .doc(JSONUtil.toJsonStr(
+                                User.builder().name("@123").build()
+                        ), XContentType.JSON)
+                );
+            }
+            BulkResponse responses = getClient().bulk(request, RequestOptions.DEFAULT);
+            if (responses.hasFailures()) {
+                log.warn("批量更新失败: {}", responses.buildFailureMessage());
+            }
+            System.out.println(responses);
+        }
     }
 
     public static class test_advanced {
