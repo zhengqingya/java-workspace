@@ -16,6 +16,7 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -43,7 +44,11 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -56,6 +61,7 @@ import org.springframework.boot.logging.LoggingSystem;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -187,13 +193,13 @@ public class App {
         }
 
         @Test
-        public void update() throws Exception {
+        public void update_method_01() throws Exception {
             // 批量更新单个字段值
             BulkRequest request = new BulkRequest();
-            for (int i = 0; i < 2; i++) {
+            for (int i = 1; i < 3; i++) {
                 request.add(new UpdateRequest()
                         .index(ES_INDEX)
-                        .id(String.valueOf(i + 1))
+                        .id(String.valueOf(i + 3))
                         .doc(JSONUtil.toJsonStr(
                                 User.builder().name("@123").build()
                         ), XContentType.JSON)
@@ -201,9 +207,39 @@ public class App {
             }
             BulkResponse responses = getClient().bulk(request, RequestOptions.DEFAULT);
             if (responses.hasFailures()) {
-                log.warn("批量更新失败: {}", responses.buildFailureMessage());
+                log.warn("批量更新部分数据失败: {}", responses.buildFailureMessage());
+                for (BulkItemResponse response : responses.getItems()) {
+                    if (response.isFailed()) {
+                        log.warn("操作失败，ID: {}, 原因: {}", response.getId(), response.getFailureMessage());
+                    } else {
+                        log.info("操作成功，ID: {}", response.getId());
+                    }
+                }
             }
             System.out.println(responses);
+        }
+
+        @Test
+        public void update_method_02() throws Exception {
+            // 根据条件批量更新单个字段值
+            UpdateByQueryRequest request = new UpdateByQueryRequest(ES_INDEX);
+
+            // 设置更新值
+            request.setScript(new Script(ScriptType.INLINE,
+                    "painless",
+                    "ctx._source.name = params.newValue", // name改为自己要更新的字段
+                    Collections.singletonMap("newValue", "test_value_xxxxxx"))); // 替换为需要设置的值
+
+            // 添加查询条件
+            request.setQuery(QueryBuilders.termQuery("age", 18));
+
+            // 执行更新操作
+            BulkByScrollResponse response = getClient().updateByQuery(request, RequestOptions.DEFAULT);
+
+            // 检查响应
+            long processed = response.getTotal();
+            long updated = response.getUpdated();
+            System.out.printf("处理了%d条记录，其中更新了%d条记录。%n", processed, updated);
         }
     }
 
