@@ -95,6 +95,10 @@ public class UserController {
 }
 ```
 
+### 四、测试
+
+访问 http://127.0.0.1:10010/api/user/hello?id=666
+
 ### zookeeper
 
 ![](./images/README_1725111720151.png)
