@@ -1,0 +1,22 @@
+server:
+  port: 10020
+
+spring:
+  application:
+    name: order
+  profiles:
+    active: dev # 环境配置
+
+dubbo:
+  application:
+    name: dubbo-${spring.application.name} # 注册服务名
+  registry:
+    address: zookeeper://127.0.0.1:2181 # 注册中心
+  protocol:
+    name: dubbo # 通信协议
+    port: 20880
+  consumer:
+    timeout: 60000 # 调用接口的超时时间（单位：毫秒）
+    check: false   # 服务启动时检查依赖的服务是否可用
+  scan:
+    base-packages: com.zhengqing.*.rpc # 包扫描，可代替启动类上的 @EnableDubbo 注解
