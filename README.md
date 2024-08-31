@@ -81,6 +81,7 @@
 - [02-Sentinel 1.8.4 规则持久化到Nacos](./SpringCloud系列/02-Sentinel%201.8.4%20规则持久化到Nacos)
 - [03-sentinel-dashboard-1.8.2-mysql](./SpringCloud系列/03-sentinel-dashboard-1.8.2-mysql)
 - [04-整合Seata+多数据源+sharding-jdbc](./SpringCloud系列/04-整合Seata+多数据源+sharding-jdbc)
+- [05-整合dubbo](./SpringCloud系列/05-整合dubbo)
 
 #### SpringSecurity系列
 
