@@ -20,4 +20,4 @@ dubbo:
     timeout: 60000 # 调用接口的超时时间（单位：毫秒）
     check: false   # 服务启动时检查依赖的服务是否可用
   scan:
-    base-packages: com.zhengqing.*.rpc # 包扫描，可替换 @EnableDubbo 注解
+    base-packages: com.zhengqing.*.rpc # 包扫描，可代替启动类上的 @EnableDubbo 注解
