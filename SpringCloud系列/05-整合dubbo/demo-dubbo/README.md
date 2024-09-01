@@ -1,10 +1,13 @@
 # 集成dubbo
 
-https://github.com/apache/dubbo-samples/tree/master/1-basic/dubbo-samples-spring-boot
+- https://cn.dubbo.apache.org/zh-cn/
+- https://github.com/apache/dubbo-samples/tree/master/1-basic/dubbo-samples-spring-boot
 
 ### 一、依赖引入
 
 ```
+<!-- dubbo -->
+<!-- https://mvnrepository.com/artifact/org.apache.dubbo/dubbo-spring-boot-starter -->
 <dependency>
     <groupId>org.apache.dubbo</groupId>
     <artifactId>dubbo-spring-boot-starter</artifactId>
