@@ -74,6 +74,7 @@
 - [65-整合Pulsar](./SpringBoot系列/65-整合Pulsar)
 - [66-自定义starter](./SpringBoot系列/66-自定义starter)
 - [67-transmittable-thread-local](./SpringBoot系列/67-transmittable-thread-local)
+- [68-整合ZooKeeper](./SpringBoot系列/68-整合ZooKeeper)
 
 #### SpringCloud系列
 
