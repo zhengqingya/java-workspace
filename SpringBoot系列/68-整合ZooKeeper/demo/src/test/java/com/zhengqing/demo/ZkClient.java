@@ -12,7 +12,7 @@ public class ZkClient {
     private final static int SESSION_TIMEOUT = 60000;
     private ZooKeeper zooKeeper;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         ZkClient client = new ZkClient();
         try {
             client.connect();
@@ -37,6 +37,10 @@ public class ZkClient {
             System.out.println("节点是否存在：" + client.exists(path));
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (client.zooKeeper != null) {
+                client.zooKeeper.close();
+            }
         }
     }
 
