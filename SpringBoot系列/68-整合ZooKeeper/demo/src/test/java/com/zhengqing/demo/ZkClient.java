@@ -1,10 +1,13 @@
 package com.zhengqing.demo;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+
+import java.util.concurrent.TimeUnit;
 
 public class ZkClient {
     private final static String CONNECTION_STRING = "localhost:2181";
@@ -21,8 +24,11 @@ public class ZkClient {
 
             // 创建节点
             client.createNode(path, "Hello Zookeeper".getBytes());
-
             System.out.println("节点是否存在：" + client.exists(path));
+
+            // 创建临时节点 特性：临时节点在其创建者会话结束时自动删除。因此，如果客户端断开连接且不再重连，则该节点将被自动删除。
+            client.createNodeEphemeral("/test_tmp_node", "Hello".getBytes());
+            System.out.println("临时节点是否存在：" + client.exists("/test_tmp_node"));
 
             // 读取节点数据
             byte[] data = client.readNode(path);
@@ -31,9 +37,10 @@ public class ZkClient {
             // 更新节点数据
             client.updateNode(path, "Hello Zookeeper Updated".getBytes());
 
+            ThreadUtil.sleep(2, TimeUnit.SECONDS);
+
             // 删除节点
             client.deleteNode(path);
-
             System.out.println("节点是否存在：" + client.exists(path));
         } catch (Exception e) {
             e.printStackTrace();
@@ -51,6 +58,11 @@ public class ZkClient {
 
     public void createNode(String path, byte[] data) throws Exception {
         String result = zooKeeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        System.out.println("Node created with path: " + result);
+    }
+
+    public void createNodeEphemeral(String path, byte[] data) throws Exception {
+        String result = zooKeeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
         System.out.println("Node created with path: " + result);
     }
 
