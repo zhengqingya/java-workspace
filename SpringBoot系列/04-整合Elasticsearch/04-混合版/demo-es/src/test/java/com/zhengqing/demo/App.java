@@ -170,6 +170,34 @@ public class App {
         }
 
         @Test
+        public void deleteByQuery() throws Exception {
+            DeleteByQueryRequest request = new DeleteByQueryRequest(ES_INDEX);
+            request.setRefresh(true);  // 确保立即刷新索引
+            /**
+             * setConflicts 方法用于处理在执行删除操作时可能遇到的版本冲突问题。Elasticsearch 使用乐观锁机制来管理文档版本，以确保并发操作的一致性。当多个操作同时尝试修改同一个文档时，可能会出现版本冲突。
+             * setConflicts 方法有以下几个可选值：
+             * proceed：
+             *      含义：如果遇到冲突，则继续执行删除操作。
+             *      效果：即使某些文档由于版本冲突而无法删除，整个删除操作仍然会继续执行其他符合条件的文档。
+             *      适用场景：当你希望尽可能多地删除符合条件的文档时使用。
+             * abort：
+             *      含义：如果遇到任何冲突，则终止整个删除操作。
+             *      效果：只要有一个文档因为版本冲突而无法删除，整个删除操作就会失败。
+             *      适用场景：当你希望确保所有符合条件的文档都被成功删除时使用。
+             * ignore：
+             *      含义：如果遇到冲突，则忽略这些冲突。
+             *      效果：即使某些文档由于版本冲突而无法删除，也不会抛出异常。
+             *      适用场景：当你不关心是否所有符合条件的文档都被成功删除时使用。
+             */
+            request.setConflicts("proceed");
+            request.setQuery(
+                    QueryBuilders.rangeQuery("age").gte(50).lte(100)
+            );
+            BulkByScrollResponse response = getClient().deleteByQuery(request, RequestOptions.DEFAULT);
+            System.out.println(response);
+        }
+
+        @Test
         public void submitDeleteByQueryTask() throws Exception {
             DeleteByQueryRequest request = new DeleteByQueryRequest(ES_INDEX);
             BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
@@ -201,8 +229,10 @@ public class App {
             for (int i = 0; i < 10; i++) {
                 request.add(new DeleteRequest().index(ES_INDEX).id(String.valueOf(i + 1)));
             }
-            BulkResponse responses = getClient().bulk(request, RequestOptions.DEFAULT);
-            System.out.println(responses);
+            BulkResponse res = getClient().bulk(request, RequestOptions.DEFAULT);
+            if (res.hasFailures()) {
+                log.warn("批量删除数据失败: {}", res.buildFailureMessage());
+            }
         }
 
         @Test
@@ -218,18 +248,18 @@ public class App {
                         ), XContentType.JSON)
                 );
             }
-            BulkResponse responses = getClient().bulk(request, RequestOptions.DEFAULT);
-            if (responses.hasFailures()) {
-                log.warn("批量更新部分数据失败: {}", responses.buildFailureMessage());
-                for (BulkItemResponse response : responses.getItems()) {
-                    if (response.isFailed()) {
-                        log.warn("操作失败，ID: {}, 原因: {}", response.getId(), response.getFailureMessage());
+            BulkResponse res = getClient().bulk(request, RequestOptions.DEFAULT);
+            if (res.hasFailures()) {
+                log.warn("批量更新部分数据失败: {}", res.buildFailureMessage());
+                for (BulkItemResponse resItem : res.getItems()) {
+                    if (resItem.isFailed()) {
+                        log.warn("操作失败，ID: {}, 原因: {}", resItem.getId(), resItem.getFailureMessage());
                     } else {
-                        log.info("操作成功，ID: {}", response.getId());
+                        log.info("操作成功，ID: {}", resItem.getId());
                     }
                 }
             }
-            System.out.println(responses);
+            System.out.println(res);
         }
 
         @Test
