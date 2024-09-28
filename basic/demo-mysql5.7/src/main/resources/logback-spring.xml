@@ -72,7 +72,7 @@
     <!-- 日志输出级别 -->
     <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
+        <!--        <appender-ref ref="FILE"/>-->
     </root>
 
     <!-- 减少部分日志 -->
