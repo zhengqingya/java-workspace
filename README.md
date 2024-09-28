@@ -20,7 +20,7 @@
 - [08-整合Kafka](./SpringBoot系列/08-整合Kafka)
 - [09-整合七牛云实现文件上传](./SpringBoot系列/09-整合七牛云实现文件上传)
 - [10-整合MinIO实现文件上传与下载](./SpringBoot系列/10-整合MinIO实现文件上传与下载)
-- [11-定时任务入门](./SpringBoot系列/11-定时任务入门)
+- [11-定时任务](./SpringBoot系列/11-定时任务)
 - [12-集成socket.io服务端和客户端](./SpringBoot系列/12-集成socket.io服务端和客户端)
 - [13-整合Nacos实现配置管理、服务注册与发现](./SpringBoot系列/13-整合Nacos实现配置管理、服务注册与发现)
 - [14-整合jasypt加密yml配置文件](./SpringBoot系列/14-整合jasypt加密yml配置文件)
