@@ -3,9 +3,11 @@ package com.zhengqing.demo.api;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.zhengqing.demo.model.MqEvent;
 import io.swagger.annotations.Api;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
@@ -22,10 +24,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/test")
 @Api(tags = "SpringEvent")
-public class SpringEventSyncController {
+public class SpringEventController {
 
     private final JdbcTemplate jdbcTemplate;
+    /**
+     * ApplicationEventPublisher 或 ApplicationContext 都可以发布事件
+     */
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final ApplicationContext applicationContext;
 
     @GetMapping("/spring-event")
     @SneakyThrows(Exception.class)
@@ -73,5 +79,15 @@ public class SpringEventSyncController {
         private String name;
     }
 
-
+    @GetMapping("/spring-event-2")
+    @SneakyThrows(Exception.class)
+    @Transactional(rollbackFor = Exception.class)
+    public Object springEvent2() {
+        log.debug("hello...");
+        applicationContext.publishEvent(new MqEvent(this, 1, DateUtil.now()));
+        return "ok:" + DateUtil.now();
+    }
 }
+
+
+
