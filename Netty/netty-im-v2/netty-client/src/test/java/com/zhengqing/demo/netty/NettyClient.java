@@ -105,9 +105,10 @@ public class NettyClient {
                                 new ChunkedWriteHandler(),
                                 new HttpObjectAggregator(64 * 1024),
                                 new WebSocketClientProtocolHandler(WebSocketClientHandshakerFactory
-                                        .newHandshaker(WEB_SOCKET_URL, WebSocketVersion.V13, null, false, new DefaultHttpHeaders())
+                                        .newHandshaker(WEB_SOCKET_URL, WebSocketVersion.V13, null, false,
+                                                new DefaultHttpHeaders()
+                                                        .add("ws-custom-header","zhengqingya"))
                                 )
-
                         );
                         ch.pipeline().addLast(new SimpleChannelInboundHandler<TextWebSocketFrame>() {
                             @Override

@@ -78,9 +78,9 @@ public class WebSocketServer implements NettyServerStrategy {
                         pipeline.addLast("http-chunked", new ChunkedWriteHandler());
 
                         // 【ws协议】
+                        pipeline.addLast(new WebSocketServerProtocolHandler("/im"));
                         // 自定义请求头解析
 //                        pipeline.addLast("handler-header", new NettyHeaderHandler());
-                        pipeline.addLast(new WebSocketServerProtocolHandler("/im"));
                         // 消息编解码
                         pipeline.addLast("encode", new WsMsgEncoder());
                         pipeline.addLast("decode", new WsMsgDecoder());

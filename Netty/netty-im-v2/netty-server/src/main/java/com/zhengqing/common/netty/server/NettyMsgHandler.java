@@ -11,6 +11,8 @@ import com.zhengqing.common.netty.util.NettyChannelAttrKeyUtil;
 import com.zhengqing.common.netty.util.RedisUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -99,6 +101,14 @@ public class NettyMsgHandler extends SimpleChannelInboundHandler<NettyMsgBase> {
                 Integer terminal = NettyChannelAttrKeyUtil.getAttr(ctx.channel(), NettyChannelAttrKeyUtil.TERMINAL);
                 ctx.channel().close();
                 log.info("【netty】心跳超时断开连接，用户id:{}，终端类型:{} ", userId, terminal);
+            }
+        } else if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete) {
+            // 监听握手完成事件
+            WebSocketServerProtocolHandler.HandshakeComplete handshake = (WebSocketServerProtocolHandler.HandshakeComplete) evt;
+            HttpHeaders headers = handshake.requestHeaders();
+            log.debug("【netty】 ws请求头：");
+            for (String name : headers.names()) {
+                System.err.println(name + ": " + headers.get(name));
             }
         } else {
             super.userEventTriggered(ctx, evt);

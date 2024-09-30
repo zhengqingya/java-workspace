@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
  *
  * @author zhengqingya
  * @description 最后得返回同样的 Sec-Websocket-Protocol 响应才行，不然会断开连接
+ * tips: 可以放到握手完成后获取请求头信息
  * @date 2024/2/26 10:11
  */
 @Slf4j
@@ -36,15 +37,16 @@ public class NettyHeaderHandler extends ChannelInboundHandlerAdapter {
             HttpRequest request = (FullHttpRequest) msg;
             HttpHeaders headers = request.headers();
             String token = headers.get("Sec-Websocket-Protocol");
+            log.debug("【netty-header】 token:{}",token);
             if (!JwtUtil.checkSign(token, this.accessTokenSecret)) {
-                log.warn("【netty】用户token：{} 校验不通过，强制下线", token);
+                log.warn("【netty-header】用户token：{} 校验不通过，强制下线", token);
                 ctx.channel().close();
                 return;
             }
             NettyJwtUser nettyJwtUser = JwtUtil.get(token);
-            log.info("【netty】用户信息: {}", JSONUtil.toJsonStr(nettyJwtUser));
+            log.info("【netty-header】用户信息: {}", JSONUtil.toJsonStr(nettyJwtUser));
         } else {
-            log.info("NettyHeaderHandler: {}", msg);
+//            log.debug("【netty-header】: {}", msg);
         }
         ctx.fireChannelRead(msg);
     }
