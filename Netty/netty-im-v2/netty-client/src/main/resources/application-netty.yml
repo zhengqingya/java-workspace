@@ -1,0 +1,12 @@
+# netty配置
+netty:
+  web-socket:
+    enable: true
+    port: 10081
+  tcp-socket:
+    enable: false
+    port: 10082
+
+jwt:
+  accessToken:
+    secret: netty-im
