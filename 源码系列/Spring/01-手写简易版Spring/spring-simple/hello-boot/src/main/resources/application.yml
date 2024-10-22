@@ -1,0 +1,10 @@
+server:
+  port: 80
+  shutdown: GRACEFUL
+
+spring:
+  datasource:
+    url: jdbc:sqlite:test.db
+    driver-class-name: org.sqlite.JDBC
+    username: root
+    password: 123456

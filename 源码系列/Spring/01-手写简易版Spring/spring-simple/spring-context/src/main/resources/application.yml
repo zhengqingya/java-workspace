@@ -1,0 +1,7 @@
+server:
+  port: 80
+  shutdown: GRACEFUL
+  test:
+    value: 123
+
+name: 你好呀！
