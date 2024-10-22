@@ -129,9 +129,9 @@
 - [01-idea使用Docker部署项目到服务器](./IDE工具/01-idea使用Docker部署项目到服务器)
 - [02-idea远程调试springboot项目](./IDE工具/02-idea远程调试springboot项目)
 
-#### 源码解析系列
+#### 源码系列
 
-- [01-MyBatis源码解析之SQL执行流程](./源码解析系列/01-MyBatis源码解析之SQL执行流程)
+- [01-MyBatis源码解析之SQL执行流程](./源码系列/MyBatis/01-MyBatis源码解析之SQL执行流程)
 
 #### Gradle
 
