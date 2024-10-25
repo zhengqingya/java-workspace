@@ -76,6 +76,7 @@
 - [67-transmittable-thread-local](./SpringBoot系列/67-transmittable-thread-local)
 - [68-整合ZooKeeper](./SpringBoot系列/68-整合ZooKeeper)
 - [69-Spring Event](./SpringBoot系列/69-Spring Event)
+- [70-整合Arthas](./SpringBoot系列/70-整合Arthas)
 
 #### SpringCloud系列
 
@@ -146,6 +147,7 @@
 - [demo-gradle-parent](./basic/demo-gradle-parent)
 - [demo-groovy](./basic/demo-groovy)
 - [demo-knife4j](./basic/demo-knife4j)
+- [demo-knife4j-arthas](./basic/demo-knife4j-arthas)
 - [demo-maven](./basic/demo-maven)
 - [demo-mysql5.7](./basic/demo-mysql5.7)
 - [demo-mysql8.0](./basic/demo-mysql8.0)

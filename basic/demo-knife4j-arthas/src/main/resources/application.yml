@@ -7,6 +7,7 @@ spring:
   profiles:
     include:
       - knife4j
+      - arthas
 
 # 配置日志地址
 logging:

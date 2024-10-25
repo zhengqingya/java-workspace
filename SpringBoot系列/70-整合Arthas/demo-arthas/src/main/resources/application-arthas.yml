@@ -1,0 +1,4 @@
+arthas:
+  # 默认 Telnet port: 3658, http port: 8563
+  http-port: 8563
+  telnet-port: 3658
