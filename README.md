@@ -75,7 +75,7 @@
 - [66-自定义starter](./SpringBoot系列/66-自定义starter)
 - [67-transmittable-thread-local](./SpringBoot系列/67-transmittable-thread-local)
 - [68-整合ZooKeeper](./SpringBoot系列/68-整合ZooKeeper)
-- [69-Spring Event](./SpringBoot系列/69-Spring Event)
+- [69-Spring Event](./SpringBoot系列/69-Spring%20Event)
 - [70-整合Arthas](./SpringBoot系列/70-整合Arthas)
 
 #### SpringCloud系列
