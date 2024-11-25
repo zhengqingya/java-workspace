@@ -77,6 +77,7 @@
 - [68-整合ZooKeeper](./SpringBoot系列/68-整合ZooKeeper)
 - [69-Spring Event](./SpringBoot系列/69-Spring%20Event)
 - [70-整合Arthas](./SpringBoot系列/70-整合Arthas)
+- [71-整合easymulti-datasource](./SpringBoot系列/71-整合easymulti-datasource)
 
 #### SpringCloud系列
 

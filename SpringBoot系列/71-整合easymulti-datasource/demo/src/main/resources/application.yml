@@ -1,0 +1,13 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: demo
+  profiles:
+    include:
+      - easymuti
+      - mybatis-plus
+      - knife4j
+  main:
+    allow-bean-definition-overriding: true

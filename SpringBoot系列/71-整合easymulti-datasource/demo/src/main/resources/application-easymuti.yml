@@ -1,0 +1,16 @@
+# 配置参考：https://github.com/wujiuye/easymulti-datasource/wiki
+easymuti:
+  datasource:
+    # 配置默认使用的数据源，不配置则默认使用master
+    defalutDataSource: first
+    first:
+      jdbcUrl: jdbc:mysql://127.0.0.1:3306/demo?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useSSL=false # MySQL在高版本需要指明是否进行SSL连接 解决则加上 &useSSL=false
+      username: root
+      password: root
+      # 连接池的配置
+      pool:
+        useConnPool: true
+        maxPoolSize: 10
+        connectionTimeout: 60
+        maxLifetime: 60
+    # ....还可以继续配置，配多少个就能用多少个
