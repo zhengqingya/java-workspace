@@ -8,17 +8,15 @@ import com.zhengqing.demo.model.vo.DemoListVO;
 import com.zhengqing.demo.service.IDemoService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * <p>
- * 测试demo 接口
- * </p>
+ * <p> 测试demo 接口 </p>
  *
  * @author zhengqingya
  * @description
@@ -26,14 +24,14 @@ import java.util.List;
  */
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/web/api/demo")
 @Api(tags = {"测试demo接口"})
 public class DemoController {
 
-    @Autowired
-    private IDemoService demoService;
+    private final IDemoService demoService;
 
-    @GetMapping("list/page")
+    @GetMapping("page")
     @ApiOperation("列表分页")
     public IPage<DemoListVO> listPage(@ModelAttribute DemoListDTO params) {
         return this.demoService.listPage(params);
@@ -59,14 +57,14 @@ public class DemoController {
 
     @DeleteMapping("")
     @ApiOperation("删除")
-    public void delete(@RequestParam Integer demoId) {
-        this.demoService.removeById(demoId);
+    public void delete(@RequestParam Integer id) {
+        this.demoService.removeById(id);
     }
 
     @GetMapping("detail")
     @ApiOperation("详情")
-    public Demo detail(@RequestParam Integer demoId) {
-        return this.demoService.getById(demoId);
+    public Demo detail(@RequestParam Integer id) {
+        return this.demoService.getById(id);
     }
 
 }

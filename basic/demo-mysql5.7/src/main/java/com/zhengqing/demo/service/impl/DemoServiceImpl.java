@@ -9,8 +9,8 @@ import com.zhengqing.demo.model.dto.DemoListDTO;
 import com.zhengqing.demo.model.dto.DemoSaveDTO;
 import com.zhengqing.demo.model.vo.DemoListVO;
 import com.zhengqing.demo.service.IDemoService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,10 +27,10 @@ import java.util.List;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class DemoServiceImpl extends ServiceImpl<DemoMapper, Demo> implements IDemoService {
 
-    @Autowired
-    private DemoMapper demoMapper;
+    private final DemoMapper demoMapper;
 
     @Override
     public IPage<DemoListVO> listPage(DemoListDTO params) {
@@ -62,20 +62,12 @@ public class DemoServiceImpl extends ServiceImpl<DemoMapper, Demo> implements ID
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer addOrUpdateData(DemoSaveDTO params) {
-        Integer id = params.getId();
-        String username = params.getUsername();
-        String password = params.getPassword();
-
-        Demo demo = new Demo();
-        demo.setId(id);
-        demo.setUsername(username);
-        demo.setPassword(password);
-
-        if (id == null) {
-            demo.insert();
-        } else {
-            demo.updateById();
-        }
+        Demo demo = Demo.builder()
+                .id(params.getId())
+                .username(params.getUsername())
+                .password(params.getPassword())
+                .build();
+        demo.insertOrUpdate();
         return demo.getId();
     }
 
