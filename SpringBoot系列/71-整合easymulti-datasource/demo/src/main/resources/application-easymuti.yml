@@ -9,8 +9,14 @@ easymuti:
       password: root
       # 连接池的配置
       pool:
-        useConnPool: true
+        useConnPool: false
         maxPoolSize: 10
         connectionTimeout: 60
         maxLifetime: 60
     # ....还可以继续配置，配多少个就能用多少个
+
+  transaction:
+    open-chain: true # 监控事务方法调用链路
+  sql-watcher:
+    enable: true # 是否启用sql监听埋点功能
+    show-real-log-invoke-link: false # 是否输出调用链上的sql
