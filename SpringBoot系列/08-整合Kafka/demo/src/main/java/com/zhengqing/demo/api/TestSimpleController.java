@@ -32,7 +32,10 @@ public class TestSimpleController {
     @PostMapping("simple")
     @ApiOperation("简单消息")
     public String simple(@RequestParam String msg) {
-        this.kafkaTemplate.send(KAFKA_TOPIC_SIMPLE, msg);
+        for (int i = 0; i < 3; i++) {
+            log.info("生产者[{}]: {}", i + 1, msg);
+            this.kafkaTemplate.send(KAFKA_TOPIC_SIMPLE, msg);
+        }
         return "SUCCESS";
     }
 
