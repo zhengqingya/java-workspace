@@ -9,7 +9,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.RetryableTopic;
-import org.springframework.kafka.annotation.TopicPartition;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.retrytopic.FixedDelayStrategy;
 import org.springframework.retry.annotation.Backoff;
@@ -71,12 +70,21 @@ public class TestRetry1Controller {
     }
 
     // 监听方式2
-    @KafkaListener(topicPartitions = {@TopicPartition(
-            topic = KAFKA_TOPIC + "-dlt",
-            partitions = {"0", "1", "2"})},
+    @KafkaListener(
+            topics = KAFKA_TOPIC + "-dlt",
+//            topicPartitions = {@TopicPartition(topic = KAFKA_TOPIC + "-dlt", partitions = {"0", "1", "2"})},
             groupId = "my_group")
     public void dltHandler2(ConsumerRecord<String, String> record) {
-        log.info("[DLT死信队列2] topic:{}, partition:{}, offset:{}, key:{}, value:{}",
+        log.info("[DLT死信队列2] my_group topic:{}, partition:{}, offset:{}, key:{}, value:{}",
+                record.topic(), record.partition(), record.offset(), record.key(), record.value());
+    }
+
+    @KafkaListener(
+            topics = KAFKA_TOPIC + "-dlt",
+//            topicPartitions = {@TopicPartition(topic = KAFKA_TOPIC + "-dlt", partitions = {"0", "1", "2"})},
+            groupId = "my_group2")
+    public void dltHandler3(ConsumerRecord<String, String> record) {
+        log.info("[DLT死信队列2] my_group2 topic:{}, partition:{}, offset:{}, key:{}, value:{}",
                 record.topic(), record.partition(), record.offset(), record.key(), record.value());
     }
 
