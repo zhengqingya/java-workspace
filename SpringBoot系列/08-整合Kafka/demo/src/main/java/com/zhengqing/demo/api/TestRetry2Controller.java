@@ -35,7 +35,7 @@ public class TestRetry2Controller {
      * 可观察控制台日志：Backoff FixedBackOff{interval=0, currentAttempts=10, maxAttempts=9} exhausted for my-retry-2-1@2
      */
     @PostMapping("retry2")
-    @ApiOperation("消息重试-测试2")
+    @ApiOperation("消息重试-测试2（默认重试10次）")
     public String retry(@RequestParam String msg) {
         log.info("[生产者] 发送消息：{} 时间：{}", msg, DateUtil.now());
         this.kafkaTemplate.send(KAFKA_TOPIC, msg);

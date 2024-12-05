@@ -44,17 +44,17 @@ public class TestRetry1Controller {
     }
 
     @RetryableTopic(
-            attempts = "2",  // attempts：重试次数，默认为3。
+            attempts = "2",  // 重试次数，默认为3。
             backoff = @Backoff(
-                    delay = 5000,// 消费延迟时间，单位为毫秒。
-                    multiplier = 2  // 延迟时间系数，eg: attempts = 4， delay = 5000， multiplier = 2 ，则间隔时间依次为5s、10s、20s、40s，最大延迟时间受 maxDelay 限制。
+                    delay = 5000,// 重试消费延迟时间，单位为毫秒。
+                    multiplier = 2  // 重试延迟时间系数，eg: attempts = 4， delay = 5000， multiplier = 2 ，则间隔时间依次为5s、10s、20s、40s，最大延迟时间受 maxDelay 限制。
             ),
             // 配置重试主题
             numPartitions = "3", //重试主题的分区数量
-            autoCreateTopics = "true",
-            retryTopicSuffix = "-retry",  // 指定重试主题创建时的后缀名：使用原主题的名称拼接后缀生成名称 -retry
-            dltTopicSuffix = "-dlt", // 指定DLT主题创建时的后缀名：使用原主题的名称拼接后缀生成名称 -dlt
-            fixedDelayTopicStrategy = FixedDelayStrategy.SINGLE_TOPIC // 可选策略包括：SINGLE_TOPIC 、MULTIPLE_TOPICS
+            autoCreateTopics = "true", // 自动创建重试主题和DLT（死信队列）主题
+            retryTopicSuffix = "-retry",  // 重试主题的后缀为 -retry
+            dltTopicSuffix = "-dlt", // DLT主题的后缀为 -dlt
+            fixedDelayTopicStrategy = FixedDelayStrategy.SINGLE_TOPIC // 使用单个重试主题的策略
     )
     @KafkaListener(topics = KAFKA_TOPIC)
     public void listen(String value) {
@@ -66,7 +66,8 @@ public class TestRetry1Controller {
     // 监听方式1
     @DltHandler
     public void dltHandler1(ConsumerRecord<String, String> record) {
-        log.info("[DLT死信队列1] topic:{}, key:{}, value:{}", record.topic(), record.key(), record.value());
+        log.info("[DLT死信队列1] topic:{}, partition:{}, offset:{}, key:{}, value:{}",
+                record.topic(), record.partition(), record.offset(), record.key(), record.value());
     }
 
     // 监听方式2
