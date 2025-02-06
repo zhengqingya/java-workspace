@@ -1,0 +1,18 @@
+{
+  "groups": [
+    {
+      "name": "mybatis-zq",
+      "type": "com.zhengqing.mybatis.springboot.config.MyBatisConfigProperty",
+      "sourceType": "com.zhengqing.mybatis.springboot.config.MyBatisConfigProperty"
+    }
+  ],
+  "properties": [
+    {
+      "name": "mybatis-zq.mapper",
+      "type": "java.lang.String",
+      "description": "mapper包扫描路径",
+      "sourceType": "com.zhengqing.mybatis.springboot.config.MyBatisConfigProperty"
+    }
+  ],
+  "hints": []
+}

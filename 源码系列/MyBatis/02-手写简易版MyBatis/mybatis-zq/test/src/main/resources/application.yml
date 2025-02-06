@@ -1,0 +1,5 @@
+server:
+  port: 83
+
+mybatis-zq:
+  mapper: com.zhengqing.test.mapper
