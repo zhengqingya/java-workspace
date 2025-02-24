@@ -145,6 +145,7 @@
 
 #### basic
 
+- [ddd-v1](./basic/ddd-v1)
 - [demo-debug](./basic/demo-debug)
 - [demo-gradle](./basic/demo-gradle)
 - [demo-gradle-parent](./basic/demo-gradle-parent)
