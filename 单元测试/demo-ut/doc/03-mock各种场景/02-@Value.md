@@ -19,6 +19,9 @@ public class UserService {
     @Value("${config.limit-num:3}")
     private Integer limitNum;
 
+    @Value("#{'${config.userMetrics:xx1,xx2,xx3}'.split(',')}")
+    private Set<String> userMetrics;
+
     public void _02_test_spring_value() {
         System.out.println("limitNum：" + limitNum);
     }
@@ -51,6 +54,8 @@ public class test_mock_value_1 {
 
         // Spring 提供了 ReflectionTestUtils 类，可以用来在测试中设置私有字段的值。
         ReflectionTestUtils.setField(userService, "limitNum", 3);
+
+        ReflectionTestUtils.setField(userService, "userMetrics", Sets.newHashSet("xx1", "xx2"));
     }
 
     // ==================== ↓↓↓↓↓↓ 单测case ↓↓↓↓↓↓=======================
