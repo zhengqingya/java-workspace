@@ -28,4 +28,10 @@ public class User extends Model<User> {
     @ApiModelProperty("密码")
     private String password;
 
+    public User(Integer id) {
+        this.id = id;
+        System.out.println("构造方法执行了...");
+        // 其它业务逻辑，如依赖注入...
+    }
+
 }

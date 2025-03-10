@@ -60,4 +60,9 @@ public class UserService {
         System.out.println("UserService.MAX_PAGE_SIZE: " + UserService.MAX_PAGE_SIZE);
     }
 
+    public void _06_test_mock_new_instance() {
+        User user = new User(111);
+        System.out.println("_06_test_mock_new_instance id: " + user.getId());
+    }
+
 }
