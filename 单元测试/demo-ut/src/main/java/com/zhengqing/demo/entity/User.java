@@ -34,4 +34,9 @@ public class User extends Model<User> {
         // 其它业务逻辑，如依赖注入...
     }
 
+    public void doBusiness(Integer id) {
+        System.out.println("doBusiness 执行了...");
+        // 一些复杂的业务逻辑，可能会存在异常...
+    }
+
 }
