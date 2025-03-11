@@ -47,10 +47,10 @@ public class SampleXxlJob {
      */
     @XxlJob("shardingJobHandler")
     public void shardingJobHandler() throws Exception {
-
         // 分片参数
         int shardIndex = XxlJobHelper.getShardIndex();
         int shardTotal = XxlJobHelper.getShardTotal();
+        log.info("shardingJobHandler：{} shardIndex:{} shardTotal:{}", XxlJobHelper.getJobParam(), shardIndex, shardTotal);
 
         XxlJobHelper.log("分片参数：当前分片序号 = {}, 总分片数 = {}", shardIndex, shardTotal);
 

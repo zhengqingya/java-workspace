@@ -62,5 +62,6 @@
     <logger name="springfox" level="WARN"/>
     <logger name="com.github.xiaoymin" level="WARN"/>
     <logger name="io.netty" level="WARN"/>
+    <logger name="sun.net" level="WARN"/>
 
 </configuration>
