@@ -78,6 +78,7 @@
 - [69-Spring Event](./SpringBoot系列/69-Spring%20Event)
 - [70-整合Arthas](./SpringBoot系列/70-整合Arthas)
 - [71-整合easymulti-datasource](./SpringBoot系列/71-整合easymulti-datasource)
+- [72-整合企微](./SpringBoot系列/72-整合企微)
 
 #### SpringCloud系列
 
