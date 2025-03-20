@@ -28,4 +28,10 @@ public class _02_test_mock_value {
         userService._02_test_spring_value();
     }
 
+    @Test
+    public void test_static_field() throws Exception {
+        ReflectionTestUtils.setField(UserService.class, "INIT_NUM", 3);
+        userService._02_test_static_field_value();
+    }
+
 }

@@ -19,6 +19,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final TransactionTemplate transactionTemplate;
     private static final int MAX_PAGE_SIZE = 10000;
+    private static int INIT_NUM = 1;
 
     public User getUserById(Integer id) {
         return userMapper.selectById(id);
@@ -41,6 +42,10 @@ public class UserService {
 
     public void _02_test_spring_value() {
         System.out.println("limitNum：" + limitNum);
+    }
+
+    public void _02_test_static_field_value() {
+        System.out.println("INIT_NUM：" + INIT_NUM);
     }
 
     public void _03_test_static_method() {

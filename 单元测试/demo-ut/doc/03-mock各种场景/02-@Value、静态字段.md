@@ -1,8 +1,8 @@
-# @Value
+# @Value、静态字段
 
 ### 场景
 
-模拟或设置值 `@Value` 注解的字段
+模拟或设置值 `@Value`注解的字段、`静态字段`
 
 ```java
 package com.zhengqing.demo.service.impl;
@@ -22,8 +22,14 @@ public class UserService {
     @Value("#{'${config.userMetrics:xx1,xx2,xx3}'.split(',')}")
     private Set<String> userMetrics;
 
+    private static int INIT_NUM = 1;
+
     public void _02_test_spring_value() {
         System.out.println("limitNum：" + limitNum);
+    }
+
+    public void _02_test_static_field_value() {
+        System.out.println("INIT_NUM：" + INIT_NUM);
     }
 }
 ```
@@ -65,6 +71,11 @@ public class test_mock_value_1 {
         userService._02_test_spring_value();
     }
 
+    @Test
+    public void test_static_field() throws Exception {
+        ReflectionTestUtils.setField(UserService.class, "INIT_NUM", 3);
+        userService._02_test_static_field_value();
+    }
 }
 ```
 
