@@ -167,7 +167,7 @@
 
 #### 单元测试
 
-- [JUnit4 + Mockito 单元测试](./单元测试/demo-ut)
+- [JUnit4 + Mockito 单元测试](./unit-test/demo-ut)
 
 #### Error系列
 

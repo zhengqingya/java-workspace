@@ -185,6 +185,12 @@
                     <destFile>target/coverage-reports/jacoco-unit.exec</destFile>
                     <!--Jacoco 是根据 .exec 文件生成最终的报告，所以需指定 .exec 的存放路径-->
                     <dataFile>target/coverage-reports/jacoco-unit.exec</dataFile>
+
+                    <!-- 排除特定包或类-->
+                    <excludes>
+                        <exclude>com/zhengqing/demo/api/**</exclude>
+                        <exclude>com/zhengqing/demo/config/**</exclude>
+                    </excludes>
                 </configuration>
                 <executions>
                     <!--
