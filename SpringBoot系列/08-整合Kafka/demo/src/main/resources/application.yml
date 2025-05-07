@@ -52,6 +52,12 @@ spring:
 
 # 配置日志地址
 logging:
+  # 开启Debug日志，方便排查Kafka相关问题
+  #  level:
+  #    org.springframework.kafka: INFO
+  #    org.apache.kafka: INFO
+  #    com.zhengqing.demo.config: DEBUG
+  # 配置日志地址
   config: classpath:logback-spring.xml
 
 

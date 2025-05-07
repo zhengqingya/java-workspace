@@ -39,9 +39,9 @@ public class TestSimpleController {
         return "SUCCESS";
     }
 
-    @KafkaListener(topics = KAFKA_TOPIC_SIMPLE)
+    @KafkaListener(topics = KAFKA_TOPIC_SIMPLE, groupId = "simple")
     public void listen(String value) {
-        log.info("消费者: " + value);
+        log.info("消费者: {}", value);
     }
 
 }
