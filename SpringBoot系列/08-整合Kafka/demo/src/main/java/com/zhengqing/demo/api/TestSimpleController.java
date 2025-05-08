@@ -44,4 +44,9 @@ public class TestSimpleController {
         log.info("消费者: {}", value);
     }
 
+    @KafkaListener(topics = KAFKA_TOPIC_SIMPLE, groupId = "simple-local")
+    public void listen2(String value) {
+        log.info("[simple-local] 消费者: {}", value);
+    }
+
 }

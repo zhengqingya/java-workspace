@@ -1,6 +1,7 @@
 package com.zhengqing.demo.config;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +31,7 @@ public class KafkaListenersPostProcessor implements BeanPostProcessor, Applicati
 
     /**
      * 禁用的kafka组集合
-     * eg：kafka.disabled-groupIds=simple,retry
+     * eg：kafka.disabled-groupIds=simple-local,retry-local
      */
     @Value("#{'${kafka.disabled-groupIds:}'.split(',')}")
     private List<String> disabledGroupIds;
@@ -51,7 +52,7 @@ public class KafkaListenersPostProcessor implements BeanPostProcessor, Applicati
                     continue;
                 }
                 if (disabledGroupIds.contains(groupId)) {
-                    log.info("禁用Kafka监听器: {}", groupId);
+                    log.info("topics:{} 禁用Kafka监听器: {}", JSONUtil.toJsonStr(container.getContainerProperties().getTopics()), groupId);
                     if (container.isRunning()) {
                         container.stop();
                     }

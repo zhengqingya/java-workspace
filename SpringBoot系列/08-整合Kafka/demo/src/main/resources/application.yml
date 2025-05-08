@@ -33,7 +33,7 @@ spring:
       #   - earliest表示从最早的offset开始;
       #   - latest表示从最新的offset开始;
       #   - none表示如果没有找到有效的offset则抛出异常。
-      auto-offset-reset: earliest
+      auto-offset-reset: latest
       max-poll-records: 500 # 每次拉取消息的最大记录数。用于控制每次消费的批量大小。
       group-id: my-group # 消费者所属的消费者组ID。同一个消费者组内的消费者会共享消息的消费负载。
       enable-auto-commit: true # 是否启用自动提交消费位移（offset）。如果设置为true，消费者会定期自动提交消费位移。
