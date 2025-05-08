@@ -32,6 +32,11 @@ public class KafkaListenersPostProcessor implements BeanPostProcessor, Applicati
     /**
      * 禁用的kafka组集合
      * eg：kafka.disabled-groupIds=simple-local,retry-local
+     *
+     * <p>
+     * 真正停用之后会打印日志如下，可以通过搜索此日志（ 需要开启日志：logging.level.org.springframework.kafka=INFO ）
+     * 或者 看下kafka可视化界面中消费者列表中是否存在此组，不存在则标识停用成功。
+     * 2025-05-08 11:19:10.305  INFO 17332 --- [tainer#10-3-C-1] o.s.k.l.KafkaMessageListenerContainer    : simple-local: Consumer stopped
      */
     @Value("#{'${kafka.disabled-groupIds:}'.split(',')}")
     private List<String> disabledGroupIds;
