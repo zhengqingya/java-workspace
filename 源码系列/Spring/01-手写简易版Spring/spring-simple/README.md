@@ -4,6 +4,7 @@
 
 - https://github.com/spring-projects/spring-framework
 - https://spring.io/projects/spring-framework
+- [Spring 中文文档](https://springdoc.tech/spring-framework/index)
 
 ### 学习资源
 

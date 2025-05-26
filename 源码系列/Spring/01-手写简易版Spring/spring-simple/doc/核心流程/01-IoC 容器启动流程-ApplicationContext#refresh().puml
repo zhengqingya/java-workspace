@@ -1,0 +1,66 @@
+@startuml
+title Spring IoC 容器启动流程 (refresh() 方法)
+
+start
+:prepareRefresh();
+:初始化上下文环境（例如属性解析、日志配置）;
+
+:obtainFreshBeanFactory();
+note right
+    1. 创建 BeanFactory（DefaultListableBeanFactory）
+    2. 加载 Bean 定义（XML/注解扫描）
+end note
+
+:prepareBeanFactory(beanFactory);
+note right
+    配置 BeanFactory 的标准特性：
+    - ClassLoader
+    - SpEL 解析器
+    - 注册默认环境 Bean
+end note
+
+:postProcessBeanFactory(beanFactory);
+note right
+    允许子类扩展 BeanFactory（如添加自定义的 BeanPostProcessor）
+end note
+
+:invokeBeanFactoryPostProcessors(beanFactory);
+note right
+    调用 BeanFactoryPostProcessor（例如：
+    ConfigurationClassPostProcessor 解析 @Configuration）
+end note
+
+:registerBeanPostProcessors(beanFactory);
+note right
+    注册 BeanPostProcessor（例如：
+    AutowiredAnnotationBeanPostProcessor）
+end note
+
+:initMessageSource();
+:初始化国际化资源;
+
+:initApplicationEventMulticaster();
+:初始化事件广播器;
+
+:onRefresh();
+note right
+    子类扩展点（例如：Spring Boot 创建 WebServer）
+end note
+
+:registerListeners();
+:注册监听器（ApplicationListener）;
+
+:finishBeanFactoryInitialization(beanFactory);
+note right
+    1. 实例化所有单例 Bean（非延迟加载）
+    2. 触发 BeanPostProcessor
+end note
+
+:finishRefresh();
+note right
+    1. 发布 ContextRefreshedEvent 事件
+    2. 初始化 LiveBeansView
+end note
+
+stop
+@enduml

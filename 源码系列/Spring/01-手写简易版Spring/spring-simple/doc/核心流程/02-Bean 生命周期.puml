@@ -1,0 +1,31 @@
+@startuml
+title Bean 生命周期核心流程
+
+start
+:实例化 Bean（构造函数/newInstance）;
+
+:填充属性（@Autowired/@Value 注入）;
+
+if (Bean 实现 Aware 接口?) then (yes)
+  :调用 Aware 方法（BeanNameAware, BeanFactoryAware 等）;
+else (no)
+endif
+
+:apply BeanPostProcessor#postProcessBeforeInitialization;
+
+if (Bean 定义中指定了 init-method 或 @PostConstruct?) then (yes)
+  :执行初始化方法（@PostConstruct → InitializingBean → init-method）;
+else (no)
+endif
+
+:apply BeanPostProcessor#postProcessAfterInitialization;
+
+:Bean 就绪（加入单例池，可被依赖注入）;
+
+if (容器关闭?) then (yes)
+  :执行销毁方法（@PreDestroy → DisposableBean → destroy-method）;
+  stop
+else (no)
+  :正常使用 Bean;
+endif
+@enduml

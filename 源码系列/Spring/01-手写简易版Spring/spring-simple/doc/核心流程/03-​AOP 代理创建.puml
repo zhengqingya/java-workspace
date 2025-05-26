@@ -1,0 +1,23 @@
+@startuml
+title Spring AOP 代理创建流程
+
+start
+:Bean 实例化完成;
+
+:检测是否需要 AOP 代理（通过 Pointcut 匹配）;
+
+if (需要代理?) then (yes)
+  if (目标类实现接口?) then (yes)
+    :使用 JDK 动态代理;
+  else (no)
+    :使用 CGLIB 代理;
+  endif
+
+  :创建代理对象（包含 Advisor 链）;
+  :将代理对象返回给容器;
+else (no)
+  :直接使用原始 Bean;
+endif
+
+stop
+@enduml
