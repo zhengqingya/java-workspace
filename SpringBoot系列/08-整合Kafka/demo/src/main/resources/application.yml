@@ -7,7 +7,12 @@ spring:
 
   # ======================== ↓↓↓↓↓↓ kafka相关配置 ↓↓↓↓↓↓ ===============================
   kafka:
-    bootstrap-servers: 127.0.0.1:9092,127.0.0.1:9093 # 127.0.0.1:9092,127.0.0.1:9093,127.0.0.1:9094 # Kafka服务器的地址。集群用多个逗号分隔
+    bootstrap-servers: 127.0.0.1:9092 # 127.0.0.1:9092,127.0.0.1:9093,127.0.0.1:9094 # Kafka服务器的地址。集群用多个逗号分隔
+    # SASL 安全认证
+    properties:
+      security.protocol: SASL_PLAINTEXT
+      sasl.mechanism: SCRAM-SHA-256
+      sasl.jaas.config: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="test" password="123456";'
     producer:
       # 消息键值的序列化
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
