@@ -1,6 +1,6 @@
 # 项目常用mock案例
 
-### StringRedisTemplate
+### 1、StringRedisTemplate
 
 ```
 @Mock
@@ -12,7 +12,7 @@ when(stringRedisTemplate.opsForValue()).thenReturn(mockRedisTemplate);
 when(mockRedisTemplate.increment(anyString(), anyLong())).thenReturn(1L);
 ```
 
-### RestHighLevelClient
+### 2、RestHighLevelClient
 
 ```
 @Mock
@@ -54,7 +54,7 @@ when(restHighLevelClient.search(any(SearchRequest.class), any(RequestOptions.cla
 );
 ```
 
-### TransactionTemplate
+### 3、TransactionTemplate
 
 ```
 private final TransactionTemplate transactionTemplate;
@@ -67,11 +67,54 @@ Mockito.doAnswer(invocation -> {
         }).when(transactionTemplate).executeWithoutResult(ArgumentMatchers.any(Consumer.class));
 ```
 
-### redissonClient
+### 4、redissonClient
 
 ```
 private final RedissonClient redissonClient;
 
 
 when(redissonClient.getBucket(Mockito.anyString())).thenAnswer(invocation -> Mockito.mock(RBucket.class));
+```
+
+### 5、CompletableFuture
+
+```
+public void _100_CompletableFuture() {
+    // ExecutorService executorService = Executors.newFixedThreadPool(5); // 这种线程池mock正常运行
+    // private final ExecutorService executorService; 这种注入的方式mock会一直转圈儿...
+
+    // 批量保存
+    List<Integer> saveList = Lists.newArrayList(1, 2, 3, 4, 5);
+    List<List<Integer>> splitList = ListUtil.split(saveList, 3);
+    List<CompletableFuture<Void>> futureList = splitList.stream()
+            .map(itemList -> CompletableFuture.runAsync(() ->
+                    {
+                        // 模拟批量保存逻辑 ...
+                        // ThreadUtil.sleep(1, TimeUnit.SECONDS);
+                        System.out.println(DateUtil.now() + ": " + JSONUtil.toJsonStr(itemList));
+                    },
+                    executorService))
+            .collect(Collectors.toList());
+
+    // 异步阻塞，等待所有线程执行完
+    CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
+}
+```
+
+```
+@Test
+public void test_100_CompletableFuture() {
+    /**
+     * 使用 Mockito 模拟 ExecutorService 的 execute 方法，使其在接收到 Runnable 任务时立即同步执行该任务，而不是异步提交给线程池。
+     * 这样做的目的是为了在单元测试中确保异步逻辑能被触发并可验证结果。
+     */
+    Mockito.doAnswer(
+            (invocation) -> {
+                ((Runnable) invocation.getArguments()[0]).run();
+                return null;
+            }
+    ).when(executorService).execute(any(Runnable.class));
+
+    userService._100_CompletableFuture();
+}
 ```
