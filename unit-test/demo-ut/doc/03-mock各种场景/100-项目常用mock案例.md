@@ -73,7 +73,10 @@ Mockito.doAnswer(invocation -> {
 private final RedissonClient redissonClient;
 
 
-when(redissonClient.getBucket(Mockito.anyString())).thenAnswer(invocation -> Mockito.mock(RBucket.class));
+// mock
+RBucket rBucket = Mockito.mock(RBucket.class);
+when(rBucket.trySet(anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+when(redissonClient.getBucket(Mockito.anyString())).thenAnswer(invocation -> rBucket);
 ```
 
 ### 5、CompletableFuture
