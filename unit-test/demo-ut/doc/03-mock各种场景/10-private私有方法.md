@@ -12,10 +12,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserService {
     private final UserMapper userMapper;
-    private void _10_private_method(String str) {
+    private User _10_private_method(String str) {
         User user = User.builder().username("zq").build();
         userMapper.insert(user);
         System.out.println(str + ": " + user.getId().toString());
+        return user;
     }
 }
 ```
@@ -39,15 +40,17 @@ public class _10_private_method {
         MockitoAnnotations.openMocks(this);
     }
 
-     @Test
-    public void test_100_private_method() {
+    @Test
+    public void test_10_private_method() {
         doAnswer(invocation -> {
             User arg = invocation.getArgument(0);
             arg.setId(666);
             return null;
         }).when(userMapper).insert(any(User.class));
 
-        ReflectionTestUtils.invokeMethod(userService, "_10_private_method", "zq");
+        User result = ReflectionTestUtils.invokeMethod(userService, "_10_private_method", "zq");
+
+        assertThat(result.getId()).isEqualTo(666);
     }
 }
 ```

@@ -83,10 +83,11 @@ public class UserService {
         System.out.println("_06_test_mock_new_instance id: " + user.getId());
     }
 
-    private void _10_private_method(String str) {
+    private User _10_private_method(String str) {
         User user = User.builder().username("zq").build();
         userMapper.insert(user);
         System.out.println(str + ": " + user.getId().toString());
+        return user;
     }
 
     public void _100_CompletableFuture() {
