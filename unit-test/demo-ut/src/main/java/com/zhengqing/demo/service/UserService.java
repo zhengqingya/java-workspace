@@ -2,8 +2,11 @@ package com.zhengqing.demo.service;
 
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.collect.Lists;
 import com.zhengqing.demo.entity.User;
 import com.zhengqing.demo.mapper.UserMapper;
@@ -101,4 +104,13 @@ public class UserService {
         CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
     }
 
+    public void error_04() {
+        System.out.println("error_04...");
+        String username = "zq";
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(StrUtil.isNotBlank(username), User::getUsername, username)
+                .orderByDesc(User::getId);
+        IPage<User> page = userMapper.selectPage(new Page<>(1, 10), queryWrapper);
+        System.out.println(JSONUtil.toJsonStr(page));
+    }
 }

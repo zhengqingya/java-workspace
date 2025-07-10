@@ -121,3 +121,19 @@ public void test_100_CompletableFuture() {
     userService._100_CompletableFuture();
 }
 ```
+
+### 6、LambdaQueryWrapper
+
+```
+LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+queryWrapper.like(StrUtil.isNotBlank(username), User::getUsername, username)
+            .orderByDesc(User::getId);
+```
+
+```java
+@Before
+public void init() {
+    MockitoAnnotations.openMocks(this);
+    TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), User.class);
+}
+```
