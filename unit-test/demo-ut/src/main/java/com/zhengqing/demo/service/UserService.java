@@ -83,6 +83,12 @@ public class UserService {
         System.out.println("_06_test_mock_new_instance id: " + user.getId());
     }
 
+    private void _10_private_method(String str) {
+        User user = User.builder().username("zq").build();
+        userMapper.insert(user);
+        System.out.println(str + ": " + user.getId().toString());
+    }
+
     public void _100_CompletableFuture() {
         // ExecutorService executorService = Executors.newFixedThreadPool(5); // 这种线程池mock正常运行
         // private final ExecutorService executorService; 这种注入的方式mock会一直转圈儿...
@@ -109,6 +115,7 @@ public class UserService {
         userMapper.insert(user);
         System.out.println(user.getId().toString());
     }
+
 
     public void error_04() {
         System.out.println("error_04...");
