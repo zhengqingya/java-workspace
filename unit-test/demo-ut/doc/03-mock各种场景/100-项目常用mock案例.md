@@ -3,6 +3,12 @@
 ### 1、StringRedisTemplate
 
 ```
+private final StringRedisTemplate stringRedisTemplate;
+
+stringRedisTemplate.opsForValue().increment(key, 1);
+```
+
+```
 @Mock
 private StringRedisTemplate stringRedisTemplate;
 
@@ -13,6 +19,20 @@ when(mockRedisTemplate.increment(anyString(), anyLong())).thenReturn(1L);
 ```
 
 ### 2、RestHighLevelClient
+
+```
+private final RestHighLevelClient restHighLevelClient;
+
+SearchResponse response = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+SearchHit[] hits = search.getHits().getHits();
+if (hits != null && hits.length > 0) {
+    List<Long> userIdList = Arrays.stream(hits).map(it -> {
+        Map<String, Object> sourceAsMap = it.getSourceAsMap();
+        String id = (String) sourceAsMap.get("userId");
+        return Long.valueOf(id);
+    }).collect(Collectors.toList());
+}
+```
 
 ```
 @Mock
@@ -59,23 +79,29 @@ when(restHighLevelClient.search(any(SearchRequest.class), any(RequestOptions.cla
 ```
 private final TransactionTemplate transactionTemplate;
 
+transactionTemplate.executeWithoutResult(status -> {
+    // ...
+});
+```
+
+```
 Mockito.doAnswer(invocation -> {
-            Consumer<TransactionStatus> callback = invocation.getArgument(0);
-            TransactionStatus transactionStatus = Mockito.mock(TransactionStatus.class);
-            callback.accept(transactionStatus);
-            return null;
-        }).when(transactionTemplate).executeWithoutResult(ArgumentMatchers.any(Consumer.class));
+    Consumer<TransactionStatus> callback = invocation.getArgument(0);
+    TransactionStatus transactionStatus = Mockito.mock(TransactionStatus.class);
+    callback.accept(transactionStatus);
+    return null;
+}).when(transactionTemplate).executeWithoutResult(ArgumentMatchers.any(Consumer.class));
 ```
 
 ### 4、redissonClient
 
 ```
 private final RedissonClient redissonClient;
-```
 
-```
 redissonClient.getBucket("test").trySet("test", 4L, TimeUnit.MINUTES)
+```
 
+```
 // mock
 RBucket rBucket = Mockito.mock(RBucket.class);
 when(rBucket.trySet(anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
@@ -152,4 +178,19 @@ public void init() {
     MockitoAnnotations.openMocks(this);
     TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), User.class);
 }
+```
+
+### 7、xxMapper.insert(xx) 之后生成主键id
+
+```
+private final UserMapper userMapper;
+userMapper.insert(user);
+
+
+// mock
+doAnswer(invocation -> {
+    User arg = invocation.getArgument(0);
+    arg.setId(666);
+    return null;
+}).when(userMapper).insert(any(User.class));
 ```

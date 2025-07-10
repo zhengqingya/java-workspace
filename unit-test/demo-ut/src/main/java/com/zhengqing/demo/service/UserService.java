@@ -104,6 +104,12 @@ public class UserService {
         CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
     }
 
+    public void _100_mybatis_save_after_getId() {
+        User user = User.builder().username("zq").build();
+        userMapper.insert(user);
+        System.out.println(user.getId().toString());
+    }
+
     public void error_04() {
         System.out.println("error_04...");
         String username = "zq";
