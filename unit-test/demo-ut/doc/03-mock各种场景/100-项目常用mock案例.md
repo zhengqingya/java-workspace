@@ -71,12 +71,28 @@ Mockito.doAnswer(invocation -> {
 
 ```
 private final RedissonClient redissonClient;
+```
 
+```
+redissonClient.getBucket("test").trySet("test", 4L, TimeUnit.MINUTES)
 
 // mock
 RBucket rBucket = Mockito.mock(RBucket.class);
 when(rBucket.trySet(anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
 when(redissonClient.getBucket(Mockito.anyString())).thenAnswer(invocation -> rBucket);
+```
+
+```
+RLock lock = redissonClient.getLock("sys_key");
+if (!lock.tryLock()) {
+    throw new BizException("请稍后重试！");
+}
+
+
+// mock
+RLock rLock = Mockito.mock(RLock.class);
+when(redissonClient.getLock(anyString())).thenReturn(rLock);
+when(rLock.tryLock()).thenReturn(true);
 ```
 
 ### 5、CompletableFuture
