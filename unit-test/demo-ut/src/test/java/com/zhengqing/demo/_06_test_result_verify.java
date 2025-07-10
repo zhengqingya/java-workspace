@@ -3,14 +3,16 @@ package com.zhengqing.demo;
 import com.zhengqing.demo.mapper.UserMapper;
 import com.zhengqing.demo.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.*;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @Slf4j
@@ -118,6 +120,7 @@ public class _06_test_result_verify {
 
         // 验证返回值
         assertEquals(10, size);
+        AssertionsForClassTypes.assertThat(size).isEqualTo(10);
     }
 
     @Test
@@ -126,9 +129,15 @@ public class _06_test_result_verify {
         List mockedList = mock(List.class);
 
         // 配置 mock 对象，当调用 add 方法时抛出异常
-        doThrow(new RuntimeException("xx")).when(mockedList).add(any());
+        doThrow(new RuntimeException("xxx")).when(mockedList).add(any());
 
         //  验证方法调用是否抛出预期的异常
         assertThrows(RuntimeException.class, () -> mockedList.add(1));
+
+        assertThatThrownBy(() -> mockedList.add(1))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("xx")
+//                .hasFieldOrPropertyWithValue("errorCode", 400)
+        ;
     }
 }
