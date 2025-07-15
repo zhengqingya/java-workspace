@@ -15,6 +15,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -87,7 +88,7 @@ public class App {
 
     public static class test_index {
         // 查看 http://localhost:9200/user
-        final String MAPPING_TEMPLATE = "{\"mappings\":{\"properties\":{\"age\":{\"type\":\"long\"},\"name\":{\"type\":\"keyword\"},\"content\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\"},\"explain\":{\"type\":\"text\",\"fields\":{\"explain-alias\":{\"type\":\"keyword\"}}},\"sex\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"}}}}";
+        final String MAPPING_TEMPLATE = "{\"mappings\":{\"properties\":{\"age\":{\"type\":\"long\"},\"name\":{\"type\":\"keyword\"},\"content\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\"},\"explain\":{\"type\":\"text\",\"fields\":{\"explain-alias\":{\"type\":\"keyword\"}}},\"sex\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"},\"data_list\":{\"type\":\"nested\",\"properties\":{\"id\":{\"type\":\"long\"},\"type\":{\"type\":\"keyword\"}}}}}}";
 
         @Test
         public void exists() throws Exception {
@@ -124,7 +125,11 @@ public class App {
             request.index(ES_INDEX) // 索引
                     .id("1002") // 如果不设置值的情况下，es会默认生成一个_id值
             ;
-            request.source(JSONUtil.toJsonStr(User.builder().name(DateUtil.now()).age(RandomUtil.randomInt(100)).sex(RandomUtil.randomString("男女", 1)).build()), XContentType.JSON);
+            request.source(JSONUtil.toJsonStr(User.builder()
+                    .name(DateUtil.now())
+                    .age(RandomUtil.randomInt(100))
+                    .sex(RandomUtil.randomString("男女", 1))
+                    .build()), XContentType.JSON);
             IndexResponse response = client.index(request, RequestOptions.DEFAULT);
             System.out.println(JSONUtil.toJsonStr(response));
         }
@@ -217,7 +222,20 @@ public class App {
             BulkRequest request = new BulkRequest();
             for (int i = 0; i < 100; i++) {
                 String id = String.valueOf(i + 1);
-                request.add(new IndexRequest().index(ES_INDEX).id(id).source(JSONUtil.toJsonStr(User.builder().id(Long.valueOf(id)).name(RandomUtil.randomString("张三李四知之愈明，则行之愈笃;行之愈笃，则知之益明。！0123456789", 8)).age(RandomUtil.randomInt(10)).sex(RandomUtil.randomString("男女", 1)).content(DateUtil.now() + RandomUtil.randomString("你一定要努力学习，加油！", 5)).explain(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10)).desc(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10)).build()), XContentType.JSON));
+                request.add(new IndexRequest().index(ES_INDEX).id(id)
+                        .source(JSONUtil.toJsonStr(User.builder()
+                                .id(Long.valueOf(id))
+                                .name(RandomUtil.randomString("张三李四知之愈明，则行之愈笃;行之愈笃，则知之益明。！0123456789", 8))
+                                .age(RandomUtil.randomInt(10)).sex(RandomUtil.randomString("男女", 1))
+                                .content(DateUtil.now() + RandomUtil.randomString("你一定要努力学习，加油！", 5))
+                                .explain(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10))
+                                .desc(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10))
+                                        .dataList(Lists.newArrayList(
+                                                User.Extra.builder().id(1L).type("add").build(),
+                                                User.Extra.builder().id(2L).type("edit").build(),
+                                                User.Extra.builder().id(RandomUtil.randomLong()).type(RandomUtil.randomString(5)).build()
+                                        ))
+                                .build()), XContentType.JSON));
             }
             BulkResponse response = getClient().bulk(request, RequestOptions.DEFAULT);
             System.out.println(JSONUtil.toJsonStr(response));
@@ -351,6 +369,8 @@ public class App {
 //                    .mustNot(QueryBuilders.matchQuery("name", "xxx"))  // mustNot -- 排除 !=
 //                    .should(QueryBuilders.matchQuery("sex", "男"))  // should -- or
 //                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1,2,3,7,9))) // termsQuery -- in
+                    // 构建 Nested 查询（匹配嵌套子文档） -- eg：查询满足 data_list.type in ('add', 'edit') 的数据
+                    .filter(QueryBuilders.nestedQuery( "data_list",  QueryBuilders.termsQuery("data_list.type", Lists.newArrayList("add", "edit")), ScoreMode.None))
                     ;
             sourceBuilder.query(boolQueryBuilder);
 
@@ -583,6 +603,16 @@ public class App {
         private String content;
         private String explain;
         private String desc;
+        private List<Extra> dataList;
+
+        @Data
+        @Builder
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public static class Extra {
+            private Long id;
+            private String type;
+        }
 
     }
 
