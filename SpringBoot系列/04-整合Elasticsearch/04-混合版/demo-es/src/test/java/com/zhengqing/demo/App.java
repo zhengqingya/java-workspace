@@ -88,7 +88,7 @@ public class App {
 
     public static class test_index {
         // 查看 http://localhost:9200/user
-        final String MAPPING_TEMPLATE = "{\"mappings\":{\"properties\":{\"age\":{\"type\":\"long\"},\"name\":{\"type\":\"keyword\"},\"content\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\"},\"explain\":{\"type\":\"text\",\"fields\":{\"explain-alias\":{\"type\":\"keyword\"}}},\"sex\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"},\"data_list\":{\"type\":\"nested\",\"properties\":{\"id\":{\"type\":\"long\"},\"type\":{\"type\":\"keyword\"}}}}}}";
+        final String MAPPING_TEMPLATE = "{\"mappings\":{\"properties\":{\"age\":{\"type\":\"long\"},\"name\":{\"type\":\"keyword\"},\"content\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\"},\"explain\":{\"type\":\"text\",\"fields\":{\"explain-alias\":{\"type\":\"keyword\"}}},\"sex\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"},\"dataList\":{\"type\":\"nested\",\"properties\":{\"id\":{\"type\":\"long\"},\"type\":{\"type\":\"keyword\"}}}}}}";
 
         @Test
         public void exists() throws Exception {
@@ -369,8 +369,8 @@ public class App {
 //                    .mustNot(QueryBuilders.matchQuery("name", "xxx"))  // mustNot -- 排除 !=
 //                    .should(QueryBuilders.matchQuery("sex", "男"))  // should -- or
 //                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1,2,3,7,9))) // termsQuery -- in
-                    // 构建 Nested 查询（匹配嵌套子文档） -- eg：查询满足 data_list.type in ('add', 'edit') 的数据
-                    .filter(QueryBuilders.nestedQuery( "data_list",  QueryBuilders.termsQuery("data_list.type", Lists.newArrayList("add", "edit")), ScoreMode.None))
+                    // 构建 Nested 查询（匹配嵌套子文档） -- eg：查询满足 dataList.type in ('add', 'edit') 的数据
+                    .filter(QueryBuilders.nestedQuery( "dataList",  QueryBuilders.termsQuery("dataList.type", Lists.newArrayList("add", "edit")), ScoreMode.None))
                     ;
             sourceBuilder.query(boolQueryBuilder);
 
