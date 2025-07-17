@@ -18,6 +18,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -78,9 +79,12 @@ import java.util.Map;
 public class App {
 
     private static final String ES_INDEX = "user";
+    private static final boolean REFRESH_NOW_ES = true;
 
     private static RestHighLevelClient getClient() {
         LoggingSystem.get(LoggingSystem.class.getClassLoader()).setLogLevel("root", LogLevel.INFO);
+        LoggingSystem.get(LoggingSystem.class.getClassLoader()).setLogLevel(App.class.getPackage().getName(), LogLevel.DEBUG);
+
         return new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200, "http")).setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(new BasicCredentialsProvider() {{
             setCredentials(AuthScope.ANY, new UsernamePasswordCredentials("elastic", "123456"));
         }})));
@@ -155,7 +159,12 @@ public class App {
                             .opType(DocWriteRequest.OpType.INDEX)
                             .source(JSONUtil.toJsonStr(User.builder().name("AAA1").build()), XContentType.JSON),
                     RequestOptions.DEFAULT);
-            System.out.println(indexResponse);
+            log.debug(JSONUtil.toJsonStr(indexResponse));
+
+            // 是否立即刷新一次ES缓存
+            if (REFRESH_NOW_ES) {
+                getClient().indices().refresh(new RefreshRequest(ES_INDEX), RequestOptions.DEFAULT);
+            }
         }
 
         @Test
@@ -230,15 +239,15 @@ public class App {
                                 .content(DateUtil.now() + RandomUtil.randomString("你一定要努力学习，加油！", 5))
                                 .explain(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10))
                                 .desc(RandomUtil.randomString("奋斗吧少年，你会是最棒的仔！0123456789", 10))
-                                        .dataList(Lists.newArrayList(
-                                                User.Extra.builder().id(1L).type("add").build(),
-                                                User.Extra.builder().id(2L).type("edit").build(),
-                                                User.Extra.builder().id(RandomUtil.randomLong()).type(RandomUtil.randomString(5)).build()
-                                        ))
+                                .dataList(Lists.newArrayList(
+                                        User.Extra.builder().id(1L).type("add").build(),
+                                        User.Extra.builder().id(2L).type("edit").build(),
+                                        User.Extra.builder().id(RandomUtil.randomLong()).type(RandomUtil.randomString(5)).build()
+                                ))
                                 .build()), XContentType.JSON));
             }
-            BulkResponse response = getClient().bulk(request, RequestOptions.DEFAULT);
-            System.out.println(JSONUtil.toJsonStr(response));
+            BulkResponse res = getClient().bulk(request, RequestOptions.DEFAULT);
+            log("批量保存数据", res);
         }
 
         @Test
@@ -248,9 +257,7 @@ public class App {
                 request.add(new DeleteRequest().index(ES_INDEX).id(String.valueOf(i + 1)));
             }
             BulkResponse res = getClient().bulk(request, RequestOptions.DEFAULT);
-            if (res.hasFailures()) {
-                log.warn("批量删除数据失败: {}", res.buildFailureMessage());
-            }
+            log("批量删除数据", res);
         }
 
         @Test
@@ -267,8 +274,12 @@ public class App {
                 );
             }
             BulkResponse res = getClient().bulk(request, RequestOptions.DEFAULT);
+            log("批量更新数据", res);
+        }
+
+        private void log(String type, BulkResponse res) {
             if (res.hasFailures()) {
-                log.warn("批量更新部分数据失败: {}", res.buildFailureMessage());
+                log.warn("【{}】失败: {}", type, res.buildFailureMessage());
                 for (BulkItemResponse resItem : res.getItems()) {
                     if (resItem.isFailed()) {
                         log.warn("操作失败，ID: {}, 原因: {}", resItem.getId(), resItem.getFailureMessage());
@@ -277,7 +288,7 @@ public class App {
                     }
                 }
             }
-            System.out.println(res);
+            log.debug("【{}】 {}", type, JSONUtil.toJsonStr(res));
         }
 
         @Test
@@ -300,7 +311,7 @@ public class App {
             // 检查响应
             long processed = response.getTotal();
             long updated = response.getUpdated();
-            System.out.printf("处理了%d条记录，其中更新了%d条记录。%n", processed, updated);
+            log.debug("处理数：{}，更新数：{}", processed, updated);
         }
 
     }
@@ -370,8 +381,7 @@ public class App {
 //                    .should(QueryBuilders.matchQuery("sex", "男"))  // should -- or
 //                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1,2,3,7,9))) // termsQuery -- in
                     // 构建 Nested 查询（匹配嵌套子文档） -- eg：查询满足 dataList.type in ('add', 'edit') 的数据
-                    .filter(QueryBuilders.nestedQuery( "dataList",  QueryBuilders.termsQuery("dataList.type", Lists.newArrayList("add", "edit")), ScoreMode.None))
-                    ;
+                    .filter(QueryBuilders.nestedQuery("dataList", QueryBuilders.termsQuery("dataList.type", Lists.newArrayList("add", "edit")), ScoreMode.None));
             sourceBuilder.query(boolQueryBuilder);
 
 
