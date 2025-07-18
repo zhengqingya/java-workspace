@@ -55,8 +55,14 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.TopHits;
+import org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.Test;
 import org.springframework.boot.logging.LogLevel;
@@ -318,7 +324,7 @@ public class App {
 
     public static class test_advanced {
         @Test // 条件查询
-        public void test() throws Exception {
+        public void test_search() throws Exception {
             // 创建搜索请求对象
             SearchRequest request = new SearchRequest().indices(ES_INDEX);
             // 构建查询的请求体
@@ -373,13 +379,14 @@ public class App {
 //                    .filter(QueryBuilders.matchQuery("explain", "斗年"))
 //                    .must(QueryBuilders.matchQuery("content", "努力")) // 模糊查询（text字段类型才行） -- 分词后倒排索引查询结果更多
 //                    .filter(QueryBuilders.matchPhraseQuery("desc", "12")) // 确保搜索词条在文档中的顺序与查询中的顺序一致
-                    .must(like("desc", "学习")) // 模糊分词查询 -- text字段
+//                    .must(like("desc", "学习")) // 模糊分词查询 -- text字段
 //                    .must(QueryBuilders.wildcardQuery("name", "*三三*")) // 模糊查询，类似mysql like -- 需keyword字段类型
 //                    .must(QueryBuilders.matchPhraseQuery("name", "三三"))
 //                    .must(QueryBuilders.matchQuery("age", "68")) // must -- and
 //                    .mustNot(QueryBuilders.matchQuery("name", "xxx"))  // mustNot -- 排除 !=
 //                    .should(QueryBuilders.matchQuery("sex", "男"))  // should -- or
 //                    .filter(QueryBuilders.termsQuery("id", Lists.newArrayList(1,2,3,7,9))) // termsQuery -- in
+                    .filter(QueryBuilders.rangeQuery("id").gte(5L).lte(10L))  // 过滤 id >= 5 and id <= 10
                     // 构建 Nested 查询（匹配嵌套子文档） -- eg：查询满足 dataList.type in ('add', 'edit') 的数据
                     .filter(QueryBuilders.nestedQuery("dataList", QueryBuilders.termsQuery("dataList.type", Lists.newArrayList("add", "edit")), ScoreMode.None));
             sourceBuilder.query(boolQueryBuilder);
@@ -465,6 +472,79 @@ public class App {
             return str.matches(regex);
         }
 
+        @Test // 分组查询
+        public void test_grouping() throws Exception {
+            /**
+             * DSL 语句：
+             *
+             * GET /user/_search
+             * {"size":0,"query":{"bool":{"filter":[{"range":{"id":{"gte":10,"lte":15}}}]}},"aggs":{"group_by_sex":{"terms":{"field":"sex"},"aggs":{"max_id":{"top_hits":{"sort":[{"id":{"order":"desc"}}],"size":1}}}}}}
+             */
+            // 创建搜索请求对象
+            SearchRequest request = new SearchRequest().indices(ES_INDEX);
+            // 构建查询的请求体
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+            // 构建查询条件
+            BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+                    // 过滤 delete_time = 0 的数据
+//                    .filter(QueryBuilders.termQuery("delete_time", 0))
+                    // 过滤 id >= 10 and id <= 15
+                    .filter(QueryBuilders.rangeQuery("id").gte(10L).lte(15L));
+
+            // 设置查询条件
+            sourceBuilder.query(boolQueryBuilder);
+
+            // 添加聚合查询：根据 sex 分组
+            TermsAggregationBuilder termsAggregationBuilder = AggregationBuilders.terms("group_by_sex")
+                    .field("sex")
+                    .size(10); // 设置返回的分组数量
+
+            // 在每个分组中获取 id 的最大值
+            TopHitsAggregationBuilder topHitsAggregationBuilder = AggregationBuilders.topHits("max_id")
+                    .sort(SortBuilders.fieldSort("id").order(SortOrder.DESC)) // 按 id 降序排序
+                    .size(1); // 每个分组只取一条最大 id 的记录
+
+            // 将 top_hits 聚合添加到 terms 聚合中
+            termsAggregationBuilder.subAggregation(topHitsAggregationBuilder);
+
+            // 将聚合添加到搜索源构建器中
+            sourceBuilder.aggregation(termsAggregationBuilder);
+
+            // 设置 size 为 0 表示不返回具体的文档，只返回聚合结果
+            sourceBuilder.size(0);
+//            sourceBuilder.size(2); // 返回2个文档
+
+            // 执行搜索
+            request.source(sourceBuilder);
+            SearchResponse response = getClient().search(request, RequestOptions.DEFAULT);
+
+            // 【文档结果】
+            SearchHits resHits = response.getHits();
+            for (SearchHit hit : resHits) {
+                log.info(hit.getSourceAsString());
+            }
+            System.err.println("=========================================================");
+
+            // 【聚合结果】
+            Terms groupBySexAggregation = response.getAggregations().get("group_by_sex");
+            for (Terms.Bucket entry : groupBySexAggregation.getBuckets()) {
+                String sex = entry.getKey().toString();
+                long docCount = entry.getDocCount();
+
+                TopHits maxIdHits = entry.getAggregations().get("max_id");
+                SearchHit[] hits = maxIdHits.getHits().getHits();
+
+                if (hits.length > 0) {
+                    String maxId = hits[0].getSourceAsMap().get("id").toString();
+                    log.info("sex: {}, max_id: {}, count: {}", sex, maxId, docCount);
+                }
+            }
+        }
+    }
+
+    public static class test_page {
+
         @Test
         public void test_from_size() throws Exception {
             SearchRequest request = new SearchRequest().indices(ES_INDEX);
@@ -487,6 +567,8 @@ public class App {
                 System.out.println(hit.getSourceAsString());
             }
         }
+
+        // -------------------------------------------------------
 
         @Test
         public void test_search_after_01() throws Exception {
@@ -541,6 +623,8 @@ public class App {
                 System.out.println(hit.getSourceAsString());
             }
         }
+
+        // -------------------------------------------------------
 
         @Test
         public void test_scroll() throws Exception {
