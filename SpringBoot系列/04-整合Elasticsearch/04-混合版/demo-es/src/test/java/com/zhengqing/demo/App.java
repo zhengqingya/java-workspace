@@ -421,6 +421,7 @@ public class App {
             // -----------------------------------------------
 
             request.source(sourceBuilder);
+            log.debug("DSL查询语句：{}", sourceBuilder);
             SearchResponse response = getClient().search(request, RequestOptions.DEFAULT);
             // 查询匹配
             SearchHits hits = response.getHits();
