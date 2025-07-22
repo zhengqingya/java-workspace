@@ -85,6 +85,7 @@ import java.util.Map;
 public class App {
 
     private static final String ES_INDEX = "user";
+    private static final String ES_INDEX_ALIAS = "user_index_alias"; // 索引别名，注：需要和 MAPPING_TEMPLATE 中的保持一致
     private static final boolean REFRESH_NOW_ES = true;
 
     private static RestHighLevelClient getClient() {
@@ -98,7 +99,7 @@ public class App {
 
     public static class test_index {
         // 查看 http://localhost:9200/user
-        final String MAPPING_TEMPLATE = "{\"mappings\":{\"properties\":{\"age\":{\"type\":\"long\"},\"name\":{\"type\":\"keyword\"},\"content\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\"},\"explain\":{\"type\":\"text\",\"fields\":{\"explain-alias\":{\"type\":\"keyword\"}}},\"sex\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"},\"dataList\":{\"type\":\"nested\",\"properties\":{\"id\":{\"type\":\"long\"},\"type\":{\"type\":\"keyword\"}}}}}}";
+        final String MAPPING_TEMPLATE = "{\"aliases\":{\"user_index_alias\":{}},\"mappings\":{\"properties\":{\"age\":{\"type\":\"long\"},\"name\":{\"type\":\"keyword\"},\"content\":{\"type\":\"text\",\"analyzer\":\"ik_max_word\"},\"explain\":{\"type\":\"text\",\"fields\":{\"explain-alias\":{\"type\":\"keyword\"}}},\"sex\":{\"type\":\"keyword\"},\"desc\":{\"type\":\"text\"},\"dataList\":{\"type\":\"nested\",\"properties\":{\"id\":{\"type\":\"long\"},\"type\":{\"type\":\"keyword\"}}}}}}";
 
         @Test
         public void exists() throws Exception {
@@ -108,7 +109,9 @@ public class App {
 
         @Test
         public void create() throws Exception {
-            CreateIndexResponse createIndexResponse = getClient().indices().create(new CreateIndexRequest(ES_INDEX).source(MAPPING_TEMPLATE, XContentType.JSON), RequestOptions.DEFAULT);
+            CreateIndexRequest request = new CreateIndexRequest(ES_INDEX).source(MAPPING_TEMPLATE, XContentType.JSON);
+//            request.alias(new Alias(ES_INDEX_ALIAS));
+            CreateIndexResponse createIndexResponse = getClient().indices().create(request, RequestOptions.DEFAULT);
             System.out.println(createIndexResponse.isAcknowledged());
         }
 
@@ -235,7 +238,7 @@ public class App {
         @Test
         public void add() throws Exception {
             BulkRequest request = new BulkRequest();
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 10; i++) {
                 String id = String.valueOf(i + 1);
                 request.add(new IndexRequest().index(ES_INDEX).id(id)
                         .source(JSONUtil.toJsonStr(User.builder()
@@ -326,7 +329,7 @@ public class App {
         @Test // 条件查询
         public void test_search() throws Exception {
             // 创建搜索请求对象
-            SearchRequest request = new SearchRequest().indices(ES_INDEX);
+            SearchRequest request = new SearchRequest().indices(ES_INDEX_ALIAS);
             // 构建查询的请求体
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
@@ -434,7 +437,7 @@ public class App {
             System.out.println("hits========>>");
             for (SearchHit hit : hits) {
                 // 输出每条查询的结果信息
-                System.out.println(hit.getSourceAsString());
+                log.info("Index:{} Source:{}", hit.getIndex(), hit.getSourceAsString());
 
                 // 打印高亮结果
                 Map<String, HighlightField> highlightFields = hit.getHighlightFields();
