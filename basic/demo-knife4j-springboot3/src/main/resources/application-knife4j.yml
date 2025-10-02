@@ -1,0 +1,23 @@
+springdoc:
+  swagger-ui:
+    # #自定义swagger前端请求路径,输入 ip:端口/swagger-ui.html 会自动重定向到swagger页面
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: '默认分组'
+      paths-to-match: '/**'
+      packages-to-scan: com.zhengqing
+  default-flat-param-object: true
+
+knife4j:
+  enable: true
+  basic:
+    enable: false # 是否开启认证
+    username: admin
+    password: 123456
+  setting:
+    language: zh_cn # 中文
+    swagger-model-name: 实体类列表 # 默认为：Swagger Models
