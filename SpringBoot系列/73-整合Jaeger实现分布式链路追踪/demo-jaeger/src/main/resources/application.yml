@@ -1,0 +1,33 @@
+server:
+  # Demo 服务端口
+  port: 8080
+
+spring:
+  application:
+    # Jaeger UI 中展示的服务名
+    name: jaeger-demo
+  profiles:
+    include:
+      - knife4j
+  zipkin:
+    # 这里不是 Zipkin UI，而是 Jaeger 开启的 Zipkin 兼容采集端口
+    base-url: http://localhost:9411
+    enabled: true
+  sleuth:
+    sampler:
+      # 学习阶段建议全采样，便于每次请求都能在 Jaeger 中看到
+      probability: 1.0
+    web:
+      # 忽略 actuator 请求，避免把健康检查也打进链路里
+      skip-pattern: /actuator.*
+
+logging:
+  # 统一使用 logback-spring.xml，在日志中打印 traceId/spanId
+  config: classpath:logback-spring.xml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 这里仅暴露基础管理端点，避免演示项目开放过多信息
+        include: health,info
