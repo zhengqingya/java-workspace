@@ -4,10 +4,26 @@
 - github：https://github.com/apache/skywalking
 - 文档：https://skywalking.apache.org/docs/
 
-日志监控 - logback
+### SkyWalking 原生探针
+
+直接将数据（通过 gRPC）打给 SkyWalking OAP。
+
+#### 1、JVM 启动参数
+
+下载并解压 `skywalking-agent` https://skywalking.apache.org/downloads/
+> eg: https://dlcdn.apache.org/skywalking/java-agent/9.6.0/apache-skywalking-java-agent-9.6.0.tgz
+
+```shell
+-javaagent:/data/skywalking-agent/skywalking-agent.jar
+-Dskywalking.agent.service_name=demo-skywalking
+-Dskywalking.collector.backend_service=127.0.0.1:11800
+```
+
+#### 2、日志监控 - logback
+
 https://skywalking.apache.org/docs/skywalking-java/v9.6.0/en/setup/service-agent/java-agent/application-toolkit-logback-1.x/
 
-## 实现说明
+##### 实现说明
 
 SkyWalking 日志监控的实现比较简单，核心分为 3 步：
 
@@ -15,7 +31,7 @@ SkyWalking 日志监控的实现比较简单，核心分为 3 步：
 2. 在 [`logback-spring.xml`](src/main/resources/logback-spring.xml) 中配置 SkyWalking 的 `%tid` 和 `%sw_ctx` 占位符，并增加 `GRPCLogClientAppender`
 3. 应用通过 `-javaagent` 方式接入 SkyWalking agent 后，业务日志会在控制台打印 trace 信息，同时通过 gRPC 上报到 SkyWalking OAP
 
-## 日志格式对比
+##### 日志格式对比
 
 当前项目在 `logback-spring.xml` 中同时输出了 `%tid` 和 `%sw_ctx`，便于观察 SkyWalking 日志上下文。
 
@@ -24,14 +40,14 @@ SkyWalking 日志监控的实现比较简单，核心分为 3 步：
 | `%tid` | 仅输出 TraceId | `traceId` | `TID: 9f8b1c7d2e3a4b5c8d6e7f0a1b2c3d4e.123.456789` | 只想快速定位一条链路时使用，日志更简洁 |
 | `%sw_ctx` | 输出完整 SkyWalking 上下文 | `serviceName`、`instanceName`、`traceId`、`traceSegmentId`、`spanId` | `SW_CTX: [demo, 192.168.1.10@8080, traceId, segmentId, 3]` | 需要同时查看链路、实例和 span 信息时使用 |
 
-## 使用建议
+##### 使用建议
 
 - 想快速 grep 或搜索 TraceId 时，优先看 `%tid`
 - 想排查当前日志属于哪个实例、哪个 span 时，优先看 `%sw_ctx`
 - 当前项目已经把两者同时打印，控制台中可直接对比效果
 
 
-## 日志输出
+##### 日志输出
 
 ```shell
 
