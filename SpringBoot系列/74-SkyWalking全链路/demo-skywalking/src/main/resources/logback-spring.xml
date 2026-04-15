@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true">
+    <!-- 从 Spring 配置中读取应用名，SkyWalking 上报日志时会带上该服务名 -->
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="demo-skywalking-log"/>
+
+    <!-- SkyWalking 的日志扩展占位符：
+         %tid    只输出 traceId
+         %sw_ctx 输出 [service, instance, traceId, segmentId, spanId] -->
+    <conversionRule conversionWord="tid"
+                    converterClass="org.apache.skywalking.apm.toolkit.log.logback.v1.x.LogbackPatternConverter"/>
+    <conversionRule conversionWord="sw_ctx"
+                    converterClass="org.apache.skywalking.apm.toolkit.log.logback.v1.x.LogbackSkyWalkingContextPatternConverter"/>
+
+    <!-- 控制台日志：本地排查时直接查看 traceId 和完整上下文 -->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [tid=%tid] [ctx=%sw_ctx] %logger{36} - %msg%n%ex"/>
+    <!-- 上报到 SkyWalking 的日志内容：保留服务名和链路上下文 -->
+    <property name="SKYWALKING_LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [${APP_NAME},tid=%tid,ctx=%sw_ctx] %logger{36} - %msg%n%ex"/>
+
+    <!-- 控制台输出，方便在本地直接看日志 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <charset>UTF-8</charset>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 通过 SkyWalking 的 gRPC appender 将日志直接上报给 OAP -->
+    <appender name="SKYWALKING" class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.log.GRPCLogClientAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <charset>UTF-8</charset>
+            <pattern>${SKYWALKING_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 根日志器同时输出到控制台和 SkyWalking -->
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SKYWALKING"/>
+    </root>
+
+    <!-- 减少部分日志 -->
+    <!-- 业务日志 -->
+    <logger name="com.zhengqing" level="DEBUG"/>
+
+    <!-- other -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="sun.rmi" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+    <logger name="springfox" level="WARN"/>
+    <logger name="com.github.xiaoymin" level="WARN"/>
+
+</configuration>

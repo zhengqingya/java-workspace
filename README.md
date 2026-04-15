@@ -84,6 +84,7 @@
 - [71-整合easymulti-datasource](./SpringBoot系列/71-整合easymulti-datasource)
 - [72-整合企微](./SpringBoot系列/72-整合企微)
 - [73-整合Jaeger实现分布式链路追踪](./SpringBoot系列/73-整合Jaeger实现分布式链路追踪)
+- [74-SkyWalking全链路](./SpringBoot系列/74-SkyWalking全链路)
 
 #### SpringCloud系列
 
