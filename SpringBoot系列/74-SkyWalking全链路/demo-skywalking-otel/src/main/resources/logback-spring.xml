@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true">
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="demo-otel"/>
+
+    <!-- 纯 OTel demo 只保留控制台日志，避免依赖 SkyWalking toolkit 类 -->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{trace_id:-N/A},%X{span_id:-N/A}] %logger{36} - %msg%n%ex"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <charset>UTF-8</charset>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+    <logger name="com.zhengqing" level="DEBUG"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="sun.rmi" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+    <logger name="springfox" level="WARN"/>
+    <logger name="com.github.xiaoymin" level="WARN"/>
+</configuration>
