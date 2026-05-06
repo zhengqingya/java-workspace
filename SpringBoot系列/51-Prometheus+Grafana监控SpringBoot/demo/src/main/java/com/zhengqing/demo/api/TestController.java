@@ -2,6 +2,8 @@ package com.zhengqing.demo.api;
 
 
 import cn.hutool.core.date.DateTime;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.SneakyThrows;
@@ -26,7 +28,27 @@ import java.util.concurrent.ConcurrentHashMap;
 @Api(tags = "测试api")
 public class TestController {
 
-    @GetMapping("time")
+    private final Counter apiCallCounter;
+
+    public TestController(MeterRegistry meterRegistry) {
+        this.apiCallCounter = Counter.builder("demo_api_call_total")
+                .description("接口调用次数")
+                .tag("api", "/test/api/count")
+                .register(meterRegistry);
+    }
+
+    /**
+     * http://127.0.0.1:9200/test/api/count
+     */
+    @GetMapping("api/count")
+    @ApiOperation("接口调用次数统计")
+    public String apiCount() {
+        this.apiCallCounter.increment();
+        return "接口调用次数：" + this.apiCallCounter.count();
+    }
+
+
+    @GetMapping("time") // http://127.0.0.1:9200/test/time
     @ApiOperation("time")
     public String time() {
         log.info("time: {}", DateTime.now());
@@ -50,5 +72,6 @@ public class TestController {
         }
         return "ok";
     }
+
 
 }
