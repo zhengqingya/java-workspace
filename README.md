@@ -126,6 +126,7 @@
 #### k8s
 
 - [01-springboot部署](./k8s/01-springboot部署)
+- [02-apm](./k8s/02-apm)
 
 #### Nepxion Discovery
 

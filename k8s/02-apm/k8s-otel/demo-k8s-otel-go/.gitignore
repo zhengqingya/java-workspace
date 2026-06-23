@@ -1,0 +1,6 @@
+.gocache/
+.gomodcache/
+.skywalking-go-agent/
+demo-go-otel
+.DS_Store
+demo-go-agent

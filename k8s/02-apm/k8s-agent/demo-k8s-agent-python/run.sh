@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+export HTTP_HOST="${HTTP_HOST:-0.0.0.0}"
+export HTTP_PORT="${HTTP_PORT:-18081}"
+export LOG_LEVEL="${LOG_LEVEL:-INFO}"
+export SW_AGENT_NAME="${SW_AGENT_NAME:-demo-k8s-agent-python}"
+export SW_AGENT_PROTOCOL="${SW_AGENT_PROTOCOL:-grpc}"
+export SW_AGENT_COLLECTOR_BACKEND_SERVICES="${SW_AGENT_COLLECTOR_BACKEND_SERVICES:-127.0.0.1:11800}"
+export SW_AGENT_LOG_REPORTER_ACTIVE="${SW_AGENT_LOG_REPORTER_ACTIVE:-true}"
+export SW_AGENT_LOG_REPORTER_LEVEL="${SW_AGENT_LOG_REPORTER_LEVEL:-INFO}"
+export SW_AGENT_LOG_REPORTER_FORMATTED="${SW_AGENT_LOG_REPORTER_FORMATTED:-true}"
+export SW_AGENT_LOG_REPORTER_LAYOUT="${SW_AGENT_LOG_REPORTER_LAYOUT:-%(asctime)s %(levelname)s [%(name)s] %(message)s}"
+
+exec sw-python run python app.py

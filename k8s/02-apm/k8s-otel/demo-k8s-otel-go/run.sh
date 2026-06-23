@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+export HTTP_ADDR="${HTTP_ADDR:-:18082}"
+export LOG_LEVEL="${LOG_LEVEL:-info}"
+export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-demo-k8s-otel-go}"
+export OTEL_SERVICE_NAMESPACE="${OTEL_SERVICE_NAMESPACE:-default}"
+export DEPLOYMENT_ENVIRONMENT="${DEPLOYMENT_ENVIRONMENT:-dev}"
+export OTEL_EXPORTER_OTLP_PROTOCOL="${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}"
+export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4317}"
+
+exec go run .

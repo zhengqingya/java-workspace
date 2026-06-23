@@ -1,0 +1,14 @@
+agent:
+  service_name: ${SW_AGENT_NAME:demo-k8s-agent-go}
+
+reporter:
+  grpc:
+    backend_service: ${SW_AGENT_REPORTER_GRPC_BACKEND_SERVICE:127.0.0.1:11800}
+
+log:
+  type: ${SW_LOG_TYPE:zap}
+  tracing:
+    enable: ${SW_AGENT_LOG_TRACING_ENABLE:true}
+    key: ${SW_AGENT_LOG_TRACING_KEY:SW_CTX}
+  reporter:
+    enable: ${SW_LOG_REPORTER_ENABLE:true}
