@@ -16,8 +16,8 @@ try {
     $otel->exportSpan($span);
 } catch (Throwable $e) {
     http_response_code(500);
-    $span['attributes']['error.type'] = $e::class;
-    $span['attributes']['error.message'] = $e->getMessage();
+    $span['attributes']['http.response.status_code'] = 500;
+    $span = $otel->markError($span, $e);
     $otel->exportSpan($span);
     logMessage($otel, 'error', 'request failed', ['exception' => $e::class, 'message' => $e->getMessage()], $span, $serviceName);
     jsonResponse(['error' => 'internal server error']);
@@ -67,15 +67,22 @@ function route(Otel $otel, array $span, string $serviceName): void
         }
 
         // 3、调用下游时创建客户端 Span，并通过 traceparent 继续透传链路上下文。
-        $clientSpan = $otel->startInternalSpan(sprintf('HTTP GET %s', $targetName), $span);
+        $clientSpan = $otel->startClientSpan(sprintf('HTTP GET %s', $targetName), $span);
         $clientSpan['attributes']['http.request.method'] = 'GET';
         $clientSpan['attributes']['url.full'] = $targetUrl;
 
-        $result['downstream'] = httpGetJson($targetUrl, [
-            'traceparent: ' . $otel->traceparent($clientSpan),
-        ]);
-        $clientSpan['attributes']['http.response.status_code'] = 200;
-        $otel->exportSpan($clientSpan);
+        try {
+            $result['downstream'] = httpGetJson($targetUrl, [
+                'traceparent: ' . $otel->traceparent($clientSpan),
+            ]);
+            $clientSpan['attributes']['http.response.status_code'] = 200;
+            $otel->exportSpan($clientSpan);
+        } catch (Throwable $e) {
+            $clientSpan['attributes']['http.response.status_code'] = 502;
+            $clientSpan = $otel->markError($clientSpan, $e);
+            $otel->exportSpan($clientSpan);
+            throw $e;
+        }
         jsonResponse($result);
         return;
     }

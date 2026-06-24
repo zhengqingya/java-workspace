@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 final class Otel
 {
+    private const SPAN_KIND_SERVER = 2;
+    private const SPAN_KIND_CLIENT = 3;
+    private const STATUS_CODE_ERROR = 2;
+
     private string $endpoint;
 
     public function __construct(private readonly string $serviceName)
@@ -21,7 +25,7 @@ final class Otel
             'span_id' => $this->randomHex(8),
             'parent_span_id' => $parent['span_id'] ?? null,
             'name' => sprintf('%s %s', $method, $path),
-            'kind' => 2,
+            'kind' => self::SPAN_KIND_SERVER,
             'start_time_unix_nano' => $this->nowNano(),
             'attributes' => [
                 'http.request.method' => $method,
@@ -31,37 +35,59 @@ final class Otel
         ];
     }
 
-    public function startInternalSpan(string $name, array $parentSpan): array
+    /**
+     * 创建下游 HTTP 调用客户端 Span。
+     */
+    public function startClientSpan(string $name, array $parentSpan): array
     {
         return [
             'trace_id' => $parentSpan['trace_id'],
             'span_id' => $this->randomHex(8),
             'parent_span_id' => $parentSpan['span_id'],
             'name' => $name,
-            'kind' => 1,
+            'kind' => self::SPAN_KIND_CLIENT,
             'start_time_unix_nano' => $this->nowNano(),
             'attributes' => [],
         ];
     }
 
+    /**
+     * 给 Span 标记错误状态和异常属性。
+     */
+    public function markError(array $span, \Throwable $e): array
+    {
+        $span['status'] = [
+            'code' => self::STATUS_CODE_ERROR,
+            'message' => $e->getMessage(),
+        ];
+        $span['attributes']['exception.type'] = $e::class;
+        $span['attributes']['exception.message'] = $e->getMessage();
+        return $span;
+    }
+
     public function exportSpan(array $span): void
     {
         $span['end_time_unix_nano'] = $this->nowNano();
+        $spanPayload = [
+            'traceId' => $span['trace_id'],
+            'spanId' => $span['span_id'],
+            'parentSpanId' => $span['parent_span_id'] ?? '',
+            'name' => $span['name'],
+            'kind' => $span['kind'],
+            'startTimeUnixNano' => (string) $span['start_time_unix_nano'],
+            'endTimeUnixNano' => (string) $span['end_time_unix_nano'],
+            'attributes' => $this->attributes($span['attributes']),
+        ];
+        if (isset($span['status'])) {
+            $spanPayload['status'] = $span['status'];
+        }
+
         $payload = [
             'resourceSpans' => [[
                 'resource' => ['attributes' => $this->resourceAttributes()],
                 'scopeSpans' => [[
                     'scope' => ['name' => $this->serviceName],
-                    'spans' => [[
-                        'traceId' => $span['trace_id'],
-                        'spanId' => $span['span_id'],
-                        'parentSpanId' => $span['parent_span_id'] ?? '',
-                        'name' => $span['name'],
-                        'kind' => $span['kind'],
-                        'startTimeUnixNano' => (string) $span['start_time_unix_nano'],
-                        'endTimeUnixNano' => (string) $span['end_time_unix_nano'],
-                        'attributes' => $this->attributes($span['attributes']),
-                    ]],
+                    'spans' => [$spanPayload],
                 ]],
             ]],
         ];
