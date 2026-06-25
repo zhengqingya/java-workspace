@@ -54,6 +54,13 @@
             <version>5.8.3</version>
         </dependency>
 
+        <!-- OpenTelemetry API：仅用于读取当前请求 Span 上下文，实际采集仍由 Java Agent 自动注入 -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <version>1.42.1</version>
+        </dependency>
+
         <!-- guava -->
         <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
         <dependency>

@@ -3,6 +3,8 @@ package com.zhengqing.demo.api;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONUtil;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ public class TestController {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("message", "hello, " + name);
         result.put("service", SERVICE_NAME);
+        result.putAll(this.currentTraceContext());
         return result;
     }
 
@@ -46,6 +49,7 @@ public class TestController {
         result.put("message", "java -> " + targetName);
         result.put("target_name", targetName);
         result.put("target_url", targetUrl);
+        result.putAll(this.currentTraceContext());
 
         if (StrUtil.isBlank(targetUrl)) {
             return result;
@@ -72,7 +76,31 @@ public class TestController {
         result.put("message", "java final reached");
         result.put("path", request.getRequestURI());
         result.put("headers", headers);
+        result.putAll(this.currentTraceContext());
         return result;
+    }
+
+    /**
+     * 获取当前请求链路上下文。
+     *
+     * @return trace_id 和 span_id
+     */
+    private Map<String, Object> currentTraceContext() {
+        // 1、读取 OpenTelemetry Java Agent 自动注入到当前线程的 Span 上下文。
+        SpanContext spanContext = Span.current().getSpanContext();
+
+        // 2、本地未挂载 Java Agent 或当前请求无有效 Span 时，返回固定兜底值，保持接口结构稳定。
+        Map<String, Object> traceContext = new LinkedHashMap<>();
+        if (!spanContext.isValid()) {
+            traceContext.put("trace_id", "0");
+            traceContext.put("span_id", "0");
+            return traceContext;
+        }
+
+        // 3、按 OTel/SigNoz/Grafana 常见十六进制格式返回链路标识。
+        traceContext.put("trace_id", spanContext.getTraceId());
+        traceContext.put("span_id", spanContext.getSpanId());
+        return traceContext;
     }
 
 }
