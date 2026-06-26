@@ -1,5 +1,6 @@
 package com.zhengqing.demo.api;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
@@ -74,21 +75,20 @@ public class TestController {
                                      @RequestParam(defaultValue = "50") Integer rate) {
         // 1、修正异常概率，避免传入负数或超过 100 的值影响随机判断。
         int finalRate = Math.max(0, Math.min(100, rate));
-        log.info("异常验证请求，random={}，rate={}，finalRate={}", random, rate, finalRate);
+        String now = DateUtil.now();
+        log.info("[{}] 异常验证请求，random={}，rate={}，finalRate={}", now, random, rate, finalRate);
 
         // 2、根据请求参数决定是否触发异常，未捕获异常会直接形成 500，方便 APM 统计异常接口。
         boolean triggerError = !Boolean.TRUE.equals(random) || RandomUtil.randomInt(100) < finalRate;
         if (triggerError) {
-            log.error("触发异常验证，random={}，finalRate={}", random, finalRate);
+            log.error("[{}] 触发异常验证，random={}，finalRate={}", now, random, finalRate);
             throw new RuntimeException("异常验证接口主动抛出异常");
         }
 
         // 3、未触发异常时返回正常响应和当前链路标识。
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("service", SERVICE_NAME);
-        result.put("message", "java error check passed");
-        result.put("random", random);
-        result.put("rate", finalRate);
+        result.put("time", now);
         result.putAll(this.currentTraceContext());
         return result;
     }
