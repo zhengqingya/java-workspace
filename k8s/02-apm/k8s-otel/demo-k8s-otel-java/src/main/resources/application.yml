@@ -7,6 +7,9 @@ spring:
   profiles:
     include:
       - knife4j
+  redis:
+    host: redis
+    port: 6379
 
 # 配置日志地址
 logging:

@@ -10,11 +10,13 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
@@ -27,6 +29,9 @@ import java.util.Map;
 public class TestController {
 
     private static final String SERVICE_NAME = "demo-k8s-otel-java";
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @GetMapping("hello") // http://127.0.0.1/hello
     public Map<String, Object> hello(@RequestParam(defaultValue = "skywalking") String name) {
@@ -119,6 +124,35 @@ public class TestController {
         result.put("service", SERVICE_NAME);
         result.put("message", "java slow check passed");
         result.put("sleep_ms", finalSleepMs);
+        result.putAll(this.currentTraceContext());
+        return result;
+    }
+
+    /**
+     * 验证 Redis 调用耗时采集。
+     *
+     * @param key   Redis key
+     * @param value Redis value
+     * @return Redis 读写结果和当前链路标识
+     */
+    @GetMapping("redis") // http://127.0.0.1/redis?key=otel:redis:test&value=hello
+    @ApiOperation("验证 Redis 调用耗时采集")
+    public Map<String, Object> redis(@RequestParam(defaultValue = "otel:redis:test") String key,
+                                     @RequestParam(defaultValue = "hello") String value) {
+        // 1、修正空参数并写入 Redis，验证 OTel Java Agent 是否生成 Redis SET span。
+        String finalKey = StrUtil.blankToDefault(key, "otel:redis:test");
+        String finalValue = StrUtil.blankToDefault(value, "hello");
+        log.info("Redis 耗时验证请求，key={}，value={}", finalKey, finalValue);
+        stringRedisTemplate.opsForValue().set(finalKey, finalValue);
+
+        // 2、读取 Redis，验证 OTel Java Agent 是否生成 Redis GET span。
+        String redisValue = stringRedisTemplate.opsForValue().get(finalKey);
+
+        // 3、返回 Redis 结果和当前链路标识，方便在 Grafana Tempo 中按 trace_id 查询链路明细。
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("service", SERVICE_NAME);
+        result.put("key", finalKey);
+        result.put("value", redisValue);
         result.putAll(this.currentTraceContext());
         return result;
     }
